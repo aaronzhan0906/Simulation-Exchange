@@ -36,8 +36,9 @@ router.get("/auth",async (req, res, next) => {
         }
 
         // check email in payload
-        const payload = jwt.verify(refreshToken,config.refreshTokenSecret);
-        const userEmail = payload.email;
+        const payload = jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
+        console.log(payload)
+        const userEmail = payload.userEmail;
         const userExist = await userService.getUserByEmail(userEmail);
         if (!userExist) {
             return res.status(401).json({ "error": true, message: "User Not Found"})
@@ -67,7 +68,7 @@ router.put("/auth", async (req, res, next) => {
 
         // make jwt 
         const refreshToken = jwt.sign (
-            { userEmail: userInfo.email },
+            { userEmail: userInfo[0].email },
             config.jwt.refreshTokenSecret,
             { expiresIn: config.jwt.refreshTokenLife } 
         );
@@ -80,7 +81,7 @@ router.put("/auth", async (req, res, next) => {
             sameSite: "strict"
         });
 
-        res.status(200).json({ "ok": true, message:"User log in successfully" });
+        res.status(200).json({ "ok": true, message: "User log in successfully" });
     } catch (error) {
         next(error)
     }
@@ -91,7 +92,7 @@ router.put("/auth", async (req, res, next) => {
 router.post("/logout", async (req, res, next) => {
     try {
         res.clearCookie("refreshToken");
-        res.status(200).json({ "ok": true, message:"Log out successfully" });
+        res.status(200).json({ "ok": true, message: "Log out successfully" });
     } catch (error) {
         next(error)
     }

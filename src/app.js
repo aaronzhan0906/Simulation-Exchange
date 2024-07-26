@@ -1,4 +1,5 @@
 import express from "express";
+import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import chalk from "chalk";
 import userRoute from "./route/userRoute.js"
@@ -14,6 +15,7 @@ const app = express();
 
 // middleware 
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 
