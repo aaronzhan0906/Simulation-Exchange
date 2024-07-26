@@ -16,26 +16,39 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 // morgan 
-morgan.token('body', (req, res) => JSON.stringify(res.locals.responseBody));
-morgan.token('coloredStatus', (req, res) => {
-  const status = res.statusCode;
-  const color = status >= 500 ? 'red' : 
-                status >= 400 ? 'yellow' : 
-                status >= 300 ? 'cyan' : 
-                status >= 200 ? 'green' : 'white';
-  return chalk[color](status);
+app.use((req, res, next) => {
+    const originalJson = res.json;
+    res.json = function (body) {
+      res.locals.responseBody = body;
+      return originalJson.call(this, body);
+    };
+    next();
+});
+
+morgan.token("body", (req, res) => {
+    if (res.locals.responseBody) {
+      return JSON.stringify(res.locals.responseBody);
+    }
+    return "No response body";
+});
+
+morgan.token("coloredStatus", (req, res) => {
+    const status = res.statusCode;
+    const color =  status >= 500 ? "red" : status >= 400 ? "yellow" : status >= 300 ? "cyan" : status >= 200 ? "green" : "white";
+    return chalk[color](status);
 });
 
 app.use(morgan((tokens, req, res) => {
-  return [
-    chalk.blue(tokens.method(req, res)),
-    chalk.yellow(tokens.url(req, res)),
-    tokens["coloredStatus"](req, res),
-    chalk.green(tokens["response-time"](req, res) + " ms"),
-    chalk.magenta("-"),
-    chalk.cyan(tokens.body(req, res))
-  ].join(" ");
+    return [
+        chalk.blue(tokens.method(req, res)),
+        chalk.yellow(tokens.url(req, res)),
+        tokens["coloredStatus"](req, res),
+        chalk.green(tokens["response-time"](req, res) + " ms"),
+        chalk.magenta("-"),
+        chalk.cyan(tokens.body(req, res))
+    ].join(" ");
 }));
 
 // static
@@ -51,20 +64,25 @@ app.use("/api/user", userRoute);
 
 // 404 
 app.use((req, res, next) => {
-  res.status(404).send("Sorry, can't find that!");
+    res.status(404).json({
+        error: true,
+        message: "Route not found"
+    });
 });
-
 
 // 500 internal server error
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).send("Internal Server Error")
-})
+    res.status(500).json({
+      error: true,
+      message: "Internal Server Error"
+    });
+});
 
 // start 
 const PORT = process.env.PORT || 6000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
 
 export default app;

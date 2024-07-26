@@ -9,12 +9,10 @@ class UserService {
     };
 
     async getUserByEmail(email) {
-        const command = "SELECT id, displayname, email FROM users WHERE email = ?";
+        const command = "SELECT user_id, displayname, email, password FROM users WHERE email = ?";
         const result = await db.query(command, [email]);
         return result;
     }
-
-
 }
 
 
