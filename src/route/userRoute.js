@@ -38,8 +38,8 @@ router.get("/auth",async (req, res, next) => {
         // check email in payload
         const payload = jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
         console.log(payload)
-        const userEmail = payload.userEmail;
-        const userExist = await userService.getUserByEmail(userEmail);
+        const email = payload.email;
+        const userExist = await userService.getUserByEmail(email);
         if (!userExist) {
             return res.status(401).json({ "error": true, message: "User Not Found"})
         }
@@ -68,7 +68,7 @@ router.put("/auth", async (req, res, next) => {
 
         // make jwt 
         const refreshToken = jwt.sign (
-            { userEmail: userInfo[0].email },
+            { email: userInfo[0].email },
             config.jwt.refreshTokenSecret,
             { expiresIn: config.jwt.refreshTokenLife } 
         );
