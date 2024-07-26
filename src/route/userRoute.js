@@ -9,16 +9,17 @@ const router = express.Router();
 
 
 // POST : sign up //
-router.post("/api/user", async (req, res, next) => {
+router.post("/", async (req, res, next) => {
     try {
-        const { displayname , email, password }  = req.body;
+        const {displayname , email, password }  = req.body;
+        console.log(req.body)
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const createUser = await userService.createUser({displayname, email, password: hashedPassword});
+        const createUser = await userService.createUser({ displayname, email, password: hashedPassword });
         
         if (createUser) {
-        res.status(201).json({ response: "ok" });}
+        res.status(200).json({ response: "ok", message: "User has been log in" });}
     } catch(error) {
         next(error);
     }
@@ -26,12 +27,12 @@ router.post("/api/user", async (req, res, next) => {
 
 
 // GET : get info //
-router.get("/api/user/auth",async (req, res, next) => {
+router.get("/auth",async (req, res, next) => {
     try {
         // check jwt
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
-            return res.sendStatus(400).json({ response: "Unauthorized"});
+            return res.status(400).json({ response: "Unauthorized" });
         }
 
         // check email in payload
@@ -39,10 +40,10 @@ router.get("/api/user/auth",async (req, res, next) => {
         const userEmail = payload.email;
         const userExist = await userService.getUserByEmail(userEmail);
         if (!userExist) {
-            return res.sendStatus(401).json({ response: "User Not Found"})
+            return res.status(401).json({ response: "User Not Found"})
         }
         
-        res.status(200).json({ response: "ok", message:"User has been log in" });
+        res.status(200).json({ response: "ok", message: "User has been log in" });
     } catch (error){
         next(error)
     }
@@ -50,7 +51,7 @@ router.get("/api/user/auth",async (req, res, next) => {
 
 
 // PUT : log in //
-router.put("/api/user/auth", async (req, res, next) => {
+router.put("/auth", async (req, res, next) => {
     try{
         // get log in info
         const { email , password } = req.body;
@@ -87,9 +88,9 @@ router.put("/api/user/auth", async (req, res, next) => {
 
 
 // POST : log out //
-router.post("/api/user/logout", async (req, res, next) => {
+router.post("/logout", async (req, res, next) => {
     try {
-        res.clearCookie("refreshToken;")
+        res.clearCookie("refreshToken");
         res.status(200).json({ response: "ok", message:"Log out successfully" });
     } catch (error) {
         next(error)
