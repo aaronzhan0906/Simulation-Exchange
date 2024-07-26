@@ -1,6 +1,6 @@
 import express from "express";
-import dotenv from "dotenv";
 import morgan from "morgan";
+import userRoute from "../src/route/userRoute.js"
 // import helmet from "helmet";
 
 
@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // route
-app.use("api/users", userRoutes);
+app.use("api/users", userRoute);
 
 app.use((err, req, res, next) => {
     console.error(err.stack);

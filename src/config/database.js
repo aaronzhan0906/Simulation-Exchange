@@ -13,7 +13,7 @@ const poolConfig = {
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000,
     idleTimeout: 60000,
-    acquireTimeout: 10000,
+    connectTimeout: 10000,
     maxIdle: 10,
 }
 
