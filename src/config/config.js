@@ -17,8 +17,8 @@ const config = {
     jwt: {
         accessTokenSecret: process.env.ACCESS_TOKEN_SECRET,
         refreshTokenSecret: process.env.REFRESH_TOKEN_SECRET,
-        accessTokenLife: process.env.ACCESS_TOKEN_LIFE || '15m',
-        refreshTokenLife: process.env.REFRESH_TOKEN_LIFE || '7d',
+        accessTokenLife: process.env.ACCESS_TOKEN_LIFE ,
+        refreshTokenLife: process.env.REFRESH_TOKEN_LIFE ,
     },
     
 }
