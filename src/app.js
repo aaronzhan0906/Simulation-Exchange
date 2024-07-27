@@ -4,7 +4,6 @@ import morgan from "morgan";
 import chalk from "chalk";
 import userRoute from "./route/userRoute.js"
 import path from "path";
-import config from "./config/config.js";
 import { fileURLToPath } from "url";
 // import helmet from "helmet";
 
