@@ -4,6 +4,7 @@ import morgan from "morgan";
 import chalk from "chalk";
 import userRoute from "./route/userRoute.js"
 import path from "path";
+import config from "./config/config.js";
 import { fileURLToPath } from "url";
 // import helmet from "helmet";
 
@@ -49,12 +50,35 @@ app.use((err, req, res, next) => {
 });
 
 // start 
-const PORT = process.env.PORT;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
-
+const PORT = config.port;
 export default app;
+
+console.log(config.env)
+
+
+if (config.env === "production") {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    })
+} else {
+    import("https").then((https)=> {
+        import("fs").then((fs) => {
+            const sslDir = path.join(process.env.HOME, ".local-ssl-certs");
+            const options = {
+                key: fs.readFileSync(path.join(sslDir, "localhost+2-key.pem")),
+                cert: fs.readFileSync(path.join(sslDir, "localhost+2.pem"))
+            };
+
+            https.createServer(options, app).listen(PORT, () => {
+                console.log(`HTTPS Server is running on port ${PORT}`)
+            })
+        })
+    })
+}
+
+
+
+
 
 
 // morgan 

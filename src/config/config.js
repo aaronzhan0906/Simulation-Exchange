@@ -2,9 +2,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const config = {
-    server: {
-        port: process.env.PORT,
-    },
+    env: process.env.NODE_ENV,
+    port: process.env.PORT,
+
 
     database: {
         host: process.env.MYSQL_HOST,      
@@ -20,6 +20,10 @@ const config = {
         accessTokenLife: process.env.ACCESS_TOKEN_EXPIRY,   
         refreshTokenLife: process.env.REFRESH_TOKEN_EXPIRY,
     },
-}
+    ssl: {
+        key: process.env.SSL_KEY_PATH,
+        cert: process.env.SSL_CERT_PATH,
+    },
+};
 
 export default config;
