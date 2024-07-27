@@ -50,33 +50,13 @@ app.use((err, req, res, next) => {
 });
 
 // start 
-const PORT = config.port;
 export default app;
 
-if (config.env === "production") {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    })
-} else {
-    import("https").then((https)=> {
-        import("fs").then((fs) => {
-            const sslDir = path.join(process.env.HOME, ".local-ssl-certs");
-            const options = {
-                key: fs.readFileSync(path.join(sslDir, "localhost+2-key.pem")),
-                cert: fs.readFileSync(path.join(sslDir, "localhost+2.pem"))
-            };
+const PORT = process.env.PORT || 3000;
 
-            https.createServer(options, app).listen(PORT, () => {
-                console.log(`HTTPS Server is running on port ${PORT}`)
-            })
-        })
-    })
-}
-
-
-
-
-
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
 
 // morgan 
 app.use((req, res, next) => {
