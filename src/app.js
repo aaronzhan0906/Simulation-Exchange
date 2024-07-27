@@ -53,9 +53,6 @@ app.use((err, req, res, next) => {
 const PORT = config.port;
 export default app;
 
-console.log(config.env)
-
-
 if (config.env === "production") {
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
