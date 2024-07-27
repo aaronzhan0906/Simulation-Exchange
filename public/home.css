@@ -1,0 +1,46 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    letter-spacing: 0.7px;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #000000;
+    color: #ffffff;
+}
+
+/* Container */
+.header__container,
+.hero__container,
+.markets__container,
+.convert__container,
+.footer__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header */
+.header {
+    background-color: #0a1929;
+    padding: 20px 0;
+}
+
+.header__container {
+    display: flex;
+    align-items: center;
+}
+
+/* Buttons */
+.header__button {
+    margin-left: 20px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #4a90e2;
+    color: #ffffff;
+}
