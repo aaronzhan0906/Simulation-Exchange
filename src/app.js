@@ -31,7 +31,7 @@ app.get("/", (req, res) => {
 import userRoute from "./route/userRoute.js"
 import quote from "./route/quote.js"
 app.use("/api/user", userRoute);
-app.use("api/quote", quote)
+app.use("/api/quote", quote)
 
 
 
