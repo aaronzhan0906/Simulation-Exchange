@@ -2,7 +2,6 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import chalk from "chalk";
-import userRoute from "./route/userRoute.js"
 import path from "path";
 import { fileURLToPath } from "url";
 // import helmet from "helmet";
@@ -29,7 +28,12 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname,".." ,"public","home.html"))
 })
 
+import userRoute from "./route/userRoute.js"
+import quote from "./route/quote.js"
 app.use("/api/user", userRoute);
+app.use("api/quote", quote)
+
+
 
 // 404 
 app.use((req, res, next) => {
