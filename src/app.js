@@ -25,12 +25,14 @@ app.use(express.urlencoded({ extended: true }));
 
 // static
 app.use(express.static(path.join(__dirname, "..", "public")))
-app.use(express.static(path.join(__dirname, "..", "public", "static")))
 
 
 // route
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname,".." ,"public","home.html"))
+})
+app.get("/trade", (req, res) => {
+    res.sendFile(path.join(__dirname,".." ,"public","trade.html"))
 })
 
 import userRoute from "./route/userRoute.js"
@@ -124,4 +126,4 @@ app.use(morgan((tokens, req, res) => {
 }));
 
 
-export { server, wss};
+export { server, wss };
