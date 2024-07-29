@@ -3,7 +3,9 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import chalk from "chalk";
 import path from "path";
+import { createServer } from "http";
 import { fileURLToPath } from "url";
+import { WebSocketServer } from 'ws';
 // import helmet from "helmet";
 
 
@@ -11,6 +13,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const server = createServer(app);
+const wss = new WebSocketServer({ server });
+
 
 // middleware 
 app.use(express.json());
@@ -32,7 +37,6 @@ import userRoute from "./route/userRoute.js"
 import quote from "./route/quote.js"
 app.use("/api/user", userRoute);
 app.use("/api/quote", quote)
-
 
 
 // 404 
@@ -57,8 +61,26 @@ export default app;
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+
+    wss.on("connection",(ws, req) => {
+        console.log(`New WebSocket connection from ${req.socket.remoteAddress}`);
+
+        ws.on("message", (message) => {
+            console.log("Received", message.toString());
+        })
+
+        ws.on("close", (code, reason) => {
+            console.log(`WebSocket disconnected: ${code}- ${reason}`)
+        });
+
+        ws.send(JSON.stringify({type:"welcome", message: "Welcome to the WebSocket server!"}));
+    })
+
+    wss.on("error", (error) => {
+        console.error("WebSocket server error:", error)
+    })
 });
 
 // morgan 
@@ -100,3 +122,6 @@ app.use(morgan((tokens, req, res) => {
         chalk.cyan(tokens.body(req, res))
     ].join(" ");
 }));
+
+
+export { server, wss};

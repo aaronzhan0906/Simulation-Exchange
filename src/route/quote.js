@@ -1,5 +1,5 @@
 import express from "express";
-import config from "../config/config.js";
+import { wss } from "../app.js";
 import WebSocket from "ws";
 
 const router = express.Router();
@@ -11,8 +11,17 @@ const btcusdtWs = new WebSocket(wsUrl)
 let latestTickerData = null;
 let latestDepthData = { bids: {}, asks: {}};
 
+// broadcast function
+function broadcastMessage(type ,data) {
+    wss.clients.forEach((client)=> {
+        if (client.readyState === WebSocket.OPEN){
+            client.send(JSON.stringify({type ,data}));
+        }
+    });
+}
 
-// get ticker and order book from binance
+
+// get ticker and order book from binance wss
 btcusdtWs.on("message", (data) => {
     const parsedData = JSON.parse(data);
     const { stream, data:streamData } = parsedData;
@@ -28,6 +37,7 @@ btcusdtWs.on("message", (data) => {
             low: streamData.l,
             volume: streamData.v
         }
+        broadcastMessage("ticker", latestDepthData);
     } else if (stream === "btcusdt@depth") {
         // renew bid
         streamData.b.forEach(([price, quantity]) => {
@@ -45,6 +55,9 @@ btcusdtWs.on("message", (data) => {
                 latestDepthData.asks[price] = parseFloat(quantity);
             }
         })
+
+        const processedData = processOrderBookData();
+        broadcastMessage("orderbook", processedData)
     }
 })
 
@@ -52,6 +65,19 @@ btcusdtWs.on("error",(error)=>{
     console.error("Websocket error:", error)
 })
 
+function processOrderBookData(){
+    const myExchangeData = getMyExchangeOrderBook();
+
+    const combineAsks = { ... latestDepthData.asks, ... myExchangeData.asks };
+    const combineBids = { ... latestDepthData.bids, ... myExchangeData.bids };
+    const processedData = {
+        asks: Object.entries(combineAsks)
+        .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity]),
+        bids: Object.entries(combineBids)
+        .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity])
+    }
+    return processedData;
+}
 
 // GET latest-ticker //
 router.get("/latest-ticker",(req, res)=> {
@@ -63,23 +89,13 @@ router.get("/latest-ticker",(req, res)=> {
 });
 
 
-// GET latest-ticker //
-router.get("/order-book",(req, res) => {
-    const myExchangeData = getMyExchangeOrderBook();
-
-    const combineAsks = { ... latestDepthData.asks, ... myExchangeData.asks };
-    const combineBids = { ... latestDepthData.bids, ... myExchangeData.bids };
-    const processedData = {
-        asks: Object.entries(combineAsks)
-        .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity]),
-        bids: Object.entries(combineBids)
-        .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity])
-    }
-
-    if (Object.keys(latestDepthData.bids).length > 0 || Object.keys(latestDepthData.asks).length > 0) {
-        res.json({processedData});
+// GET order-book //
+router.get("/order-book", (req, res) => {
+    const processedData = processOrderBookData();
+    if (Object.keys(processedData.bids).length > 0 || Object.keys(processedData.asks).length > 0) {
+        res.json(processedData);
     } else {
-        res.status(503).json({ error:"ok", message:"Order book data not available yet"})
+        res.status(503).json({ error: "ok", message: "Order book data not available yet" });
     }
 });
 
@@ -92,8 +108,8 @@ router.get("/ws-status",(req, res) => {
 
 // getMyExchangeOrderBook
 async function getMyExchangeOrderBook () {
-    return null;
+    return { bids: {}, asks: {} };
 }
 
-
+// export 
 export default router;
