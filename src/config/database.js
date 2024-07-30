@@ -6,14 +6,14 @@ const poolConfig = {
     host: config.database.host,
     user: config.database.user,
     password: config.database.password,
-    database: config.database.name,
+    database: config.database.database,    
     connectionLimit: 100,
     queueLimit: 1000,
     waitForConnections: true,
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000,
     idleTimeout: 60000,
-    acquireTimeout: 10000,
+    connectTimeout: 10000,
     maxIdle: 10,
 }
 

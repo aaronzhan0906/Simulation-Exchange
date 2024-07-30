@@ -1,28 +1,129 @@
 import express from "express";
-import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import morgan from "morgan";
+import chalk from "chalk";
+import path from "path";
+import { createServer } from "http";
+import { fileURLToPath } from "url";
+import { WebSocketServer } from 'ws';
 // import helmet from "helmet";
 
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+const server = createServer(app);
+const wss = new WebSocketServer({ server });
+
 
 // middleware 
-app.use(morgan("dev"));
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-// route
-app.use("api/users", userRoutes);
 
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send("Internal Server Error")
+// static
+app.use(express.static(path.join(__dirname, "..", "public")))
+
+
+// route
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname,".." ,"public","home.html"))
+})
+app.get("/trade", (req, res) => {
+    res.sendFile(path.join(__dirname,".." ,"public","trade.html"))
 })
 
-// start 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+import userRoute from "./route/userRoute.js"
+import quoteRoute from "./route/quoteRoute.js"
+app.use("/api/user", userRoute);
+app.use("/api/quote", quoteRoute)
+
+
+// 404 
+app.use((req, res, next) => {
+    res.status(404).json({
+        error: true,
+        message: "Route not found"
+    });
 });
 
+// 500 internal server error
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+      error: true,
+      message: "Internal Server Error"
+    });
+});
+
+// start 
 export default app;
+
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+
+    wss.on("connection",(ws, req) => {
+        console.log(`New WebSocket connection from ${req.socket.remoteAddress}`);
+
+        ws.on("message", (message) => {
+            console.log("Received", message.toString());
+        })
+
+        ws.on("close", (code, reason) => {
+            console.log(`WebSocket disconnected: ${code}- ${reason}`)
+        });
+
+        ws.send(JSON.stringify({type:"welcome", message: "Welcome to the WebSocket server!"}));
+    })
+
+    wss.on("error", (error) => {
+        console.error("WebSocket server error:", error)
+    })
+});
+
+// morgan 
+app.use((req, res, next) => {
+    const originalJson = res.json;
+    res.json = function (body) {
+      res.locals.responseBody = body;
+      return originalJson.call(this, body);
+    };
+    next();
+});
+
+morgan.token("body", (req, res) => {
+    if (res.locals.responseBody) {
+      return JSON.stringify(res.locals.responseBody);
+    }
+    return "No response body";
+});
+
+morgan.token("coloredStatus", (req, res) => {
+    const status = res.statusCode;
+    let color;
+    if (status >= 500) color = chalk.bgRed;
+    else if (status >= 400) color = chalk.bgYellow;
+    else if (status >= 300) color = chalk.bgCyan;
+    else if (status >= 200) color = chalk.bgGreen;
+    else color = chalk.white;
+    
+    return color(status);
+});
+
+app.use(morgan((tokens, req, res) => {
+    return [
+        chalk.blue(tokens.method(req, res)),
+        chalk.yellow(tokens.url(req, res)),
+        tokens["coloredStatus"](req, res),
+        chalk.green(tokens["response-time"](req, res) + " ms"),
+        chalk.magenta("-"),
+        chalk.cyan(tokens.body(req, res))
+    ].join(" ");
+}));
+
+
+export { server, wss };

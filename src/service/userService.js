@@ -8,14 +8,12 @@ class UserService {
     return result.insertId;
     };
 
-    async getUserById(id) {
-        const command = "SELECT id, username, email FROM users WHERE id = ?";
-        const result = await db.query(command, [id]);
-        return users[0];
+    async getUserByEmail(email) {
+        const command = "SELECT user_id, displayname, email, password FROM users WHERE email = ?";
+        const result = await db.query(command, [email]);
+        return result;
     }
-
-
 }
 
 
-export default UserService();
+export default new UserService();
