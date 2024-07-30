@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+TC:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
     <title>Trade</title>
     <link rel="stylesheet" href="./css/trade.css">
     <script type="module" src="./js/trade.js"></script>
@@ -12,7 +15,7 @@
         <div class="header__container">
             <h2 class="header__logo"><a class="header__logo--link" href="https://localhost:9091/">SIMU</a></h2>
             <div class="header__nav">
-                <a href="#" class="header__link">Home</a>
+                <a href="https://localhost:9091/" class="header__link">Home</a>
                 <a href="#" class="header__link">Trade</a>
                 <a href="#" class="header__link">Wallet</a>
             </div>
@@ -24,11 +27,113 @@
     <hr>
     <main class="main">
         <div class="chart"></div>
-        <div class="orderbook"></div>
-        <div class="trade-panel"></div>
-        <div class="open-orders"></div>
-        <div class="recent-trades"></div>
-        <div class="my-trades"></div>
+        <!-- order-book -->
+        <div class="order-book">
+            <div class="order-book-header">
+                Order Book
+            </div>
+            <div class="order-book__table-header">
+                <span>Price(USDT)</span>
+                <span>Total(BTC)</span>
+            </div>
+            <div class="order-book__asks">
+                <div>69,596.64</div><div>0.265113</div>
+                <div>69,596.64</div><div>0.265113</div>
+                <div>69,596.64</div><div>0.265113</div>
+                <div>69,596.39</div><div>0.264537</div>
+                <div>69,596.24</div><div>0.195521</div>
+                <div>69,596.09</div><div>0.195091</div>
+                <div>69,595.54</div><div>0.187955</div>
+                <div>69,595.25</div><div>0.167155</div>
+                <div>69,594.84</div><div>0.166579</div>
+                <div>69,594.56</div><div>0.166149</div>
+            </div>
+            <div class="order-book__spread">
+                <span class="order-book__price">69,594.56</span>
+                <div class="order-book__price--usd">≈69,594.56 USD</div>
+            </div>
+            <div class="order-book__bids">
+                <div>69,594.55</div><div>1.869540</div>
+                <div>69,594.52</div><div>2.019540</div>
+                <div>69,594.13</div><div>2.159540</div>
+                <div>69,594.12</div><div>2.299540</div>
+                <div>69,593.44</div><div>2.299970</div>
+                <div>69,593.33</div><div>2.307106</div>
+                <div>69,593.30</div><div>2.327043</div>
+                <div>69,592.74</div><div>2.327473</div>
+                <div>69,592.74</div><div>2.327473</div>
+                <div>69,592.74</div><div>2.327473</div>
+            </div>
+        </div>
+        <!-- trade-panel -->
+        <div class="trade-panel">
+            <div class="trade-panel__tab">
+                <button class="trade-panel__tab--buy">Buy</button>
+                <button class="trade-panel__tab--sell">Sell</button>
+            </div>
+            <div class="trade-panel__order-type">
+                <select>
+                    <option>Limit</option>
+                    <option>Market</option>
+                </select>
+            </div>
+            <div class="trade-panel__input-group">
+                <input type="text" value="191.03" class="trade-panel__input">
+                <span class="trade-panel__currency">USDT</span>
+            </div>
+            <div class="trade-panel__input-group">
+                <input type="text" placeholder="Amount" class="trade-panel__input">
+                <span class="trade-panel__currency">SOL</span>
+            </div>
+            <div class="trade-panel__quick-select">
+                <button>25%</button>
+                <button>50%</button>
+                <button>75%</button>
+                <button>100%</button>
+            </div>
+            <div class="trade-panel__input-group">
+                <input type="text" placeholder="Total" class="trade-panel__input" readonly>
+                <span class="trade-panel__currency">USDT</span>
+            </div>
+            <div class="trade-panel__available">
+                Available: -- USDT
+            </div>
+            <button class="trade-panel__submit">Buy SOL</button>
+        </div>
+        <!-- open-orders -->
+        <div class="open-orders">
+            <div class="open-orders__header">
+                <div>Open orders(0)</div>
+                <button class="open-orders__history-btn">History</button>
+            </div>
+            <hr>
+            <div class="open-orders__content">
+                <div class="open-orders__empty-state">
+                    <p>You have no trades</p>
+                </div>
+            </div>
+        </div>
+        <!-- recent-trades -->
+        <div class="recent-trades">
+            <h3 class="recent-trades__title">Recent trade</h3>
+            <div class="recent-trades__header">
+                <span>Price(USDT)</span>
+                <span>Time</span>
+            </div>
+            <div class="recent-trades__list">
+                <!-- 交易記錄會在這裡動態添加 -->
+            </div>
+        </div>
+        <div class="my-trades">
+            <h3 class="my-trades__title">Recent trade</h3>
+            <div class="my-trades__header">
+                <span>Price(USDT)</span>
+                <span>Time</span>
+            </div>
+            <div class="my-trades__list">
+                <!-- 交易記錄會在這裡動態添加 -->
+            </div>
+        </div>
     </main>
 
     <!-- <footer class="footer">
