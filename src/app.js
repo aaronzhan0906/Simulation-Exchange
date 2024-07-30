@@ -9,9 +9,12 @@ import { WebSocketServer } from 'ws';
 // import helmet from "helmet";
 
 
+// path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
+// app, server, wss
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
@@ -27,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "..", "public")))
 
 
-// route
+// html 
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname,".." ,"public","home.html"))
 })
@@ -35,10 +38,13 @@ app.get("/trade", (req, res) => {
     res.sendFile(path.join(__dirname,".." ,"public","trade.html"))
 })
 
-import userRoute from "./route/userRoute.js"
-import quoteRoute from "./route/quoteRoute.js"
+// route
+import userRoute from "./routes/userRoute.js";
+import quoteRoute from "./routes/quoteRoute.js";
+import accountRoute from "./routes/accountRoute.js";
 app.use("/api/user", userRoute);
-app.use("/api/quote", quoteRoute)
+app.use("/api/quote", quoteRoute);
+app.use("/api/account", accountRoute);
 
 
 // 404 
@@ -49,6 +55,7 @@ app.use((req, res, next) => {
     });
 });
 
+
 // 500 internal server error
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -57,6 +64,7 @@ app.use((err, req, res, next) => {
       message: "Internal Server Error"
     });
 });
+
 
 // start 
 export default app;

@@ -2,13 +2,13 @@ import express from "express";
 import config from "../config/config.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt"; 
-import userService from "../service/userService.js";
+import userService from "../services/userService.js";
 
 
 const router = express.Router();
 
 
-// POST : sign up //
+// POST : register //
 router.post("/", async (req, res, next) => {
     try {
         const {displayname , email, password }  = req.body;
