@@ -36,9 +36,9 @@ app.get("/trade", (req, res) => {
 })
 
 import userRoute from "./route/userRoute.js"
-import quote from "./route/quote.js"
+import quoteRoute from "./route/quoteRoute.js"
 app.use("/api/user", userRoute);
-app.use("/api/quote", quote)
+app.use("/api/quote", quoteRoute)
 
 
 // 404 
