@@ -3,7 +3,7 @@ import config from "../config/config.js";
 import bcrypt from bcrypt
 
 class UserModel {
-    async createUser(userData) {
+    async createUserWithInitialFunds(userData) {
         const { displayname, email, password } = userData;
         try {
             await db.beginTransaction();

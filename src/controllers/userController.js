@@ -9,7 +9,7 @@ const UserController = {
         try {
             const {displayname, email, password} = req.body;
             const hashedPassword = await bcrypt.hash(password, 10);
-            const user = await UserModel.createUser({ displayname, email, password: hashedPassword });
+            await UserModel.createUserWithInitialFunds({ displayname, email, password: hashedPassword });
             
             res.status(201).json({ "ok": true, message: "User registered successfully"});
         } catch(error) {
