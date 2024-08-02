@@ -41,10 +41,10 @@ app.get("/trade", (req, res) => {
 // route
 import userRoute from "./routes/userRoute.js";
 import quoteRoute from "./routes/quoteRoute.js";
-import accountRoute from "./routes/accountRoute.js";
+// import accountRoute from "./routes/accountRoute.js";
 app.use("/api/user", userRoute);
 app.use("/api/quote", quoteRoute);
-app.use("/api/account", accountRoute);
+// app.use("/api/account", accountRoute);
 
 
 // 404 

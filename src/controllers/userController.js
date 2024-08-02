@@ -1,22 +1,21 @@
 import config from "../config/config.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt"; 
-import UserModel from "../services/userModel.js";
+import UserModel from "../models/userModel.js";
 
-const UserController = {
+class UserController {
     // router.post("/register", userController.register);
     async register(req, res, next) {
         try {
             const {displayname, email, password} = req.body;
-            const hashedPassword = await bcrypt.hash(password, 10);
-            await UserModel.createUserWithInitialFunds({ displayname, email, password: hashedPassword });
+            await UserModel.createUserWithInitialFunds({ displayname, email, password });
             
             res.status(201).json({ "ok": true, message: "User registered successfully"});
         } catch(error) {
             // 之後補檢查郵件是否重複
             next(error);
         }
-    },
+    }
 
     // router.get("/auth", userController.getInfo);
     async getInfo(req, res, next) {
@@ -52,7 +51,7 @@ const UserController = {
         } catch (error) {
             next(error);
         }
-    },
+    }
 
     // router.put("/auth", userController.login);
     async login(req, res, next) {
@@ -85,7 +84,7 @@ const UserController = {
         } catch (error) {
             next(error);
         }
-    },
+    }
 
     // router.post("/logout", userController.logout);
     async logout(req, res, next) {
@@ -93,7 +92,7 @@ const UserController = {
             const { accessToken } = req.cookies;
             if ( accessToken ) {
                 const { userId } = jwt.verify(accessToken, config.jwt.accessTokenSecret);
-                await UserModel.removeRefreshToken(userId)
+                await UserModel.removeRefreshToken( userId )
             }
 
             res.clearCookie("accessToken");

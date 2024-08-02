@@ -1,18 +1,18 @@
-import express from "express";
-import AccountController from "../controllers/accountController.js"
-// import auth
-const router = express.Router();
+// import express from "express";
+// import AccountController from "../controllers/accountController.js"
+// // import auth
+// const router = express.Router();
 
 
 
-router.get("/preAuthorization", auth, AccountController.getBalance);
+// router.get("/preAuthorization", AccountController.getBalance);
 
-router.post("/complete-transaction", auth, AccountController.completeTransaction );
+// router.post("/complete-transaction", AccountController.completeTransaction );
 
-router.get("/history", auth , AccountController.geTransactionHistory );
+// router.get("/history", AccountController.geTransactionHistory );
 
-router.get("/assets", auth , AccountController.getCurrentAssets);
+// router.get("/assets", AccountController.getCurrentAssets);
 
-router.post("/initialize", auth, AccountController.initializeAccount);
+// router.post("/initialize", AccountController.initializeAccount);
 
-export default router
+// export default router

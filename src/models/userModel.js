@@ -1,32 +1,36 @@
 import db from "../config/database.js";
 import config from "../config/config.js";
-import bcrypt from bcrypt
+import bcrypt from "bcrypt";
 
 class UserModel {
     async createUserWithInitialFunds(userData) {
         const { displayname, email, password } = userData;
+        const connection = await db.getConnection();
+
         try {
-            await db.beginTransaction();
+            await connection.beginTransaction();
             const hashedPassword = await bcrypt.hash(password, 10)
-            const [userResult] = await db.query(
+            const [userResult] = await connection.query(
                 "INSERT INTO users (displayname, email, password) VALUES (?, ?, ?)",
                 [displayname, email, hashedPassword]
             )
             const userId = userResult.insertId;
 
-            await db.query(
+            await connection.query(
                 "INSERT INTO accounts (user_id, balance) VALUES (?, ?)",
                 [userId, 10000] 
             );
-            await db.query(
+            await connection.query(
                 "INSERT INTO assets (user_id, symbol, amount, average_purchase_cost) VALUES (?, ?, ?, ?)",
-                [userId, usdt, 10000, 1]
+                [userId, "USDT", 10000, 1]
             )
-            await db.commit();
+            await connection.commit();
             return { user_id: userId };
         } catch(error) {
-            await db.rollback();
+            await connection.rollback();
             throw error
+        } finally {
+            connection.release();
         }
     };
 
