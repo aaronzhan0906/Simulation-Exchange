@@ -7,6 +7,9 @@ import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { WebSocketServer } from 'ws';
 // import helmet from "helmet";
+import kafkaProducer from "./services/kafkaProducer";
+import kafkaConsumer from "./services/kafkaConsumer";
+
 
 
 // path
@@ -25,6 +28,10 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
+// kafka
+kafkaProducer.init();
+kafkaConsumer.init();
+
 
 // static
 app.use(express.static(path.join(__dirname, "..", "public")))
@@ -41,10 +48,10 @@ app.get("/trade", (req, res) => {
 // route
 import userRoute from "./routes/userRoute.js";
 import quoteRoute from "./routes/quoteRoute.js";
-// import accountRoute from "./routes/accountRoute.js";
+import accountRoute from "./routes/accountRoute.js";
 app.use("/api/user", userRoute);
 app.use("/api/quote", quoteRoute);
-// app.use("/api/account", accountRoute);
+app.use("/api/account", accountRoute);
 
 
 // 404 
