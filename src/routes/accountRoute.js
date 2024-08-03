@@ -1,18 +1,24 @@
-// import express from "express";
-// import AccountController from "../controllers/accountController.js"
-// // import auth
-// const router = express.Router();
+import express from "express";
+import AccountController from "../controllers/accountController.js"
+import authenticateToken from "../middlewares/authMiddleware.js"
+const router = express.Router();
 
 
+router.use(authenticateToken)
 
-// router.get("/preAuthorization", AccountController.getBalance);
 
-// router.post("/complete-transaction", AccountController.completeTransaction );
+router.get("/balance", AccountController.getBalance)
+router.get("/assets". AccountController.getAssets)
+router.get("/history", AccountController.getTransactionHistory );
+router.get("/buyPreAuthorization", AccountController.buyPreAuthorization);
+router.get("/sellPreAuthorization", AccountController.sellPreAuthorization);
 
-// router.get("/history", AccountController.geTransactionHistory );
 
-// router.get("/assets", AccountController.getCurrentAssets);
+// order
+router.post("/createOrder", AccountController.createOrder);
+// router.get("/updateOrder", AccountController.updateOrder);
 
-// router.post("/initialize", AccountController.initializeAccount);
+// transaction
+router.post("/transactionCompleted", AccountController.transactionCompleted);
 
-// export default router
+export default router

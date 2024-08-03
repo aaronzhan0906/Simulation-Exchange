@@ -7,10 +7,10 @@ class UserController {
     // router.post("/register", userController.register);
     async register(req, res, next) {
         try {
-            const {displayname, email, password} = req.body;
+            const { displayname, email, password } = req.body;
             await UserModel.createUserWithInitialFunds({ displayname, email, password });
             
-            res.status(201).json({ "ok": true, message: "User registered successfully"});
+            res.status(200).json({ "ok": true, message: "User registered successfully"});
         } catch(error) {
             // 之後補檢查郵件是否重複
             next(error);

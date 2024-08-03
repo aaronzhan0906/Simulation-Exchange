@@ -1,80 +1,146 @@
 import Big from "big.js";
-// import AccountModel from ("../models/accountModel.js");
-// import Transaction from "../models/Transaction";
+import kafka from "kafkajs";
+import AccountModel from ("../models/accountModel.js");
 
 class AccountController {
-    static async getBalance(req, res) {
+    // router.get("/balance", AccountController.getBalance)
+    async getBalance(req, res, next) {
         try {
-            const account = await Account.findById(req.user.id);
-            res.json({ balance: account.balance.toString() });
-        } catch (error) {
-            res.status(500).json({ error: "Failed to retrieve balance"});
+            const balance = await AccountModel.getBalanceById(req.user.userId);
+            res.status(200).json({ "ok": true, "balance": balance });
+        } catch(error) {
+            next(error);
         }
     }
 
-    static async preAuthorization(req, res) {
+    // router.get("/assets". AccountController.getAssets)
+    async getAssets(req, res, next) {
         try {
-            const { amount } = req.body;
-            const account = await Account.findById(req.user.id);
-            const balance = new Big(account.balance);
-            const preAuthAmount = new Big(amount);
-            
+            const assets = await AccountModel.getAssetsById(req.user.userId);
+            res.status(200).json({ 
+                "ok": true, 
+                "assets": assets.map(asset => ({
+                    symbol: asset.symbol,
+                    amount: asset.amount.toString(),
+                    average_purchase_cost: asset.average_purchase_cost
+                }))
+            });
+        } catch(error) {
+            next(error);
+        }
+    }
+
+    // router.get("/history", AccountController.getTransactionHistory );
+    async getTransactionHistory(req, res, next) {
+        try {
+            const transactions = await AccountTransaction.getTransactionsById(req.user.userId);
+            res.status(200).json({
+                "ok": true,
+                "transactions": transactions.map(transaction => ({
+                    symbol: transaction.symbol,
+                    buy_sell: transaction.buy_sell,
+                    amount: transaction.amount.toString(),
+                    price: transaction.price.toString(),
+                    status: transaction.status,
+                    status_changes_at:  transaction.status_changes_at
+                }))
+            })
+        } catch(error) {
+            next(error);
+        }
+    }
+
+    // router.get("/buyPreAuthorization", AccountController.buyPreAuthorization);
+    async buyPreAuthorization(req, res, next){
+        try {
+            const { buyAmount, buyPrice } = req.body;
+            const balance = new Big(AccountModel.getBalanceById(req.user.userId));
+            const preAuthAmount = new Big(buyAmount).times(buyPrice);
+
             if (balance.lt(preAuthAmount)){
-                return res.status(400).json({ error: "Insufficient balance"})
+                return res.status(400).json({ error: true, message:"Insufficient balance"})
             }
 
-            account.pendingTransactions.push({ amount: preAuthAmount.toString(), type: "preauth" });
-            await account.save();
-            
             const remainingBalance = balance.minus(preAuthAmount);
-            res.json({
+            res.status(200).json({
                 ok: true,
                 message: "Pre-authorization successful",
                 remainingBalance: remainingBalance.toString()
-            });
-        } catch (error) {
-            res.status(500).json({error: "Pre-authorization failed"})
-        }
-    }
-
-    static async completeTransaction(req, res){
-        try {
-            const { actualAmount, transactionType } = req.body;
-            const account = await Account.findById(req.user.id);
-            const balance = new Big(account.balance);
-            const amount = new Big(actualAmount);
-
-            let newBalance;
-            if (transactionType === "buy") {
-                newBalance = balance.minus(amount);
-            } else if (transactionType === "sell") {
-                newBalance = balance.plus(amount);
-            } else {
-                return res.status(400).json({ error: "Invalid transaction type"})
-            }
-            
-            account.balance = newBalance.toString();
-
-            const transaction = new Transaction({
-                accountId: req.user.id,
-                amount: amount.toString(),
-                type: transactionType
-            });
-
-            await Promise.all([account.save(), transaction.save()]);
-
-            res.json({
-                ok: true,
-                message: "Transaction completed successfully",
-                newBalance: account.balance
-            });
+            })
         } catch(error) {
-            res.status(500).json({ error: "Transaction failed" });
+            next(error);
         }
     }
 
-    // static async getCurrentAssets(req, res) { }
+    // router.get("/sellPreAuthorization", AccountController.sellPreAuthorization);
+    async sellPreAuthorization(req, res, next){
+        try { 
+            const { symbol, sellAmount } = req.body;
+            const amount = AccountModel.getAmountOfSymbolById(req.user.userId, symbol)
+
+            if (amount.lt(sellAmount)){
+                return res.status(400).json({ error: true, message:"Insufficient asset"})
+            }
+
+            const remainingAsset = amount.minus(sellAmount);
+            res.status(200).json({
+                ok: true,
+                message: "Pre-authorization successful",
+                remainingAsset: remainingAsset.toString()
+            })
+        } catch(error) {
+            next(error);
+        }
+    }
+
+    // router.post("/createOrder", AccountController.createOrder);
+    async createOrder(req, res, next){
+        try { 
+            const { symbol, orderType, amount, price } = req.body;
+            const { userId } = req.user.userId;
+
+            if ( !userId || !symbol || !orderType || !amount || !price) {
+                return res.status(400).json({ error:true, message:"Missing required fields" })
+            }
+
+            const order = await AccountModel.createOrder({
+                user_id: userId,
+                symbol,
+                order_type: orderType,
+                amount,
+                price,
+                status: pending
+            })
+
+            res.status(200).json({
+                ok: true,
+                message: "Order created successfully",
+                order: {
+                    orderId: order.order_id,
+                    userId: order.user_id,
+                    symbol: order.symbol,
+                    orderType: order.order_type,
+                    amount: order.amount.toString(),
+                    price: order.price.toString(),
+                    status: order.status,
+                    createdAt: order.created_at
+                }
+            })
+
+        } catch(error) {
+            next(error);
+        }
+    }
+
+    async transactionCompleted(req, res, next){
+        try { 
+           console.log("hello")
+
+        } catch(error) {
+            next(error);
+        }
+    }
 }
 
 
-export default AccountController;
+export default new AccountController();
