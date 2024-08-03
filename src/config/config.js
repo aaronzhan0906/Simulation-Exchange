@@ -5,7 +5,6 @@ const config = {
     env: process.env.NODE_ENV,
     port: process.env.PORT,
 
-
     database: {
         host: process.env.MYSQL_HOST,      
         port: process.env.MYSQL_PORT,      
@@ -24,6 +23,13 @@ const config = {
         key: process.env.SSL_KEY_PATH,
         cert: process.env.SSL_CERT_PATH,
     },
+
+    // Kafka 
+    kafka: {
+        clientId: process.env.KAFKA_CLIENT_ID,
+        brokers: process.env.KAFKA_BROKERS.split(','), 
+        groupId: process.env.KAFKA_GROUP_ID,
+      },
 };
 
 export default config;

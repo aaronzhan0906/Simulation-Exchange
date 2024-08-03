@@ -1,6 +1,7 @@
 import Big from "big.js";
-import kafka from "kafkajs";
-import AccountModel from ("../models/accountModel.js");
+import AccountModel from "../models/accountModel.js";
+import { Kafka } from "kafkajs";
+import kafkaProducer from "../services/kafkaProducer.js";
 
 class AccountController {
     // router.get("/balance", AccountController.getBalance)
@@ -22,7 +23,7 @@ class AccountController {
                 "assets": assets.map(asset => ({
                     symbol: asset.symbol,
                     amount: asset.amount.toString(),
-                    average_purchase_cost: asset.average_purchase_cost
+                    average_purchase_cost: asset.average_purchase_cost.toString()
                 }))
             });
         } catch(error) {
@@ -112,6 +113,18 @@ class AccountController {
                 status: pending
             })
 
+            // send order to kafka
+            await kafkaProducer.sendMessage("new-orders",{
+                orderId: order.order_id,
+                userId: order.user_id,
+                symbol: order.symbol,
+                orderType: order.order_type,
+                amount: order.amount.toString(),
+                price: order.price.toString(),
+                status: order.status,
+                createdAt: order.created_at
+            })
+
             res.status(200).json({
                 ok: true,
                 message: "Order created successfully",
@@ -144,3 +157,4 @@ class AccountController {
 
 
 export default new AccountController();
+

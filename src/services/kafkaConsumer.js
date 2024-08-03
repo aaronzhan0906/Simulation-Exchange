@@ -1,8 +1,11 @@
 import { Kafka } from 'kafkajs';
-import kafkaConfig from '../config/kafka.js';
+import config from '../config/config.js';
 
-const kafka = new Kafka(kafkaConfig);
-const consumer = kafka.consumer({ groupId: kafkaConfig.groupId });
+const kafka = new Kafka({
+    clientId: config.kafka.clientId,
+    brokers: config.kafka.brokers
+});
+const consumer = kafka.consumer({ groupId: config.kafka.groupId });
 
 export default {
     init: async() => {
