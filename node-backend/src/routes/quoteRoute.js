@@ -32,12 +32,12 @@ btcusdtWs.on("message", (data) => {
             Symbol: streamData.s,
             price: streamData.c,
             priceChange: streamData.p,
-            priceChangePercent: streamData.p,
+            priceChangePercent: streamData.P,
             high: streamData.h,
             low: streamData.l,
             volume: streamData.v
         }
-        broadcastMessage("ticker", latestDepthData);
+        broadcastMessage("ticker", latestTickerData);
     } else if (stream === "btcusdt@depth") {
         // renew bid
         streamData.b.forEach(([price, quantity]) => {
