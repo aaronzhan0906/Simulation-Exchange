@@ -14,7 +14,8 @@
             <div class="header__nav">
                 <a href="https://localhost:9091/" class="header__link">Home</a>
                 <a href="https://localhost:9091/trade" class="header__link">Trade</a>
-                <a href="#" class="header__link">Wallet</a>
+                <a href="https://localhost:9091/wallet" class="header__link">Wallet</a>
+                <a href="https://localhost:9091/history" class="header__link">History</a>
             </div>
             <div class="header__actions">
                 <button class="header__button">Login / Sign up</button>
@@ -22,12 +23,61 @@
         </div>
     </header>
     <hr>
+    <!-- Hero section  -->
+    <div class="hero">
+        <div class="hero__container">
+            <h2 class="hero__title">Simu Exchange</h2>
+            <div class="hero__text">模擬的交易所環境，使用者能夠在貼近真實市場的情況下進行模擬交易</div>
+            <form class="hero__register">
+                <input type="text" class="hero__register--input" placeholder="電子郵件">
+                <button type="submit" class="hero__register--button">立即註冊</button>
+            </form>
+        </div>
+    </div>
     <!-- main -->
     <main class="main">
-        <h1 class="stock__btc"></h1>
-    
-    
-
+        <!-- Cryptocurrency list -->
+        <section class="symbol-list">
+            <div class="symbol-list__container">
+                <div class="symbol-list__header">
+                    <span>Name</span>
+                    <span>Price</span>
+                    <span>24h Change</span>
+                    <span>Actions</span>
+                </div>
+                <div class="symbol-item symbol-item__btc" onclick="window.location.href='https://localhost:9091/trade';">
+                    <div class="symbol-item__name">
+                        <img src="./images/bitcoin.png" alt="BTC icon" >
+                        <span>BTC/USDT</span>
+                    </div>
+                    <div class="symbol-item__price">
+                        <span>60,164.73 USDT</span>
+                        <span>≈ 60,156.07 USD</span>
+                    </div>
+                    <div class="symbol-item__change negative">-2.47%</div>
+                    <div class="symbol-item__actions">
+                        <a href="#" class="symbol-item__link">Spot trade</a>
+                    </div>
+                </div>
+                <hr>
+                <div class="symbol-item">
+                    <div class="symbol-item__name">
+                        <img src="./images/temp.png" alt="Temp icon">
+                        <span>Temp</span>
+                    </div>
+                    <div class="symbol-item__price">
+                        <span>Temp</span>
+                        <span>Temp</span>
+                    </div>
+                    <div class="symbol-item__change">Temp</div>
+                    <div class="symbol-item__actions">
+                        <a href="#" class="symbol-item__link">Spot trade</a>
+                    </div>
+                </div>
+                <hr>
+                <!-- 其他加密貨幣項目-->
+            </div>
+        </section>
     </main>
 
     <!-- <footer class="footer">

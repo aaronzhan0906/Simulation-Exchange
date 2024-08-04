@@ -35,14 +35,18 @@ kafkaConsumer.init();
 
 // static
 app.use(express.static(path.join(__dirname, "..", "public")))
-
-
 // html 
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname,".." ,"public","home.html"))
 })
 app.get("/trade", (req, res) => {
     res.sendFile(path.join(__dirname,".." ,"public","trade.html"))
+})
+app.get("/wallet", (req, res) => {
+    res.sendFile(path.join(__dirname,".." ,"public","wallet.html"))
+})
+app.get("/history", (req, res) => {
+    res.sendFile(path.join(__dirname,".." ,"public","history.html"))
 })
 
 // route
