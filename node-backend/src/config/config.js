@@ -29,7 +29,13 @@ const config = {
         clientId: process.env.KAFKA_CLIENT_ID,
         brokers: process.env.KAFKA_BROKERS.split(','), 
         groupId: process.env.KAFKA_GROUP_ID,
-      },
+    },
+
+    // snowflake
+    snowflake: {
+        instanceId: process.env.SNOWFLAKE_INSTANCE_ID,
+        customEpoch: process.env.SNOWFLAKE_CUSTOM_EPOCH,
+    },
 };
 
 export default config;

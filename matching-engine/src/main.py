@@ -1,15 +1,16 @@
 import asyncio
-from kafka_client import kafkaClient
+from kafka_client import KafkaClient
 from order_book import OrderBook
 from matching_engine import MatchingEngine
 
+
 async def main():
-    kafka_client = kafkaClient()
+    kafka_client = KafkaClient()
     order_book = OrderBook()
     matching_engine = MatchingEngine(order_book)
 
     await kafka_client.setup()
-
+    print("---------------------------------------------")
     print("Trading engine started. Waiting for orders...")
 
     # consumer

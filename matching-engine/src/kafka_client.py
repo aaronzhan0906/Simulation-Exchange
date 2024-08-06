@@ -2,7 +2,7 @@ from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 import json
 
 class KafkaClient: 
-    def __init__(self, bootstrap_servers="localhost:9292"):
+    def __init__(self, bootstrap_servers="localhost:9092"):
         self.bootstrap_servers = bootstrap_servers
         self.consumer = None
         self.producer = None

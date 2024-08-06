@@ -27,6 +27,7 @@
     "kafkajs": "^2.2.4",
     "morgan": "^1.10.0",
     "mysql2": "^3.10.3",
+    "nodejs-snowflake": "^2.0.1",
     "ws": "^8.18.0"
   },
   "devDependencies": {

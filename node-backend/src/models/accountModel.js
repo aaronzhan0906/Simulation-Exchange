@@ -25,25 +25,6 @@ class AccountModel {
 
         return result.length > 0 ? result[0] : 0;
     }
-
-    async getTransactionsById(userId){
-        const [rows] = await db.query(
-            "SELECT symbol, transaction_type, amount, price, executed_at FROM transactions WHERE user_id = ?",
-            [userId]
-        );
-        return [rows];
-    }
-
-    async createOrder(user_id, symbol, order_type, amount, price, status) {
-        const result = await db.query(
-            "INSERT INTO orders (user_id, symbol, order_type, amount, price, status VALUES (?, ?, ?, ?, ?, ?)",
-            [user_id, symbol, order_type, amount, price, status]
-        )
-        return result
-    }
-    
-
-
 }
 
 export default new AccountModel();
