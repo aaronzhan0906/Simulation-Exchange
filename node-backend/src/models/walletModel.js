@@ -1,7 +1,7 @@
 import db from "../config/database.js";
 
 
-class AccountModel {
+class WalletModel {
     async getBalanceById(userId) {
         await db.query(
             "SELECT amount FROM accounts WHERE user_id = ?",
@@ -27,4 +27,4 @@ class AccountModel {
     }
 }
 
-export default new AccountModel();
+export default new WalletModel();

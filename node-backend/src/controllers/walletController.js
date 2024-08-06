@@ -1,12 +1,11 @@
-import Big from "big.js";
-import AccountModel from "../models/accountModel.js";
+import WalletModel from "../models/walletModel.js";
 
 
-class AccountController {
+class WalletController {
     // router.get("/balance", AccountController.getBalance)
     async getBalance(req, res, next) {
         try {
-            const balance = await AccountModel.getBalanceById(req.user.userId);
+            const balance = await WalletModel.getBalanceById(req.user.userId);
             res.status(200).json({ "ok": true, "balance": balance });
         } catch(error) {
             next(error);
@@ -16,7 +15,7 @@ class AccountController {
     // router.get("/assets". AccountController.getAssets)
     async getAssets(req, res, next) {
         try {
-            const assets = await AccountModel.getAssetsById(req.user.userId);
+            const assets = await WalletModel.getAssetsById(req.user.userId);
             res.status(200).json({ 
                 "ok": true, 
                 "assets": assets.map(asset => ({
@@ -32,5 +31,5 @@ class AccountController {
 }
 
 
-export default new AccountController();
+export default new WalletController();
 

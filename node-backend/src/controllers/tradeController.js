@@ -1,17 +1,15 @@
 import Big from "big.js";
-import AccountModel from "../models/accountModel.js";
+import WalletModel from "../models/walletModel.js";
 import TradeModel from "../models/tradeModel.js";
-import kafkaProducer from "../services/kafkaProducer.js";
-import { Kafka } from "kafkajs";
 import kafkaProducer from "../services/kafkaProducer.js";
 
 class TradeController {
     // router.get("/buyPreAuthorization", TradeController.buyPreAuthorization);
     async buyPreAuthorization(req, res, next){
         try {
-            const { buyAmount, buyPrice } = req.body;
-            const balance = new Big(AccountModel.getBalanceById(req.user.userId));
-            const preAuthAmount = new Big(buyAmount).times(buyPrice);
+            const { buyPrice, buyQuantity } = req.body;
+            const balance = new Big(WalletModel.getBalanceById(req.user.userId));
+            const preAuthAmount = new Big(buyQuantity).times(buyPrice);
 
             if (balance.lt(preAuthAmount)){
                 return res.status(400).json({ error: true, message:"Insufficient balance"})
@@ -31,14 +29,14 @@ class TradeController {
     // router.get("/sellPreAuthorization", TradeController.sellPreAuthorization);
     async sellPreAuthorization(req, res, next){
         try { 
-            const { symbol, sellAmount } = req.body;
-            const amount = AccountModel.getAmountOfSymbolById(req.user.userId, symbol)
+            const { symbol, sellQuantity } = req.body;
+            const amount = WalletModel.getAmountOfSymbolById(req.user.userId, symbol)
 
-            if (amount.lt(sellAmount)){
+            if (amount.lt(sellQuantity)){
                 return res.status(400).json({ error: true, message:"Insufficient asset"})
             }
 
-            const remainingAsset = amount.minus(sellAmount);
+            const remainingAsset = amount.minus(sellQuantity);
             res.status(200).json({
                 ok: true,
                 message: "Pre-authorization successful",
@@ -61,7 +59,7 @@ class TradeController {
             
             // snowflake order_id 
             const orderId = generateSnowflakeId();
-            const order = await AccountModel.createOrder({
+            const order = await TradeModel.createOrder({
                 order_id: orderId,
                 user_id: userId,
                 symbol,
@@ -108,9 +106,38 @@ class TradeController {
         }
     }
 
-    async transactionCompleted(req, res, next){
+
+    // consumer 
+    async processCompletedTransaction(transactionData){
+        const { transactionId, orderId, userId, symbol, side, type, price, quantity, amount, executedAt } = transactionData;
+
         try { 
-           console.log("hello")
+           const updateOrder = await TradeModel.updateOrderStatus(orderId, "completed" , executedAt);
+
+           // update account
+           let updateAccount;
+           if (side === "buy") {
+                updateAccount = await TradeModel.decreaseBalance(userId, amount);
+                await TradeModel.increaseAsset(userId, symbol, quantity);
+           } else if ( side === "sell") {
+                updateAccount = await TradeModel.increaseBalance(userId, amount);
+                await TradeModel.decreaseAsset(userId, symbol, quantity);
+           }
+
+           const transaction = await TradeModel.createTransaction({
+                transaction_id: transactionId,
+                order_id: orderId,
+                user_id: userId,
+                symbol,
+                side,
+                type,
+                price,
+                quantity,
+                amount,
+                executed_at: executedAt
+           });
+
+           console.log(`Transaction ${transaction} processed successfully`);
 
         } catch(error) {
             next(error);

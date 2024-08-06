@@ -1,7 +1,7 @@
 import HistoryModel from "../models/historyModel.js";
 
 class HistoryController {
-    // router.get("/history/transactions", AccountController.getTransactionHistory );
+
     async getTransactionHistory(req, res, next) {
         try {
             const transactions = await HistoryModel.getTransactionsById(req.user.userId);

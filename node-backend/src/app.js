@@ -52,12 +52,12 @@ app.get("/history", (req, res) => {
 // route
 import userRoute from "./routes/userRoute.js";
 import quoteRoute from "./routes/quoteRoute.js";
-import accountRoute from "./routes/accountRoute.js";
+import walletRoute from "./routes/walletRoute.js";
 import tradeRoute from "./routes/tradeRoute.js";
 import historyRoute from "./routes/historyRoute.js";
 app.use("/api/user", userRoute);
 app.use("/api/quote", quoteRoute);
-app.use("/api/account", accountRoute);
+app.use("/api/wallet", walletRoute);
 app.use("/api/trade", tradeRoute);
 app.use("/api/history", historyRoute);
 

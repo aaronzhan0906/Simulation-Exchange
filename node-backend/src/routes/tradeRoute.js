@@ -6,16 +6,13 @@ const router = express.Router();
 
 router.use(authenticateToken)
 
-
+// pre-authorization
 router.get("/buyPreAuthorization", TradeController.buyPreAuthorization);
 router.get("/sellPreAuthorization", TradeController.sellPreAuthorization);
 
 // order
-router.post("/createOrder", AccountController.createOrder);
-// router.get("/updateOrder", AccountController.updateOrder);
+router.post("/createOrder", TradeController.createOrder);
 
-// transaction
-router.post("/transactionCompleted", AccountController.transactionCompleted);
 
 
 

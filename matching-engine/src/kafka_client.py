@@ -9,7 +9,8 @@ class KafkaClient:
 
     async def setup(self):
         self.consumer = AIOKafkaConsumer(
-            "incoming_orders",
+            "processed-orders",
+            "completed-transactions",
             bootstrap_servers = self.bootstrap_servers,
             value_deserializer=lambda x: json.loads(x.decode("utf-8"))
         )
