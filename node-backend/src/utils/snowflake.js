@@ -6,5 +6,5 @@ const snowflake = new Snowflake({
 });
 
 export function generateSnowflakeId() {
-    return snowflake.getUniqueID();
+    return snowflake.getUniqueID().toString();
 }

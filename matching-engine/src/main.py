@@ -18,8 +18,13 @@ async def main():
         print(f"Received order: {order}")
 
         # matching 
-        result = matching_engine.process_order(order)
-
+        result = matching_engine.process_order(
+        order["orderId"], 
+        order["symbol"], 
+        order["side"],
+        order["price"],
+        order["quantity"]
+        )
         # producer send matching result
         await kafka_client.produce_result("matched_orders", result)
         print(f"Sent result: {result}")
@@ -27,8 +32,8 @@ async def main():
         # producer send order book snapshot
         snapshot = order_book.get_order_book()
         await kafka_client.produce_result("order_book_snapshot", snapshot)
-        print(f"Sent order book snapshot")
 
+        print("-----------------------")
         print("Current Order Book State:")
         print("Bids:", order_book.bids)
         print("Asks:", order_book.asks)

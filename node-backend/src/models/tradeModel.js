@@ -2,13 +2,22 @@ import db from "../config/database.js";
 
 
 class TradeModel {
-    async createOrder(order_id, user_id, symbol, order_type, price, quantity, amount, status) {
-        const result = await db.query(
-            "INSERT INTO orders (order_id, user_id, symbol, order_type, price, quantity, amount, status VALUES (?, ?, ?, ?, ?, ?)",
-            [order_id, user_id, symbol, order_type, price, quantity, amount, status]
-        )
-
-        return result
+    async createOrder(order_id, user_id, symbol, side, type, price, quantity, status) {
+        const insertQuery = `
+        INSERT INTO orders 
+        (order_id, user_id, symbol, side, type, price, quantity, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+    
+        await db.query(insertQuery, [
+            order_id, user_id, symbol, side, type, price, quantity, status
+        ]);
+        const selectQuery = `
+        SELECT * FROM orders WHERE order_id = ?
+        `;
+    
+        const rows = await db.query(selectQuery, [order_id]);
+        return rows[0];
     }
 
     async updateOrderStatus(orderId, status, updatedAt) {

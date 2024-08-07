@@ -2,6 +2,7 @@ import Big from "big.js";
 import WalletModel from "../models/walletModel.js";
 import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
+import { generateSnowflakeId } from "../utils/snowflake.js"
 
 class TradeController {
     // router.get("/buyPreAuthorization", TradeController.buyPreAuthorization);
@@ -51,25 +52,26 @@ class TradeController {
     async createOrder(req, res, next){
         try { 
             const { symbol, side, type, price, quantity } = req.body;
-            const { userId } = req.user.userId;
+            const userId = req.user.userId;
 
-            if ( !userId || !symbol || !orderType || !amount || !price) {
-                return res.status(400).json({ error:true, message:"Missing required fields" })
+            if ( !userId || !symbol || !side || !type || !price || !quantity) {
+                return res.status(400).json({ error:true, message:"Missing required fields!" })
             }
             
             // snowflake order_id 
             const orderId = generateSnowflakeId();
-            const order = await TradeModel.createOrder({
-                order_id: orderId,
-                user_id: userId,
+            const order = await TradeModel.createOrder(
+                orderId,
+                userId,
                 symbol,
                 side,
                 type,
                 price,
                 quantity,
-                amount,
-                status: "pending"
-            })
+                "pending"
+            );
+
+            console.log(order)
 
             // send order to kafka
             await kafkaProducer.sendMessage("new-orders",{
@@ -78,11 +80,12 @@ class TradeController {
                 symbol: order.symbol,
                 side: order.side,
                 type: order.type,
-                price: order.price.toString(),
-                quantity: order.price.toString(),
+                price: order.price,
+                quantity: order.quantity,
                 status: order.status,
                 createdAt: order.created_at
             })
+            
 
             res.status(200).json({
                 ok: true,
@@ -93,9 +96,9 @@ class TradeController {
                     symbol: order.symbol,
                     side: order.side,
                     type: order.type,
-                    price: order.price.toString(),
-                    quantity: order.price.toString(),
-                    amount: order.amount.toString(),
+                    price: order.price,
+                    quantity: order.price,
+                    amount: order.amount,
                     status: order.status,
                     createdAt: order.created_at
                 }

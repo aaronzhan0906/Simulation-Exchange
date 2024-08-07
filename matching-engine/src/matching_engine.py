@@ -1,16 +1,23 @@
 from order_book import OrderBook
 from typing import Dict, List
+from decimal import Decimal
 
 class MatchingEngine:
     def __init__(self, order_book: OrderBook):
         self.order_book: OrderBook = order_book
 
-    def process_order(self, order_type: str, price: float, quantity: float) -> Dict:
-        opposite_book = self.order_book.asks if order_type == "buy" else self.order_book.bids
+    def process_order(self, order_id, symbol, side, price, quantity) -> Dict:
+        price = Decimal(str(price))
+        quantity = Decimal(str(quantity))
 
-        trades: List[Dict[str, float]] = []
+        opposite_book = self.order_book.asks if side == "buy" else self.order_book.bids
+
+        trades: List[Dict[str, Decimal]] = []
         for opposite_price, opposite_quantity in opposite_book.items():
-            if (order_type == "buy" and opposite_price > price) or (order_type == "sell" and opposite_price < price):
+            opposite_price = Decimal(str(opposite_price))
+            opposite_quantity = Decimal(str(opposite_quantity))
+
+            if (side == "buy" and opposite_price > price) or (side == "sell" and opposite_price < price):
                 break
 
             trade_quantity = min(opposite_quantity, quantity)
@@ -18,15 +25,15 @@ class MatchingEngine:
             self.order_book.remove_order({
                 "price": opposite_price,
                 "quantity": trade_quantity,
-                "order_type": "sell" if order_type == "buy" else "buy"
+                "side": "sell" if side == "buy" else "buy"
             })
             quantity -= trade_quantity
 
-            if quantity == 0:
+            if quantity == Decimal("0"):
                 return {"status": "completed", "trades": trades}
             
-        if quantity > 0:
-            self.order_book.add_order({"price": price, "quantity": quantity, "order_type": order_type})
+        if quantity > Decimal("0"):
+            self.order_book.add_order({"price": price, "quantity": quantity, "side": side})
             if trades:
                 return {"status": "partial", "trades": trades, "remaining": quantity}
             else:
