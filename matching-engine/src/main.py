@@ -13,31 +13,40 @@ async def main():
     print("---------------------------------------------")
     print("Trading engine started. Waiting for orders...")
 
-    # consumer
-    async for order in kafka_client.consume_orders():
-        print(f"Received order: {order}")
+    try:
+        # consumer
+        async for order in kafka_client.consume_orders():
+            print(f"Received order: {order}")
 
-        # matching 
-        result = matching_engine.process_order(
-        order["orderId"], 
-        order["symbol"], 
-        order["side"],
-        order["price"],
-        order["quantity"]
-        )
-        # producer send matching result
-        await kafka_client.produce_result("matched_orders", result)
-        print(f"Sent result: {result}")
+            # matching 
+            results = matching_engine.process_order(
+                order["orderId"], 
+                order["userId"], 
+                order["symbol"], 
+                order["side"],
+                order["price"],
+                order["quantity"],
+                order["status"]
+            )
+            
+            for result in results:
+                await kafka_client.produce_result("matched_orders", result)
+                print("========================")
+                print(f"Sent result: {result}")
 
-        # producer send order book snapshot
-        snapshot = order_book.get_order_book()
-        await kafka_client.produce_result("order_book_snapshot", snapshot)
+            # producer send order book snapshot
+            snapshot = order_book.get_order_book()
+            await kafka_client.produce_result("order_book_snapshot", snapshot)
 
-        print("-----------------------")
-        print("Current Order Book State:")
-        print("Bids:", order_book.bids)
-        print("Asks:", order_book.asks)
-        print("-----------------------")
+            print("--------------------------")
+            print("Current Order Book State:")
+            order_book_snapshot = order_book.get_order_book()
+            print(f"Asks: {order_book_snapshot['asks']}")
+            print(f"Bids: {order_book_snapshot['bids']}")
+            print("--------------------------")
+
+    finally:
+        await kafka_client.close()
 
 if __name__ == "__main__":
     asyncio.run(main())

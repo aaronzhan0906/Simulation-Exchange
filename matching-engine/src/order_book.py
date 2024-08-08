@@ -1,5 +1,6 @@
 from sortedcontainers import SortedDict
-from typing import Dict, List
+from decimal import Decimal
+from collections import deque
 
 class OrderBook:
     def __init__(self):
@@ -7,51 +8,100 @@ class OrderBook:
         self.asks = SortedDict()
 
     def add_order(self, order):
-        price = order["price"]
-        quantity = order["quantity"]
         side = order["side"]
+        price = Decimal(str(order["price"]))
+        quantity = Decimal(str(order["quantity"]))
+        order_id = order["order_id"]
+        user_id = order["user_id"]
 
-        if side == "buy":
-            if price in self.bids:
-                self.bids[price] += quantity
-            else:
-                self.bids[price] = quantity
-        else:
-            if price in self.asks:
-                self.asks[price] += quantity
-            else:
-                self.asks[price] = quantity
+        book = self.bids if side == "buy" else self.asks
+        if price not in book:
+            book[price] = deque()
+        book[price].append((user_id, order_id, quantity))
 
-    def remove_order(self, order):
-        price = order["price"]
-        quantity = order["quantity"]
+    def match_order(self, order):
         side = order["side"]
-
+        input_user_id = order["user_id"]
+        input_price = Decimal(str(order["price"]))
+        quantity = Decimal(str(order["quantity"]))
+        
         if side == "buy":
-            self.bids[price] -= quantity
-            if self.bids[price] <= 0:
-                del self.bids[price]
-        else:
-            self.asks[price] -= quantity
-            if self.asks[price] <= 0:
-                del self.asks[price]
+            opposite_book = self.asks
+            iterate_book = iter
+            price_condition = lambda op, ip: op <= ip
+        else:  
+            opposite_book = self.bids
+            iterate_book = reversed
+            price_condition = lambda op, ip: op >= ip
 
-    def get_best_bid(self):
-        if self.bids:
-            best_price = self.bids.peekitem(-1)[0]  # SortedDict 是升序，所以最后一个是最高价
-            return {"price": best_price, "quantity": self.bids[best_price]}
-        return {"price": 0, "quantity": 0}
-    
-    def get_best_ask(self):
-        if self.asks:
-            best_price = self.asks.peekitem(0)[0]  # 最低的卖价
-            return {"price": best_price, "quantity": self.asks[best_price]}
-        return {"price": 0, "quantity": 0}
+        for opposite_price, orders in iterate_book(opposite_book.items()):
+            if not price_condition(opposite_price, input_price):
+                break
 
-    def get_order_book(self, levels: int = 10):
-        bids = [{"price": price, "quantity": quantity} for price, quantity in self.bids.items()[-levels:][::-1]]
-        asks = [{"price": price, "quantity": quantity} for price, quantity in self.asks.items()[:levels]]
-        return {"bids": bids, "asks": asks}
+            while orders and quantity > 0:
+                matched_user_id, matched_order_id, matched_quantity = orders[0]
+                trade_quantity = min(matched_quantity, quantity)
+                
+                matched_remaining = matched_quantity - trade_quantity
+                
+                yield {
+                    "matched_order_id": matched_order_id,
+                    "matched_user_id": matched_user_id,
+                    "trade_quantity": trade_quantity,
+                    "executed_price": opposite_price,  
+                    "input_remaining": quantity - trade_quantity,
+                    "matched_remaining": matched_remaining,
+                    "input_price": input_price,  
+                    "opposite_price": opposite_price,
+                    "input_user_id": input_user_id
+                }
+                
+                quantity -= trade_quantity
+                
+                if matched_remaining == 0:
+                    orders.popleft()
+                else:
+                    orders[0] = (matched_user_id, matched_order_id, matched_remaining)
+
+            if not orders:
+                del opposite_book[opposite_price]
+
+            if quantity == 0:
+                break
+
+        if quantity > 0:
+            self.add_order({**order, "quantity": quantity})
+
+    def get_order_book(self, levels: int = 10) -> dict:
+        asks = []
+        for price, queue in self.asks.items():
+            if len(asks) >= levels:
+                break
+            total_quantity = sum(Decimal(str(order[2])) for order in queue)
+            asks.append({"price": str(price), "quantity": str(total_quantity)})
+
+        bids = []
+        for price, queue in reversed(self.bids.items()):
+            if len(bids) >= levels:
+                break
+            total_quantity = sum(Decimal(str(order[2])) for order in queue)
+            bids.append({"price": str(price), "quantity": str(total_quantity)})
+
+        return {"asks": asks, "bids": bids}
 
     def __str__(self):
-        return f"Bids: {dict(self.bids)}\nAsks: {dict(self.asks)}"
+        return f"Asks: {dict(self.asks)}\nBids: {dict(self.bids)}"
+    
+        # # Get the lowest ask price (first item in asks)
+    # def get_best_ask(self):
+    #     if self.asks:
+    #         best_price = self.asks.peekitem(0)[0] 
+    #         return {"price": best_price, "quantity": self.asks[best_price]}
+    #     return {"price": 0, "quantity": 0}
+
+    # # Get the highest bid price (last item in bids)
+    # def get_best_bid(self):
+    #     if self.bids:
+    #         best_price = self.bids.peekitem(-1)[0]  
+    #         return {"price": best_price, "quantity": self.bids[best_price]}
+    #     return {"price": 0, "quantity": 0}

@@ -1,43 +1,73 @@
 from order_book import OrderBook
-from typing import Dict, List
-from decimal import Decimal
+from snowflake import SnowflakeGenerator
+from datetime import datetime, timezone
 
 class MatchingEngine:
-    def __init__(self, order_book: OrderBook):
+    def __init__(self, order_book: OrderBook, instance_id = 1):
         self.order_book: OrderBook = order_book
+        self.snowflake_generator = SnowflakeGenerator(instance_id)
 
-    def process_order(self, order_id, symbol, side, price, quantity) -> Dict:
-        price = Decimal(str(price))
-        quantity = Decimal(str(quantity))
+    def process_order(self, order_id, user_id, symbol, side, price, quantity, status):
+        order = {
+            "order_id": order_id,
+            "user_id": user_id,
+            "symbol": symbol,
+            "side": side,
+            "price": price,
+            "quantity": quantity,
+            "status": status
+        }
+        
 
-        opposite_book = self.order_book.asks if side == "buy" else self.order_book.bids
-
-        trades: List[Dict[str, Decimal]] = []
-        for opposite_price, opposite_quantity in opposite_book.items():
-            opposite_price = Decimal(str(opposite_price))
-            opposite_quantity = Decimal(str(opposite_quantity))
-
-            if (side == "buy" and opposite_price > price) or (side == "sell" and opposite_price < price):
-                break
-
-            trade_quantity = min(opposite_quantity, quantity)
-            trades.append({"price": opposite_price, "quantity": trade_quantity})
-            self.order_book.remove_order({
-                "price": opposite_price,
-                "quantity": trade_quantity,
-                "side": "sell" if side == "buy" else "buy"
-            })
-            quantity -= trade_quantity
-
-            if quantity == Decimal("0"):
-                return {"status": "completed", "trades": trades}
+        for match in self.order_book.match_order(order):
+            # trade 
+            trade_id = str(next(self.snowflake_generator))
+            timestamp = datetime.now(timezone.utc).isoformat()
             
-        if quantity > Decimal("0"):
-            self.order_book.add_order({"price": price, "quantity": quantity, "side": side})
-            if trades:
-                return {"status": "partial", "trades": trades, "remaining": quantity}
-            else:
-                return {"status": "pending", "remaining": quantity}
-            
+            trade_record = {
+                "trade_id": trade_id,
+                "timestamp": timestamp,
+                "symbol": symbol,
+                "price": str(match["executed_price"]),
+                "quantity": str(match["trade_quantity"]),
+                "buyer": {
+                    "user_id": user_id if side == "buy" else match["matched_user_id"],
+                    "order_id": order_id if side == "buy" else match["matched_order_id"]
+                },
+                "seller": {
+                    "user_id": match["matched_user_id"] if side == "buy" else user_id,
+                    "order_id": match["matched_order_id"] if side == "buy" else order_id
+                }
+            }
+
+            # input order
+            input_order_result = {
+                "order_id": order_id,
+                "matched_order_id": match["matched_order_id"],
+                "symbol": symbol,
+                "side": side,
+                "executed_quantity": str(match["trade_quantity"]),
+                "executed_price": str(match["executed_price"]),
+                "remaining_quantity": str(match["input_remaining"]),
+                "status": "completed" if match["input_remaining"] == 0 else "partial",
+                "trade_record": trade_record
+            }
+
+            matched_order_result = {
+                "order_id": match["matched_order_id"],
+                "matched_order_id": order_id,
+                "symbol": symbol,
+                "side": "buy" if side == "sell" else "sell",
+                "executed_quantity": str(match["trade_quantity"]),
+                "executed_price": str(match["executed_price"]),
+                "remaining_quantity": str(match["matched_remaining"]),
+                "status": "completed" if match["matched_remaining"] == 0 else "partial",
+                "trade_record": trade_record
+            }
+
+
+            yield input_order_result
+            yield matched_order_result
+        
     def get_market_depth(self, levels: int = 10):
         return self.order_book.get_order_book(levels)
