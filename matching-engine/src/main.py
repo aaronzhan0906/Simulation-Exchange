@@ -10,8 +10,8 @@ async def main():
     matching_engine = MatchingEngine(order_book)
 
     await kafka_client.setup()
-    print("---------------------------------------------")
     print("Trading engine started. Waiting for orders...")
+    print("---------------------------------------------")
 
     try:
         # consumer
