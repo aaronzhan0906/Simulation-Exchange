@@ -9,7 +9,7 @@ class MatchingEngine:
 
     def process_order(self, order_id, user_id, symbol, side, price, quantity, status):
         order = {
-            "order_id": order_id,
+            "order_id": str(order_id),
             "user_id": user_id,
             "symbol": symbol,
             "side": side,
@@ -24,12 +24,35 @@ class MatchingEngine:
             trade_id = str(next(self.snowflake_generator))
             timestamp = datetime.now(timezone.utc).isoformat()
             
-            trade_record = {
+            # 打開前要檢查一下 目前用不到
+            # trade_record = {
+            #     "trade_id": trade_id,
+            #     "timestamp": timestamp,
+            #     "symbol": symbol,
+            #     "price": str(match["executed_price"]),
+            #     "quantity": str(match["trade_quantity"]),
+            #     "buyer": {
+            #         "user_id": user_id if side == "buy" else match["matched_user_id"],
+            #         "order_id": order_id if side == "buy" else match["matched_order_id"]
+            #     },
+            #     "seller": {
+            #         "user_id": match["matched_user_id"] if side == "buy" else user_id,
+            #         "order_id": match["matched_order_id"] if side == "buy" else order_id
+            #     }
+            # }
+
+            # input order
+            input_order_result = {
                 "trade_id": trade_id,
                 "timestamp": timestamp,
+                "order_id": order_id,
+                "matched_order_id": match["matched_order_id"],
                 "symbol": symbol,
-                "price": str(match["executed_price"]),
-                "quantity": str(match["trade_quantity"]),
+                "side": side,
+                "executed_quantity": str(match["trade_quantity"]),
+                "executed_price": str(match["executed_price"]),
+                "remaining_quantity": str(match["input_remaining"]),
+                "status": "filled" if match["input_remaining"] == 0 else "partially_filled",
                 "buyer": {
                     "user_id": user_id if side == "buy" else match["matched_user_id"],
                     "order_id": order_id if side == "buy" else match["matched_order_id"]
@@ -40,20 +63,9 @@ class MatchingEngine:
                 }
             }
 
-            # input order
-            input_order_result = {
-                "order_id": order_id,
-                "matched_order_id": match["matched_order_id"],
-                "symbol": symbol,
-                "side": side,
-                "executed_quantity": str(match["trade_quantity"]),
-                "executed_price": str(match["executed_price"]),
-                "remaining_quantity": str(match["input_remaining"]),
-                "status": "completed" if match["input_remaining"] == 0 else "partial",
-                "trade_record": trade_record
-            }
-
             matched_order_result = {
+                "trade_id": trade_id,
+                "timestamp": timestamp,
                 "order_id": match["matched_order_id"],
                 "matched_order_id": order_id,
                 "symbol": symbol,
@@ -61,8 +73,15 @@ class MatchingEngine:
                 "executed_quantity": str(match["trade_quantity"]),
                 "executed_price": str(match["executed_price"]),
                 "remaining_quantity": str(match["matched_remaining"]),
-                "status": "completed" if match["matched_remaining"] == 0 else "partial",
-                "trade_record": trade_record
+                "status": "filled" if match["matched_remaining"] == 0 else "partially_filled",
+                "buyer": {
+                    "user_id": user_id if side == "buy" else match["matched_user_id"],
+                    "order_id": order_id if side == "buy" else match["matched_order_id"]
+                },
+                "seller": {
+                    "user_id": match["matched_user_id"] if side == "buy" else user_id,
+                    "order_id": match["matched_order_id"] if side == "buy" else order_id
+                }
             }
 
 

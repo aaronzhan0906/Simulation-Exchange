@@ -16,7 +16,7 @@ class UserModel {
                 [displayname, email, hashedPassword]
             )
             const userId = userResult.insertId;
-
+            
             await connection.query(
                 "INSERT INTO accounts (user_id, balance) VALUES (?, ?)",
                 [userId, 10000] 

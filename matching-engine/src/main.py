@@ -16,8 +16,8 @@ async def main():
     try:
         # consumer
         async for order in kafka_client.consume_orders():
-            print(f"Received order: {order}")
-
+            print(f"Received order: userId {order["userId"]}")
+            print(order)
             # matching 
             results = matching_engine.process_order(
                 order["orderId"], 
@@ -29,21 +29,22 @@ async def main():
                 order["status"]
             )
             
-            for result in results:
-                await kafka_client.produce_result("matched_orders", result)
+            for trade_result in results:
+                await kafka_client.produce_result("trade_result", trade_result)
                 print("========================")
-                print(f"Sent result: {result}")
+                print(f"Sent 'matched_orders': {trade_result}")
 
             # producer send order book snapshot
-            snapshot = order_book.get_order_book()
-            await kafka_client.produce_result("order_book_snapshot", snapshot)
-
-            print("--------------------------")
-            print("Current Order Book State:")
             order_book_snapshot = order_book.get_order_book()
-            print(f"Asks: {order_book_snapshot['asks']}")
-            print(f"Bids: {order_book_snapshot['bids']}")
-            print("--------------------------")
+            await kafka_client.produce_result("order_book_snapshot", order_book_snapshot)
+            print("========================")
+            print(f"Sent 'order_book_snapshot': {order_book_snapshot}")
+            print("========================")
+            # print("--------------------------")
+            # print("Current Order Book State:")
+            # print(f"Asks: {order_book_snapshot['asks']}")
+            # print(f"Bids: {order_book_snapshot['bids']}")
+            # print("--------------------------")
 
     finally:
         await kafka_client.close()

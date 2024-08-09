@@ -12,21 +12,22 @@ const consumer = kafka.consumer({ groupId: config.kafka.groupId });
 export default {
     init: async() => {
         await consumer.connect();
-        await consumer.subscribe({ topic: "processed-orders", fromBeginning: true });
-        await consumer.subscribe({ topic: "completed-transactions", fromBeginning: true })
+        await consumer.subscribe({ topic: "trade_result", fromBeginning: true });
+        await consumer.subscribe({ topic: "order_book_snapshot", fromBeginning: true })
 
         await consumer.run({
-            eachMessage: async ({ topic, partition, message }) => {
+            eachMessage: async ({ topic, message }) => {
                 const data = JSON.parse(message.value.toString());
                 
                 switch (topic) {
-                    case "processed-orders":
-                        console.log("Processed order received:", data);
+                    case "trade_result":
+                        console.log("trade_result received:", data);
+                        TradeController.createTradeHistory(data);
+                        TradeController.updateOrderData(data);
                         break;
 
-                    case "completed-transactions":
-                        console.log("Completed transaction received:", data);
-                        await TradeController.processCompletedTransaction(data);
+                    case "order_book_snapshot":
+                        console.log("order_book_snapshot received:", data);
                         break;
 
                     default:

@@ -72,7 +72,7 @@ class UserController {
             const refreshToken = UserModel.generateRefreshToken(user);
 
             res.cookie("accessToken", accessToken, {
-                maxAge: 24 * 60 * 60 * 1000, 
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 之後改
                 httpOnly: true, 
                 secure: true, 
                 sameSite: "strict"

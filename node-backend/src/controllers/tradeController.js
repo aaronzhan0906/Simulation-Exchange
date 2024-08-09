@@ -1,4 +1,5 @@
 import Big from "big.js";
+import Decimal from 'decimal.js';
 import WalletModel from "../models/walletModel.js";
 import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
@@ -49,7 +50,7 @@ class TradeController {
     }
 
     // router.post("/createOrder", AccountController.createOrder);
-    async createOrder(req, res, next){
+    async createOrder(req, res){
         try { 
             const { symbol, side, type, price, quantity } = req.body;
             const userId = req.user.userId;
@@ -60,19 +61,20 @@ class TradeController {
             
             // snowflake order_id 
             const orderId = generateSnowflakeId();
+      
+            const orderIdString = orderId.toString();
             const order = await TradeModel.createOrder(
-                orderId,
+                orderIdString,
                 userId,
                 symbol,
                 side,
                 type,
                 price,
                 quantity,
-                "pending"
+                "open"
             );
 
-            console.log(order)
-
+     
             // send order to kafka
             await kafkaProducer.sendMessage("new-orders",{
                 orderId: order.order_id,
@@ -105,47 +107,89 @@ class TradeController {
             })
 
         } catch(error) {
-            next(error);
+            console.error(error);
+            throw error;
+        }
+    }
+
+    async updateOrderData(trade_result){
+        const {
+            order_id,
+            timestamp,
+            executed_quantity,
+            executed_price,
+            status
+        } = trade_result
+
+        const updateOrderData = {
+            order_id,
+            executed_quantity: new Decimal(executed_quantity).toString(),
+            executed_price: new Decimal(executed_price).toString(),
+            status,
+            updated_at: timestamp
+        }
+        
+        try {  
+            const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
+            
+            if (!resultOrderData) {
+                throw new Error('Order not found or update failed');
+            }
+
+            if (resultOrderData.side == "buy") {
+                await TradeModel.increaseAsset(increaseResult)
+            } else {
+                await TradeModel.decreaseAsset(decreaseResult)
+            }
+            
+        } catch (error) {
+            console.error("Error updating order:", error);
+            throw error;
         }
     }
 
 
     // consumer 
-    async processCompletedTransaction(transactionData){
-        const { transactionId, orderId, userId, symbol, side, type, price, quantity, amount, executedAt } = transactionData;
+    async createTradeHistory(trade_result){
+        const {
+            trade_id: originalTradeId,
+            timestamp,
+            symbol,
+            side,
+            executed_quantity,
+            executed_price,
+            buyer,
+            seller
+        } = trade_result
 
-        try { 
-           const updateOrder = await TradeModel.updateOrderStatus(orderId, "completed" , executedAt);
+        const user_id = side === "buy" ? buyer.user_id : seller.user_id;
+        const trade_id = side === "buy" ? `b${originalTradeId}` : `s${originalTradeId}`
 
-           // update account
-           let updateAccount;
-           if (side === "buy") {
-                updateAccount = await TradeModel.decreaseBalance(userId, amount);
-                await TradeModel.increaseAsset(userId, symbol, quantity);
-           } else if ( side === "sell") {
-                updateAccount = await TradeModel.increaseBalance(userId, amount);
-                await TradeModel.decreaseAsset(userId, symbol, quantity);
-           }
+        const tradeData = {
+            user_id,
+            trade_id,
+            executed_at: new Date(timestamp),
+            symbol,
+            side,
+            price: new Decimal(executed_price).toString(),
+            quantity: new Decimal(executed_quantity).toString(),
+            buyer_user_id: buyer.user_id,
+            buyer_order_id: buyer.order_id,
+            seller_user_id: seller.user_id,
+            seller_order_id: seller.order_id
+        };
 
-           const transaction = await TradeModel.createTransaction({
-                transaction_id: transactionId,
-                order_id: orderId,
-                user_id: userId,
-                symbol,
-                side,
-                type,
-                price,
-                quantity,
-                amount,
-                executed_at: executedAt
-           });
-
-           console.log(`Transaction ${transaction} processed successfully`);
+        try {
+            const result = await TradeModel.createTradeHistory(tradeData)
+            if (result) console.log("Trade history created.")
 
         } catch(error) {
-            next(error);
+            console.error(error);
+            throw error;
         }
     }
+
+
 }
 
 
