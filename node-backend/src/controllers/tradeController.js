@@ -1,54 +1,9 @@
-import Big from "big.js";
 import Decimal from 'decimal.js';
-import WalletModel from "../models/walletModel.js";
 import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 
 class TradeController {
-    // router.get("/buyPreAuthorization", TradeController.buyPreAuthorization);
-    async buyPreAuthorization(req, res, next){
-        try {
-            const { buyPrice, buyQuantity } = req.body;
-            const balance = new Big(WalletModel.getBalanceById(req.user.userId));
-            const preAuthAmount = new Big(buyQuantity).times(buyPrice);
-
-            if (balance.lt(preAuthAmount)){
-                return res.status(400).json({ error: true, message:"Insufficient balance"})
-            }
-
-            const remainingBalance = balance.minus(preAuthAmount);
-            res.status(200).json({
-                ok: true,
-                message: "Pre-authorization successful",
-                remainingBalance: remainingBalance.toString()
-            })
-        } catch(error) {
-            next(error);
-        }
-    }
-
-    // router.get("/sellPreAuthorization", TradeController.sellPreAuthorization);
-    async sellPreAuthorization(req, res, next){
-        try { 
-            const { symbol, sellQuantity } = req.body;
-            const amount = WalletModel.getAmountOfSymbolById(req.user.userId, symbol)
-
-            if (amount.lt(sellQuantity)){
-                return res.status(400).json({ error: true, message:"Insufficient asset"})
-            }
-
-            const remainingAsset = amount.minus(sellQuantity);
-            res.status(200).json({
-                ok: true,
-                message: "Pre-authorization successful",
-                remainingAsset: remainingAsset.toString()
-            })
-        } catch(error) {
-            next(error);
-        }
-    }
-
     // router.post("/createOrder", AccountController.createOrder);
     async createOrder(req, res){
         try { 
@@ -58,7 +13,15 @@ class TradeController {
             if ( !userId || !symbol || !side || !type || !price || !quantity) {
                 return res.status(400).json({ error:true, message:"Missing required fields!" })
             }
-            
+
+            if (side === "buy") {
+                await preBuyAuth(userId, price, quantity);
+            } else if (side === "sell") {
+                await preSellAuth(userId, symbol, quantity);
+            } else {
+                throw new Error("Invalid side");
+            }
+
             // snowflake order_id 
             const orderId = generateSnowflakeId();
       
@@ -132,7 +95,7 @@ class TradeController {
         try {  
             const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
             if (!resultOrderData) {
-                throw new Error('Order not found or update failed');
+                throw new Error('Order not found or update failed'); 
             }
 
             if (resultOrderData.side == "buy") {
@@ -196,3 +159,37 @@ class TradeController {
 
 export default new TradeController();
 
+
+
+async function preBuyAuth(userId, price, quantity) {
+    const dPrice = new Decimal(price)
+    const dQuantity = new Decimal(quantity)
+    const costAmount = dPrice.times(dQuantity)  
+
+    try {
+        const availableBalance = await TradeModel.getAvailableBalanceById(userId)
+        const usableBalance = new Decimal(availableBalance);
+        if (usableBalance.lessThan(costAmount)) {
+            return res.status(400).json({ error:true, message:"Insufficient available balance" });
+        } 
+        await TradeModel.lockBalance(userId, price, quantity)
+    } catch (error) {
+        console.error("preBuyAuth error:", error);
+        throw error;
+    } 
+}
+
+
+async function preSellAuth(userId, symbol, quantity) {
+    const sellQuantity = new Decimal(quantity)
+    try {
+        const availableQuantity = await TradeModel.getQuantityBySymbolAndUserId(userId, symbol);
+        if (new Decimal(availableQuantity).lessThan(sellQuantity)) {
+            return res.status(400).json({ error:true, message:"Insufficient available asset" });
+        }
+        await TradeModel.lockAsset(userId, symbol, quantity)
+    } catch (error) {
+        console.error("preSellAuth error:", error);
+        throw error;
+    }
+}

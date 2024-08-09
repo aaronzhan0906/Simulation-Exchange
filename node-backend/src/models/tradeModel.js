@@ -2,6 +2,7 @@ import db from "../config/database.js";
 import Decimal from 'decimal.js';
 
 class TradeModel {
+    // order feature
     async createOrder(order_id, user_id, symbol, side, type, price, quantity, status) {
         const insertQuery = `
         INSERT INTO orders 
@@ -69,6 +70,75 @@ class TradeModel {
         }
     }
 
+    async createTradeHistory(tradeData) {
+        const insertQuery = `
+            INSERT INTO trades 
+            (user_id, trade_id, executed_at, symbol, side, price, quantity, buyer_user_id, buyer_order_id, seller_user_id, seller_order_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+    
+        try {
+            await db.query(insertQuery, [
+                tradeData.user_id, tradeData.trade_id, tradeData.executed_at, tradeData.symbol, tradeData.side, tradeData.price, tradeData.quantity, 
+                tradeData.buyer_user_id, tradeData.buyer_order_id, tradeData.seller_user_id, tradeData.seller_order_id
+            ]);
+        } catch (error) {
+            console.error("Error creating trade history:", error);
+            throw error;
+        }
+    }
+    
+    // preauth
+    async getAvailableBalanceById(userId) {
+        const result = await db.query(
+            `SELECT available_balance 
+            FROM accounts 
+            WHERE user_id = ?`,
+            [userId]
+        );
+        return result[0].available_balance
+    }
+
+    async lockBalance(userId, price, quantity){
+        const dPrice = new Decimal(price)
+        const dQuantity = new Decimal(quantity)
+        const constAmount = dPrice.times(dQuantity)
+
+        await db.query(
+            `UPDATE accounts
+            SET locked_balance = locked_balance + ?
+            WHERE user_id = ?
+            `,[constAmount.toString(), userId]
+        )
+    }
+
+    async getQuantityBySymbolAndUserId(userId, symbol,){
+        const updateSymbol = symbol.replace("/USDT","");
+        const result = await db.query(
+            `SELECT available_quantity 
+            FROM assets 
+            WHERE user_id = ? AND symbol = ?
+            `,[userId, updateSymbol]);
+        return result[0].available_quantity;
+    }
+
+    async lockAsset(userId, symbol, quantity){
+        const updateSymbol = symbol.replace("/USDT","");
+        console.log(updateSymbol)
+        await db.query(
+            `UPDATE assets
+            SET locked_quantity = locked_quantity + ?
+            WHERE user_id = ? AND symbol = ?
+            `,[quantity, userId, updateSymbol]
+        )
+    }
+
+    // async releaseLockAsset(userId, symbol, quantity){
+    //     console.log("releaseLockAsset")
+    // }
+
+
+    // calculate balance and assets
     async decreaseBalance(updateAccountData){
         const updateUserId = updateAccountData.user_id;
         const executedQuantity = new Decimal(updateAccountData.executed_quantity)
@@ -76,7 +146,9 @@ class TradeModel {
         const decreaseAmount = executedQuantity.times(executedPrice)
         try {
             await db.query(
-                "UPDATE accounts SET balance = balance - ? WHERE user_id = ?",
+                `UPDATE accounts 
+                SET balance = balance - ? 
+                WHERE user_id = ?`,
                 [decreaseAmount.toString(), updateUserId]
             );
         }  catch (error) {
@@ -171,23 +243,10 @@ class TradeModel {
         }
     }
 
-    async createTradeHistory(tradeData) {
-        const insertQuery = `
-            INSERT INTO trades 
-            (user_id, trade_id, executed_at, symbol, side, price, quantity, buyer_user_id, buyer_order_id, seller_user_id, seller_order_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-    
-        try {
-            await db.query(insertQuery, [
-                tradeData.user_id, tradeData.trade_id, tradeData.executed_at, tradeData.symbol, tradeData.side, tradeData.price, tradeData.quantity, 
-                tradeData.buyer_user_id, tradeData.buyer_order_id, tradeData.seller_user_id, tradeData.seller_order_id
-            ]);
-        } catch (error) {
-            console.error("Error creating trade history:", error);
-            throw error;
-        }
+    async deleteOrder(order_id, price, quantity, status){
+        console.log("deleteOrder")
     }
+
 }
 
 export default new TradeModel();

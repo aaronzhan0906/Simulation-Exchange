@@ -4,7 +4,7 @@ import db from "../config/database.js";
 class WalletModel {
     async getBalanceById(userId) {
         await db.query(
-            "SELECT amount FROM accounts WHERE user_id = ?",
+            "SELECT balance FROM accounts WHERE user_id = ?",
             [userId]
         );
     }
