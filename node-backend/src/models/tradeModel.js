@@ -30,13 +30,14 @@ class TradeModel {
                 WHERE order_id = ?`,
                 [newData.order_id]
             )
-            
+
+           
             // calculate logic
             const old = {
-                quantity: new Decimal(oldData.quantity),
-                executed_quantity: new Decimal(oldData.executed_quantity),
-                remaining_quantity: new Decimal(oldData.remaining_quantity),
-                average_price: new Decimal(oldData.average_price)
+                quantity: new Decimal(oldData.quantity || 0),
+                executed_quantity: new Decimal(oldData.executed_quantity || 0),
+                remaining_quantity: new Decimal(oldData.remaining_quantity || 0),
+                average_price: new Decimal(oldData.average_price || 0)
             };
             
             const newExecutedQuantity = new Decimal(old.executed_quantity).plus(newData.executed_quantity);
@@ -45,7 +46,6 @@ class TradeModel {
             const newValue = new Decimal(newData.executed_price).times(newData.executed_quantity);
             const totalQuantity = new Decimal(old.quantity).minus(newRemainingQuantity);
             const newAveragePrice = oldValue.plus(newValue).dividedBy(totalQuantity);
-
             await db.query(
                 `UPDATE orders
                 SET executed_quantity = ?,
@@ -62,65 +62,113 @@ class TradeModel {
             const resultOrderData = await db.query(
                 `SELECT * FROM orders WHERE order_id = ?`,[newData.order_id]
             )
-
-            return resultOrderData
+            return resultOrderData[0]
         } catch (error) {
-        console.error("Error in updateOrder:", error);
+        console.error("Error in updateOrderData:", error);
         throw error;
         }
     }
 
-    // async decreaseBalance(userId, amount){
-    //     const result = await db.query (
-    //         "UPDATE users SET = balance - ? WHERE user_id = ?",
-    //         [amount, userId]
-    //     );
-    // }
-
-    // async increaseBalance(userId, amount) {
-    //     await db.query(
-    //         "UPDATE users SET balance = balance + ? WHERE user_id = ?",
-    //         [amount, userId]
-    //     )
-    // }
-
-    async increaseAsset(updateAssetData){
+    async decreaseBalance(updateAccountData){
+        const updateUserId = updateAccountData.user_id;
+        const executedQuantity = new Decimal(updateAccountData.executed_quantity)
+        const executedPrice = new Decimal(updateAccountData.average_price);
+        const decreaseAmount = executedQuantity.times(executedPrice)
         try {
-            const existingAsset = await db.query(
-                `SELECT symbol, quantity, average_price
-                FROM assets
-                WHERE user_id = ? AND symbol = ?`,
-                [updateAssetData.user_id, updateAssetData.symbol]
+            await db.query(
+                "UPDATE accounts SET balance = balance - ? WHERE user_id = ?",
+                [decreaseAmount.toString(), updateUserId]
             );
-            if (oldData.symbol) {
-                addNewAsset
-            } else {
-                plusNewAsset
-            }
-
-            const old = {
-                quantity: new Decimal(oldData.quantity),
-                average_price: new Decimal(oldData.average_price)
-            };
-
-            const addNewAsset = await db.query(
-                `INSERT INTO user_assets (user_id, symbol, quantity)
-                VALUES(?, ?, ?)
-                ON DUPLICATE KEY UPDATE quantity = quantity + ?`,
-                [userId, symbol, quantity, quantity]
-            )
-
-        } catch (error) {
-            console.error("Error in increaseAsset:", error);
+        }  catch (error) {
+            console.error("Error decreasing balance:", error);
             throw error;
         }
     }
 
-    async decreaseAsset(userId, symbol, quantity) {
-        await db.query(
-            "UPDATE assets SET quantity - quantity WHERE user_id = ? AND symbol = ?",
-            [quantity, userId, symbol]
-        );
+    async increaseBalance(updateAccountData){
+        const updateUserId = updateAccountData.user_id;
+        const executedQuantity = new Decimal(updateAccountData.executed_quantity)
+        const executedPrice = new Decimal(updateAccountData.average_price);
+        const increaseAmount = executedQuantity.times(executedPrice)
+        try {
+            await db.query(
+                "UPDATE accounts SET balance = balance + ? WHERE user_id = ?",
+                [increaseAmount.toString(), updateUserId]
+            );
+        }  catch (error) {
+            console.error("Error decreasing balance:", error);
+            throw error;
+        }
+    }
+
+    async increaseAsset(updateAssetData) {
+        const updateUserId = updateAssetData.user_id;
+        const updateSymbol = updateAssetData.symbol.replace("/USDT","");
+        try {
+            const existingAsset = await db.query(
+                `SELECT quantity, average_price
+                FROM assets
+                WHERE user_id = ? AND symbol = ?`,
+                [updateUserId, updateSymbol]
+            );
+
+            let newQuantity, newAveragePrice;
+            
+            if (existingAsset.length > 0) {
+                const currentQuantity = new Decimal(existingAsset[0].quantity);
+                const currentAveragePrice = new Decimal(existingAsset[0].average_price);
+                const executedQuantity = new Decimal(updateAssetData.executed_quantity);
+                const executedPrice = new Decimal(updateAssetData.average_price);
+            
+                newQuantity = currentQuantity.plus(executedQuantity);
+                newAveragePrice = currentQuantity.times(currentAveragePrice).plus(executedQuantity.times(executedPrice)).dividedBy(newQuantity);
+
+                await db.query(
+                    `UPDATE assets
+                    SET quantity = ?, average_price = ?
+                    WHERE user_id = ? AND symbol = ?`,
+                    [newQuantity.toString(), newAveragePrice.toString(), updateUserId, updateSymbol]
+                );
+            } else {
+                await db.query(
+                    `INSERT INTO assets (user_id, symbol, quantity, average_price)
+                    VALUES (?, ?, ?, ?)`,
+                    [updateUserId, updateSymbol, updateAssetData.executed_quantity, updateAssetData.average_price]
+                );
+            }
+            
+        } catch (error) {
+            console.error("Error in increaseAsset:", error);
+        throw error;
+        }
+    }
+    
+    async decreaseAsset(updateAssetData) {
+        const updateUserId = updateAssetData.user_id;
+        const updateSymbol = updateAssetData.symbol.replace("/USDT","");
+        let newQuantity;
+
+        try {
+            const existingAsset = await db.query(
+                `SELECT quantity
+                FROM assets
+                WHERE user_id = ? AND symbol = ?`,
+                [updateUserId, updateSymbol]
+            );
+
+            const currentQuantity = new Decimal(existingAsset[0].quantity);
+            newQuantity = currentQuantity.minus(updateAssetData.executed_quantity);
+
+            await db.query(
+                `UPDATE assets
+                SET quantity = ?
+                WHERE user_id = ? AND symbol = ?`,
+                [newQuantity.toString(), updateUserId, updateSymbol]
+            );
+        } catch (error) {
+            console.error("Error in decreaseAsset:", error);
+        throw error;
+        }
     }
 
     async createTradeHistory(tradeData) {

@@ -131,15 +131,16 @@ class TradeController {
         
         try {  
             const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
-            
             if (!resultOrderData) {
                 throw new Error('Order not found or update failed');
             }
 
             if (resultOrderData.side == "buy") {
-                await TradeModel.increaseAsset(increaseResult)
+                await TradeModel.increaseAsset(resultOrderData)
+                await TradeModel.decreaseBalance(resultOrderData)
             } else {
-                await TradeModel.decreaseAsset(decreaseResult)
+                await TradeModel.decreaseAsset(resultOrderData)
+                await TradeModel.increaseBalance(resultOrderData)
             }
             
         } catch (error) {
