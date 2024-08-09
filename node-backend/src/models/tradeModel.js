@@ -173,6 +173,25 @@ class TradeModel {
         }
     }
 
+    async unlockBalance(updateAccountData){
+        const updateUserId = updateAccountData.user_id;
+        const executedQuantity = new Decimal(updateAccountData.executed_quantity)
+        const executedPrice = new Decimal(updateAccountData.average_price);
+        const unlockAmount = executedQuantity.times(executedPrice)
+        try {
+            await db.query(
+                `UPDATE accounts
+                SET locked_balance = locked_balance - ?
+                WHERE user_id = ?`,
+                [unlockAmount.toString(), updateUserId]
+            );
+        } catch (error) {
+            console.error("Error unlocking balance:", error);
+            throw error;
+        }
+    }
+
+
     async increaseAsset(updateAssetData) {
         const updateUserId = updateAssetData.user_id;
         const updateSymbol = updateAssetData.symbol.replace("/USDT","");
@@ -240,6 +259,22 @@ class TradeModel {
         } catch (error) {
             console.error("Error in decreaseAsset:", error);
         throw error;
+        }
+    }
+
+    async unlockAsset(updateAssetData) {
+        const updateUserId = updateAssetData.user_id;
+        const updateSymbol = updateAssetData.symbol.replace("/USDT","");
+        try {
+            await db.query(
+                `UPDATE assets
+                SET locked_quantity = locked_quantity - ?
+                WHERE user_id = ? AND symbol = ?`,
+                [updateAssetData.executed_quantity, updateUserId, updateSymbol]
+            );
+        } catch (error) {
+            console.error("Error in unlockAsset:", error);
+            throw error;
         }
     }
 

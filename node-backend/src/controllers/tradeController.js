@@ -101,9 +101,11 @@ class TradeController {
             if (resultOrderData.side == "buy") {
                 await TradeModel.increaseAsset(resultOrderData)
                 await TradeModel.decreaseBalance(resultOrderData)
+                await TradeModel.unlockBalance(resultOrderData)
             } else {
                 await TradeModel.decreaseAsset(resultOrderData)
                 await TradeModel.increaseBalance(resultOrderData)
+                await TradeModel.unlockAsset(resultOrderData)
             }
             
         } catch (error) {
