@@ -278,9 +278,21 @@ class TradeModel {
         }
     }
 
-    async deleteOrder(order_id, price, quantity, status){
-        console.log("deleteOrder")
-    }
+    // async cancelOrder(order_id, status){
+    //     const updateStatus = status;
+    //     const updateOrderId = order_id;
+    //     try {
+    //         await db.query(
+    //             `UPDATE orders
+    //             SET status = ?
+    //             WHERE order_id = ?`,
+    //             [updateStatus, updateOrderId]
+    //         );
+    //     } catch (error) {
+    //         console.error("Error in cancelOrder:", error);
+    //         throw error;
+    //     }
+    // }
 
 }
 

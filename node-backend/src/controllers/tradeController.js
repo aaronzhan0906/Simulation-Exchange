@@ -95,7 +95,7 @@ class TradeController {
         try {  
             const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
             if (!resultOrderData) {
-                throw new Error('Order not found or update failed'); 
+                throw new Error("Order not found or update failed"); 
             }
 
             if (resultOrderData.side == "buy") {
@@ -109,13 +109,41 @@ class TradeController {
             }
             
         } catch (error) {
-            console.error("Error updating order:", error);
+            console.error("updateOrderData error:", error);
             throw error;
         }
     }
 
 
-    // consumer 
+    // async cancelOrder(req, res){
+    //     const { orderId, side, price, quantity } = req.body;
+    //     const userId = req.user.userId;
+
+    //     if ( !userId || !orderId ) {
+    //         return res.status(400).json({ error:true, message:"Missing required fields!" })
+    //     }
+
+    //     try {
+    //         const resultStatus = await TradeModel.cancelOrder(orderId, userId);
+    //         if (!resultStatus) {
+    //             return res.status(400).json({ error: true, message: "Order not found or update failed" });
+    //         }
+    
+    //         if (side === "buy") {
+    //             await TradeModel.unlockBalance(orderId, userId, price, quantity);
+    //         } else {
+    //             await TradeModel.unlockAsset(orderId, userId, quantity);
+    //         }
+    
+    //         return res.status(200).json({ ok: true, message: "Order cancelled successfully and assets unlocked", status: resultStatus });
+    //     } catch(error) {
+    //         console.error("cancelOrder error:", error);
+    //         throw error;
+    //     }
+    // }    
+
+
+    // consumer trade result from kafka
     async createTradeHistory(trade_result){
         const {
             trade_id: originalTradeId,
@@ -150,7 +178,7 @@ class TradeController {
             if (result) console.log("Trade history created.")
 
         } catch(error) {
-            console.error(error);
+            console.error("createTradeHistory error, error:", error);
             throw error;
         }
     }
