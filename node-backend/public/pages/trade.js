@@ -1,4 +1,12 @@
-const ws = new WebSocket(`wss://${location.host}`);
+import { headerEventListeners } from "../utils/header.js";
+
+document.addEventListener("DOMContentLoaded", (event) => {
+    headerEventListeners();
+
+
+
+
+    const ws = new WebSocket(`wss://${location.host}`);
 
 ws.onopen = function() {
     console.log("WebSocket connection established");
@@ -55,3 +63,4 @@ function updatePrice(tickerData) {
 function updateOrderBookUI(orderBookData){
     console.log("Order book:", orderBookData);
 }
+});

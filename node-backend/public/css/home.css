@@ -44,10 +44,11 @@ hr {
 .header__logo {
     color: rgb(0, 132, 255);
     font-size: 20px;
+    cursor: pointer;
 }
+
 .header__logo--link {
     text-decoration: none;
-
 }
 
 .header__logo--link:visited {
@@ -63,6 +64,7 @@ hr {
     font-size: 12px;
     padding: 10px;
     text-decoration: none;
+    cursor: pointer;
 }
 
 .header__link:hover{

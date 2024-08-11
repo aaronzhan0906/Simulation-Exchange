@@ -4,16 +4,37 @@ import config from "../config/config.js";
 import bcrypt from "bcrypt";
 
 class UserModel {
+    async checkEmailExist(email) {
+        const connection = await db.getConnection();
+
+        try {
+            const [result] = await connection.query(
+                "SELECT email FROM users WHERE email = ?",
+                email
+            );
+            console.log(result.length);
+            if (result.length === 1) {
+                return true;
+            }
+        } catch(error) {
+            await connection.rollback();
+            throw error
+        } finally {
+            connection.release();
+        }
+    };
+
+
     async createUserWithInitialFunds(userData) {
-        const { displayname, email, password } = userData;
+        const { email, password } = userData;
         const connection = await db.getConnection();
 
         try {
             await connection.beginTransaction();
             const hashedPassword = await bcrypt.hash(password, 10)
             const [userResult] = await connection.query(
-                "INSERT INTO users (displayname, email, password) VALUES (?, ?, ?)",
-                [displayname, email, hashedPassword]
+                "INSERT INTO users (email, password) VALUES (?, ?)",
+                [email, hashedPassword]
             )
             const userId = userResult.insertId;
             
@@ -21,10 +42,7 @@ class UserModel {
                 "INSERT INTO accounts (user_id, balance) VALUES (?, ?)",
                 [userId, 10000] 
             );
-            await connection.query(
-                "INSERT INTO assets (user_id, symbol, amount, average_purchase_cost) VALUES (?, ?, ?, ?)",
-                [userId, "USDT", 10000, 1]
-            )
+            
             await connection.commit();
             return { user_id: userId };
         } catch(error) {
@@ -36,7 +54,7 @@ class UserModel {
     };
 
     async getUserByEmail(email) {
-        const command = "SELECT user_id, displayname, email, password FROM users WHERE email = ?";
+        const command = "SELECT user_id, email, password FROM users WHERE email = ?";
         const result = await db.query(command, [email]);
         return result;
     }

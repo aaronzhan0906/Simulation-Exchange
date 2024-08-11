@@ -45,7 +45,9 @@ hr {
 .header__logo {
     color: rgb(0, 132, 255);
     font-size: 20px;
+    cursor: pointer;
 }
+
 .header__logo--link {
     text-decoration: none;
 
@@ -64,6 +66,7 @@ hr {
     font-size: 12px;
     padding: 10px;
     text-decoration: none;
+    cursor: pointer;
 }
 
 .header__link:hover{
@@ -75,14 +78,37 @@ hr {
     margin-left: auto; 
 }
 
-.header__button {
+
+.header__login {
+    margin-left: 5px;
     font-size: 10px;
     padding: 7px 14px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    background-color: #4a90e2;
+    background-color: #3b424a;
     color: #ffffff;
+}
+
+.header__signup {
+    margin-left: 5px;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #559cec, #357abd);
+    color: #ffffff;
+}
+
+.header__login:hover {
+    background: linear-gradient(135deg, #485058, #3b424a);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.header__signup:hover {
+    background: linear-gradient(135deg, #5a9ee8, #4a90e2);
+    box-shadow: 0 2px 4px rgba(74, 144, 226, 0.1);
 }
 
 

@@ -86,7 +86,6 @@ hr {
     margin: 50px auto 30px auto;
     overflow: hidden;
     border: 0.6px solid rgba(70, 76, 86, 1);
-    
 }
 
 .login__title {
@@ -122,6 +121,22 @@ input {
     border: 1px solid #dbdbdb;
     border-radius: 10px ;
     background-color: #0d0e0f;
+    color: #ffffff;
+}
+
+input:focus {
+    outline: none; 
+    border-color: #4a90e2; 
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2); 
+}
+
+/* make sure the input background color is black when autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff;
+    -webkit-box-shadow: 0 0 0px 1000px #0d0e0f inset;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 button {

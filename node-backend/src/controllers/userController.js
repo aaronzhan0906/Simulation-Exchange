@@ -5,20 +5,23 @@ import UserModel from "../models/userModel.js";
 
 class UserController {
     // router.post("/register", userController.register);
-    async register(req, res, next) {
+    async register(req, res) {
         try {
-            const { displayname, email, password } = req.body;
-            await UserModel.createUserWithInitialFunds({ displayname, email, password });
-            
-            res.status(200).json({ "ok": true, message: "User registered successfully"});
+            const { email, password } = req.body;
+            const checkEmailExist = await UserModel.checkEmailExist(email);
+            if (checkEmailExist) {
+                return res.status(400).json({ "error": true, message: "Email already exists" });};
+
+
+            await UserModel.createUserWithInitialFunds({ email, password });
+                return res.status(201).json({ ok: true, message: "User registered successfully" });
         } catch(error) {
-            // 之後補檢查郵件是否重複
-            next(error);
+            console.error(error);
         }
     }
 
     // router.get("/auth", userController.getInfo);
-    async getInfo(req, res, next) {
+    async getInfo(req, res) {
         try {
             // check access token
             const { accessToken } = req.cookies
@@ -49,12 +52,13 @@ class UserController {
                 return res.status(401).json({ error: true, message: "Invalid refresh token" });
             }
         } catch (error) {
-            next(error);
+            console.error(error);
+
         }
     }
 
     // router.put("/auth", userController.login);
-    async login(req, res, next) {
+    async login(req, res) {
         try{
             const { email, password } = req.body;
             const userInfo = await UserModel.getUserByEmail(email);
@@ -82,12 +86,12 @@ class UserController {
 
             res.status(200).json({ "ok": true, message: "User logged in successfully" });
         } catch (error) {
-            next(error);
+            console.error(error);
         }
     }
 
     // router.post("/logout", userController.logout);
-    async logout(req, res, next) {
+    async logout(req, res) {
         try {
             const { accessToken } = req.cookies;
             if ( accessToken ) {
@@ -98,7 +102,7 @@ class UserController {
             res.clearCookie("accessToken");
             res.status(200).json({ "ok": true, message: "Logged out successfully" });
         } catch (error) {
-            next(error);
+            console.error(error);
         }
     }
 }
