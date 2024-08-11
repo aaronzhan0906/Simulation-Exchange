@@ -6,9 +6,11 @@ const router = express.Router();
 
 router.use(authenticateToken)
 
-// order
-router.post("/createOrder", TradeController.createOrder);
+// create order
+router.post("/order", TradeController.createOrder);
 
+// cancel order
+router.patch("/order", TradeController.cancelOrder);
 
 
 

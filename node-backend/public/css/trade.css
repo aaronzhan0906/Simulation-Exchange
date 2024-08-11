@@ -10,7 +10,6 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
     background-color: #0d0e0f;
     color: #ffffff;
 }
@@ -23,7 +22,7 @@ hr {
 
 /* Container */
 .header__container {
-    width: calc(100% - 150px);
+    width: calc(70% + 300px);
     margin: 0 auto;
 }
 
@@ -46,7 +45,6 @@ hr {
     color: rgb(0, 132, 255);
     font-size: 20px;
 }
-
 .header__logo--link {
     text-decoration: none;
 
@@ -82,9 +80,22 @@ hr {
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    background-color: #2a3038;
+    color: #ffffff;
+}
+
+.header__login {
+    font-size: 10px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
     background-color: #4a90e2;
     color: #ffffff;
 }
+
+
+
 
 /* Main and grid configuration*/
 .main {

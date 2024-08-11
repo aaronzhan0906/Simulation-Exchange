@@ -4,8 +4,7 @@ from order_book import OrderBook
 from matching_engine import MatchingEngine
 
 async def handle_new_order(order, matching_engine, kafka_client, order_book):
-    print(f"Received order: userId {order['userId']}")
-    print(order)
+    print("Received new-orders:",order)
     results = matching_engine.process_order(
         order["orderId"], 
         order["userId"], 
@@ -28,9 +27,12 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
     print("========================")
 
 async def handle_cancel_order(cancel_request, matching_engine, kafka_client, order_book):
-    print(f"Received cancellation request: userId {cancel_request['userId']}")
-    print(cancel_request)
-    cancel_result = matching_engine.cancel_order(cancel_request["orderId"], cancel_request["userId"])
+    print(f"Received cancel-orders:", cancel_request)
+    cancel_result = matching_engine.cancel_order(
+        cancel_request["orderId"],
+        cancel_request["userId"],
+        cancel_request["symbol"]
+    )
     await kafka_client.produce_result("cancel_result", cancel_result)
     print("========================")
     print(f"Sent 'cancel_result': {cancel_result}")

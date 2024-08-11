@@ -48,6 +48,12 @@ app.get("/wallet", (req, res) => {
 app.get("/history", (req, res) => {
     res.sendFile(path.join(__dirname,".." ,"public","history.html"))
 })
+app.get("/login", (req, res) => {
+    res.sendFile(path.join(__dirname,".." ,"public","login.html"))
+})
+app.get("/signup", (req, res) => {
+    res.sendFile(path.join(__dirname,".." ,"public","signup.html"))
+})
 
 // route
 import userRoute from "./routes/userRoute.js";

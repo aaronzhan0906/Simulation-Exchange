@@ -70,6 +70,74 @@ class TradeModel {
         }
     }
 
+    // cancel order
+    async cancelOrder(orderId, status, updatedAt) {
+        const updateOrderId = orderId;
+        const updateStatus = status;
+        const updateUpdatedAt = updatedAt;
+        try {
+            const result = await db.query(
+                `UPDATE orders
+                SET status = ?,
+                updated_at = ?
+                WHERE order_id = ?`,
+                [updateStatus, updateUpdatedAt, updateOrderId]
+            );
+            if (result.affectedRows > 0) {
+                return { updateOrderId, updateStatus, updateUpdatedAt };}
+        } catch (error) {
+            console.error("Error in cancelOrder:", error);
+            throw error;
+        }
+    }
+
+    async releaseLockedBalance (cancelResult){
+        const userId = cancelResult.user_id;
+        const updatePrice = new Decimal(cancelResult.price);
+        const updateQuantity = new Decimal(cancelResult.canceled_quantity);
+        const updateAmount = updatePrice.times(updateQuantity);
+        console.log(updateAmount)
+        try {
+            const result = await db.query(
+                `UPDATE accounts
+                SET locked_balance = locked_balance - ?
+                WHERE user_id = ?`,
+                [updateAmount.toString(), userId]
+            );
+        
+
+        if (result.affectedRows > 0) {
+            return true;
+        }
+
+    } catch (error) {
+        console.error("Error in releaseLockedBalance:", error);
+        throw error;
+        }
+    }
+
+    async releaseLockedAsset (cancelResult){
+        const userId = cancelResult.user_id;
+        const updateSymbol = cancelResult.symbol.replace("/USDT","");
+        const updateQuantity = new Decimal(cancelResult.canceled_quantity);
+        try {
+            const result = await db.query(
+                `UPDATE assets
+                SET locked_quantity = locked_quantity - ?
+                WHERE user_id = ? AND symbol = ?`,
+                [updateQuantity.toString(), userId, updateSymbol]
+            );
+            if (result.affectedRows > 0) {
+                return true;
+            }
+        } catch (error) {
+            console.error("Error in releaseLockedAsset:", error);
+            throw error;
+        }
+     }
+
+
+    // trade history
     async createTradeHistory(tradeData) {
         const insertQuery = `
             INSERT INTO trades 
@@ -132,10 +200,6 @@ class TradeModel {
             `,[quantity, userId, updateSymbol]
         )
     }
-
-    // async releaseLockAsset(userId, symbol, quantity){
-    //     console.log("releaseLockAsset")
-    // }
 
 
     // calculate balance and assets
@@ -277,22 +341,6 @@ class TradeModel {
             throw error;
         }
     }
-
-    // async cancelOrder(order_id, status){
-    //     const updateStatus = status;
-    //     const updateOrderId = order_id;
-    //     try {
-    //         await db.query(
-    //             `UPDATE orders
-    //             SET status = ?
-    //             WHERE order_id = ?`,
-    //             [updateStatus, updateOrderId]
-    //         );
-    //     } catch (error) {
-    //         console.error("Error in cancelOrder:", error);
-    //         throw error;
-    //     }
-    // }
 
 }
 

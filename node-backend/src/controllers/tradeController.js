@@ -4,16 +4,16 @@ import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 
 class TradeController {
-    // router.post("/createOrder", AccountController.createOrder);
+    // router.post("/order", TradeController.createOrder);
     async createOrder(req, res){
-        try { 
-            const { symbol, side, type, price, quantity } = req.body;
+        const { symbol, side, type, price, quantity } = req.body;
             const userId = req.user.userId;
 
             if ( !userId || !symbol || !side || !type || !price || !quantity) {
                 return res.status(400).json({ error:true, message:"Missing required fields!" })
             }
 
+        try { 
             if (side === "buy") {
                 await preBuyAuth(userId, price, quantity);
             } else if (side === "sell") {
@@ -114,33 +114,80 @@ class TradeController {
         }
     }
 
+    // router.patch("/order", TradeController.cancelOrder);
+    async cancelOrder(req, res){
+        const { orderId, symbol } = req.body;
+        const userId = req.user.userId;
 
-    // async cancelOrder(req, res){
-    //     const { orderId, side, price, quantity } = req.body;
-    //     const userId = req.user.userId;
+        if ( !userId || !orderId || !symbol) {
+            return res.status(400).json({ error:true, message:"Missing required fields!" })
+        }
 
-    //     if ( !userId || !orderId ) {
-    //         return res.status(400).json({ error:true, message:"Missing required fields!" })
-    //     }
-
-    //     try {
-    //         const resultStatus = await TradeModel.cancelOrder(orderId, userId);
-    //         if (!resultStatus) {
-    //             return res.status(400).json({ error: true, message: "Order not found or update failed" });
-    //         }
+        try {
+            const cancelResultPromise = new Promise((resolve, reject) => {
+                const timeoutId = setTimeout(() => {
+                    if (pendingCancelResults.has(orderId)) {
+                        pendingCancelResults.delete(orderId);
+                        reject(new Error("Cancel request timeout"));
+                    }
+                }, 30000);
     
-    //         if (side === "buy") {
-    //             await TradeModel.unlockBalance(orderId, userId, price, quantity);
-    //         } else {
-    //             await TradeModel.unlockAsset(orderId, userId, quantity);
-    //         }
-    
-    //         return res.status(200).json({ ok: true, message: "Order cancelled successfully and assets unlocked", status: resultStatus });
-    //     } catch(error) {
-    //         console.error("cancelOrder error:", error);
-    //         throw error;
-    //     }
-    // }    
+                pendingCancelResults.set(orderId, { resolve, reject, timeoutId, timestamp: new Date() });
+            });
+            await kafkaProducer.sendMessage("cancel-orders", { orderId, userId, symbol });
+            const cancelResult = await cancelResultPromise;
+
+            const updateOrderId = cancelResult.order_id;
+            const updateStatus = cancelResult.status;
+            const updateUpdateAt = cancelResult.timestamp;
+            const updateResult = await TradeModel.cancelOrder(updateOrderId, updateStatus, updateUpdateAt);
+            
+            if (!updateResult) {
+                return res.status(400).json({
+                    error: true,
+                    message: "Unexpected cancellation result",
+                    status: cancelResult.status
+                });
+            }
+
+            
+
+            if (cancelResult.side === "buy") {
+                await TradeModel.releaseLockedBalance(cancelResult);
+            } else {
+                await TradeModel.releaseLockedAsset(cancelResult);
+            }
+
+            if (cancelResult.status === "CANCELED" || cancelResult.status === "PARTIALLY_FILLED_CANCELED") {
+                return res.status(200).json({
+                    ok: true,
+                    message: "Order cancelled successfully",
+                    orderId: updateResult.updateOrderId,
+                    status: updateResult.updateStatus,
+                    updatedAt: updateResult.updateUpdatedAt
+                });
+            } 
+           
+        } catch(error) {
+            console.error("cancelOrder error:", error);
+            pendingCancelResults.delete(orderId); 
+            if (error.message === "Cancel order request timeout") {
+                return res.status(408).json({ error:true, message:"Cancel order request timeout" });
+            }
+        }
+    }    
+
+    async processCancelResult(data) {
+        console.log("Processing cancel result:", data);
+        
+        try {
+            await TradeModel.cancelOrder(data.orderId, data.status);
+            
+            console.log(`Cancel result processed successfully for order: ${data.order_id}`);
+        } catch (error) {
+            console.error(`Error processing cancel result for order ${data.orderId}:`, error);
+        }
+    }
 
 
     // consumer trade result from kafka
@@ -189,7 +236,8 @@ class TradeController {
 
 export default new TradeController();
 
-
+// pending cancel orders
+export const pendingCancelResults = new Map()
 
 async function preBuyAuth(userId, price, quantity) {
     const dPrice = new Decimal(price)

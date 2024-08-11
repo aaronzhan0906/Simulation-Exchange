@@ -74,7 +74,7 @@ class MatchingEngine:
             yield input_order_result
             yield matched_order_result
 
-    def cancel_order(self, order_id, user_id):
+    def cancel_order(self, order_id, user_id, symbol):
         canceled_order = self.order_book.cancel_order(order_id)
 
         if canceled_order is None:
@@ -105,6 +105,7 @@ class MatchingEngine:
             "order_id": order_id,
             "user_id": user_id,
             "side": side,
+            "symbol": symbol,
             "price": str(price),
             "original_quantity": str(original_quantity),
             "executed_quantity": str(executed_quantity),
