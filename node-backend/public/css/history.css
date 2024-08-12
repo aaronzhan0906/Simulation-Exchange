@@ -5,7 +5,7 @@
     font-family: "Roboto", sans-serif;
     font-optical-sizing: auto;
     box-sizing: border-box;
-    letter-spacing: 1px;
+    letter-spacing: 1.1px;
 
 }
 
@@ -110,6 +110,21 @@ hr {
     box-shadow: 0 2px 4px rgba(74, 144, 226, 0.1);
 }
 
+.header__logout {
+    margin-left: 5px;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #222931;
+    color: #ffffff;
+}
+
+.header__logout:hover {
+    background: linear-gradient(135deg, #485058, #3b424a);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
 /* Main */
 .main {
     background-color: #0d0e0f;

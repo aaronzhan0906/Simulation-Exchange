@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import UserModel from "../models/userModel.js";
 
 class UserController {
-    // router.post("/register", userController.register);
+    // router.post("/signup", userController.register);
     async register(req, res) {
         try {
             const { email, password } = req.body;
@@ -71,7 +71,7 @@ class UserController {
             const isPasswordValid = await bcrypt.compare(password, userInfo[0].password);
             if (!isPasswordValid)
                 return res.status(401).json({ "error": true, message: "Invalid credentials" });
-
+            
             const accessToken = UserModel.generateAccessToken(user);
             const refreshToken = UserModel.generateRefreshToken(user);
 
@@ -84,7 +84,11 @@ class UserController {
 
             await UserModel.saveRefreshToken(user.user_id, refreshToken);
 
-            res.status(200).json({ "ok": true, message: "User logged in successfully" });
+            const loginProof = {
+                isLogin: true
+            }
+
+            res.status(200).json({ "ok": true, message: "User logged in successfully", loginProof: loginProof });
         } catch (error) {
             console.error(error);
         }

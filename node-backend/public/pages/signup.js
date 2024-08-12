@@ -36,12 +36,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    const signupLink = document.querySelector(".login__link");
-    signupLink.addEventListener("click", () => {
-        window.location.href = "/signup";
+    const logInLink = document.getElementById("login__link");
+    logInLink.addEventListener("click", () => {
+        window.location.href = "/login";
     });
 
-    const logoLink = document.querySelector(".header__logo--link");
+    const logoLink = document.getElementById("header__logo--link");
     logoLink.addEventListener("click", (event) => {
         event.preventDefault();
         window.location.href = "/";

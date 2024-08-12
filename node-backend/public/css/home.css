@@ -5,7 +5,7 @@
     font-family: "Roboto", sans-serif;
     font-optical-sizing: auto;
     box-sizing: border-box;
-    letter-spacing: 1px;
+    letter-spacing: 1.1px;
 
 }
 
@@ -74,11 +74,13 @@ hr {
 /* Buttons */
 .header__actions {
     margin-left: auto; 
+    display: flex;
+    align-items: center;
 }
 
 
 .header__login {
-    margin-left: 5px;
+    margin-left: 20px;
     font-size: 10px;
     padding: 7px 14px;
     border: none;
@@ -88,8 +90,13 @@ hr {
     color: #ffffff;
 }
 
+.header__login:hover {
+    background: linear-gradient(135deg, #485058, #3b424a);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .header__signup {
-    margin-left: 5px;
+    margin-left: 10px;
     font-size: 10px;
     padding: 7px 14px;
     border: none;
@@ -99,14 +106,25 @@ hr {
     color: #ffffff;
 }
 
-.header__login:hover {
-    background: linear-gradient(135deg, #485058, #3b424a);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
 .header__signup:hover {
     background: linear-gradient(135deg, #5a9ee8, #4a90e2);
     box-shadow: 0 2px 4px rgba(74, 144, 226, 0.1);
+}
+
+.header__logout {
+    margin-left: 5px;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #222931;
+    color: #ffffff;
+}
+
+.header__logout:hover {
+    background: linear-gradient(135deg, #485058, #3b424a);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 
@@ -126,6 +144,8 @@ hr {
     padding: 50px 0 0 0 ;
     font-size: 40px;
     font-weight: 600;
+    letter-spacing: 1.5px;
+
 }
 
 .hero__text{

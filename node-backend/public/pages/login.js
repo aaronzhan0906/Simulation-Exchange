@@ -21,11 +21,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ email, password }),
+                credentials: "include"
             });
 
             const data = await response.json();
 
             if (response.ok) {
+                localStorage.setItem("isLogin", data.loginProof );
                 window.location.href = "/";
             } else {
                 alert(data.message || "Login failed. Please try again.");
@@ -36,12 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    const signupLink = document.querySelector(".signup__link");
+    const signupLink = document.getElementById("signup__link");
     signupLink.addEventListener("click", () => {
         window.location.href = "/signup";
     });
 
-    const logoLink = document.querySelector(".header__logo--link");
+    const logoLink = document.getElementById("header__logo--link");
     logoLink.addEventListener("click", (event) => {
         event.preventDefault();
         window.location.href = "/";

@@ -1,5 +1,5 @@
-import { headerEventListeners } from "../utils/header.js";
+import { initializeHeader } from "../components/header.js";
 
 document.addEventListener("DOMContentLoaded", (event) => {
-    headerEventListeners();
+    initializeHeader();
 });
