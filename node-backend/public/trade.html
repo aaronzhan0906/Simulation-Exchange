@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js" integrity="sha512-WWzCZDQZ23GuPVKPowBGCF6MhoA1az8iJk/Gjh2a5S3jeeNEvKJHgGPMyDofeUtcOeHeI3AbsPFUILWHfoRP8w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+TC:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
@@ -50,8 +51,8 @@
                 <div>69,594.56</div><div>0.166149</div>
             </div>
             <div class="order-book__spread">
-                <span class="order-book__price negative"></span>
-                <div class="order-book__price--usd"></div>
+                <span class="order-book__price negative" id="order-book__price"></span>
+                <div class="order-book__price--usd" id="order-book__price--usd"></div>
             </div>
             <div class="order-book__bids">
                 <div>69,594.55</div><div>1.869540</div>
@@ -69,37 +70,37 @@
         <!-- trade-panel -->
         <div class="trade-panel">
             <div class="trade-panel__tab">
-                <button class="trade-panel__tab--buy">Buy</button>
-                <button class="trade-panel__tab--sell">Sell</button>
+                <button class="trade-panel__tab--buy" id="trade-panel__tab--buy">Buy</button>
+                <button class="trade-panel__tab--sell" id="trade-panel__tab--sell">Sell</button>
             </div>
             <div class="trade-panel__order-type">
                 <select>
                     <option>Limit</option>
-                    <option>Market</option>
                 </select>
             </div>
             <div class="trade-panel__input-group">
-                <input type="text" placeholder="Price" class="trade-panel__input">
+                <input type="text" placeholder="Price" class="trade-panel__input" id="trade-panel__input--price">
                 <span class="trade-panel__currency">USDT</span>
             </div>
             <div class="trade-panel__input-group">
-                <input type="text" placeholder="Amount" class="trade-panel__input">
+                <input type="text" placeholder="Quantity" class="trade-panel__input" id="trade-panel__input--quantity">
                 <span class="trade-panel__currency">BTC</span>
             </div>
             <div class="trade-panel__quick-select">
-                <button>25%</button>
-                <button>50%</button>
-                <button>75%</button>
-                <button>100%</button>
+                <button data-value="0.25">25%</button>
+                <button data-value="0.5">50%</button>
+                <button data-value="0.75">75%</button>
+                <button data-value="1">100%</button>
             </div>
             <div class="trade-panel__input-group">
-                <input type="text" placeholder="Total" class="trade-panel__input" readonly>
+                <input type="text" placeholder="Total" class="trade-panel__input" id="trade-panel__input--total">
                 <span class="trade-panel__currency">USDT</span>
             </div>
             <div class="trade-panel__available">
-                Available: -- USDT
+                <div>Available</div> 
+                <div class="trade-panel__available-price" id="trade-panel__available-price"></div>
             </div>
-            <button class="trade-panel__submit">Buy BTC</button>
+            <button class="trade-panel__submit" id="trade-panel__submit">Buy BTC</button>
         </div>
         <!-- open-orders -->
         <div class="open-orders">
@@ -122,7 +123,7 @@
                 <span>Time</span>
             </div>
             <div class="recent-trades__list">
-                <!-- 交易記錄會在這裡動態添加 -->
+                <!-- order list -->
             </div>
         </div>
         <div class="my-trades">

@@ -8,7 +8,17 @@ class WalletController {
             const balance = await WalletModel.getBalanceById(req.user.userId);
             res.status(200).json({ "ok": true, "balance": balance });
         } catch(error) {
-            next(error);
+            console.error("Failed to get balance:", error);
+        }
+    }
+
+    // router.get("/available", AccountController.getAvailable)
+    async getAvailable (req, res){
+        try {
+            const result = await WalletModel.getAvailableById(req.user.userId);
+            res.status(200).json({ "ok": true, "available": result["available_balance"] });
+        } catch(error) {
+            console.error("Failed to get available:", error);
         }
     }
 
@@ -25,7 +35,7 @@ class WalletController {
                 }))
             });
         } catch(error) {
-            next(error);
+            console.error("Failed to get assets:", error);
         }
     }
 }

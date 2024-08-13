@@ -133,11 +133,10 @@ hr {
 .main {
     display: grid;
     grid-template-columns: 3.65fr 0.85fr 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto minmax(300px, 1fr);
     gap: 10px;
     padding: 10px 15px 15px 15px;
-    height: calc(100vh - 50px);
-    max-height: calc(100vh - 50px);
+    min-height: calc(100vh - 50px);
     overflow: hidden; 
 }
 
@@ -274,36 +273,69 @@ hr {
     color: #259a32; 
 }
 
+
 /* trade-panel */
 .trade-panel {
     background-color: #1a1a1a;
     color: #ffffff;
-    padding: 20px;
+    padding: 10px;
 }
 
 .trade-panel__tab {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
-}
-
-.trade-panel__tab--buy, .trade-panel__tab--sell {
-    flex: 1;
-    padding: 10px;
-    border-radius: 30px;
-    border: none;
+    position: relative;
     background-color: #333;
-    color: #fff;
+    border-radius: 30px;
     cursor: pointer;
 }
 
-.trade-panel__tab--buy {
-    background-color: #56c488;
+
+.trade-panel__tab--buy, .trade-panel__tab--sell {
+    padding: 10px;
+    border-radius: 30px;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.trade-panel__tab--buy{
+    width: 40%;
+    background-color: #333;
+    z-index: 2;
+    text-indent: 15px;
 }
 
 .trade-panel__tab--sell {
-    background-color: #c45656;
+    background-color: #333;
+    width: 40%;
+    z-index: 1;
+    text-indent: -15px;
+
 }
+
+.trade-panel__tab--buy.active {
+    background-color: #56c488;
+    z-index: 2;
+    width: 60%;
+    text-indent: 0;
+}
+
+.trade-panel__tab--sell.active {
+    background-color: #c45656;
+    z-index: 2;
+    width: 60%;
+    text-indent: 0;
+
+}
+
+
+
+
+
+
 
 .trade-panel__order-type select {
     width: 100%;
@@ -325,9 +357,23 @@ hr {
     padding: 10px;
     background-color: #333;
     color: #fff;
-    border: none;
+    border: 1px solid #333;
     border-radius: 3px;
 }
+
+.trade-panel__input:focus {
+    outline: none; 
+    border: 1px solid #4a90e2;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff;
+    -webkit-box-shadow: 0 0 0px 1000px #333 inset;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 
 .trade-panel__currency {
     position: absolute;
@@ -347,36 +393,65 @@ hr {
 
 .trade-panel__quick-select {
     display: flex;
-    justify-content: space-between;
+    background-color: #2c2c2e;
+    border-radius: 15px;
+    padding: 2px;
     margin-bottom: 15px;
 }
 
 .trade-panel__quick-select button {
+    font-size: 9px;
     flex: 1;
-    margin: 0 5px;
-    padding: 5px;
-    background-color: #333;
-    color: #fff;
+    padding: 5px 10px;
+    border-radius: 15px;
     border: none;
-    border-radius: 10px;
+    background: none;
+    color: #c8c8c8;
     cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: color 0.3s ease;
 }
 
+.trade-panel__quick-select button.active {
+    color: #000;
+    background-color: #fff;
+}
+
+
 .trade-panel__available {
+    display: flex;
     margin-bottom: 15px;
-    font-size: 14px;
+    font-size: 11px;
     color: #999;
 }
+
+.trade-panel__available-price {
+    margin-left: auto;
+    font-size: 11px;
+    color: #e7e7e7;
+}
+
 
 .trade-panel__submit {
     width: 100%;
     padding: 10px;
-    background-color: #56c488;
     color: #fff;
     border: none;
     border-radius: 15px;
     cursor: pointer;
+    transition: all 0.3s ease;
 }
+
+.trade-panel__submit.buy {
+    background-color: #56c488;
+}
+
+.trade-panel__submit.sell {
+    background-color: #c45656;
+}
+
+
 
 
 /* open-order */

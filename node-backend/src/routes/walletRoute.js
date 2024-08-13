@@ -8,6 +8,7 @@ router.use(authenticateToken)
 
 
 router.get("/balance", WalletController.getBalance)
+router.get("/available", WalletController.getAvailable)
 router.get("/assets", WalletController.getAssets)
 
 
