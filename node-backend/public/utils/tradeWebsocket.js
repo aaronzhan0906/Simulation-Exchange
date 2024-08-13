@@ -1,4 +1,4 @@
-const tradeWebSocket = {
+const tradeWebsocket = {
     ws: null,
 
     init() {
@@ -22,7 +22,7 @@ const tradeWebSocket = {
         if (message.type === "ticker") {
             this.emitRecentPrice(message.data.price);
         } else if (message.type === "orderbook") {
-            this.updateOrderBookUI(message.data);
+            this.emitOrderBook(message.data);
         }
     },
 
@@ -31,6 +31,11 @@ const tradeWebSocket = {
         document.dispatchEvent(event);
     },
 
+    emitOrderBook(orderBookData){
+        const event = new CustomEvent("orderBook", { detail: orderBookData });
+        document.dispatchEvent(event)
+    },
+    
     onError(error) {
         console.log("WebSocket error:", error);
     },
@@ -38,13 +43,6 @@ const tradeWebSocket = {
     onClose() {
         console.log("WebSocket connection closed");
     },
-
-   
-
-    updateOrderBookUI(orderBookData) {
-        // console.log("Order book:", orderBookData);
-        // 實現訂單簿更新邏輯
-    }
 };
 
-export default tradeWebSocket;
+export default tradeWebsocket;

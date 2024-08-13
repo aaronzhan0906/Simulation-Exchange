@@ -38,33 +38,15 @@
                 <span>Price(USDT)</span>
                 <span>Total(BTC)</span>
             </div>
-            <div class="order-book__asks">
-                <div>69,596.64</div><div>0.265113</div>
-                <div>69,596.64</div><div>0.265113</div>
-                <div>69,596.64</div><div>0.265113</div>
-                <div>69,596.39</div><div>0.264537</div>
-                <div>69,596.24</div><div>0.195521</div>
-                <div>69,596.09</div><div>0.195091</div>
-                <div>69,595.54</div><div>0.187955</div>
-                <div>69,595.25</div><div>0.167155</div>
-                <div>69,594.84</div><div>0.166579</div>
-                <div>69,594.56</div><div>0.166149</div>
+            <div class="order-book__asks" id="order-book__asks">
+                
             </div>
             <div class="order-book__spread">
-                <span class="order-book__price negative" id="order-book__price"></span>
+                <span class="order-book__price" id="order-book__price"></span>
                 <div class="order-book__price--usd" id="order-book__price--usd"></div>
             </div>
-            <div class="order-book__bids">
-                <div>69,594.55</div><div>1.869540</div>
-                <div>69,594.52</div><div>2.019540</div>
-                <div>69,594.13</div><div>2.159540</div>
-                <div>69,594.12</div><div>2.299540</div>
-                <div>69,593.44</div><div>2.299970</div>
-                <div>69,593.33</div><div>2.307106</div>
-                <div>69,593.30</div><div>2.327043</div>
-                <div>69,592.74</div><div>2.327473</div>
-                <div>69,592.74</div><div>2.327473</div>
-                <div>69,592.74</div><div>2.327473</div>
+            <div class="order-book__bids" id="order-book__bids">
+            
             </div>
         </div>
         <!-- trade-panel -->
@@ -79,11 +61,11 @@
                 </select>
             </div>
             <div class="trade-panel__input-group">
-                <input type="text" placeholder="Price" class="trade-panel__input" id="trade-panel__input--price">
+                <input type="number" placeholder="Price" class="trade-panel__input" id="trade-panel__input--price" pattern="^\d*\.?\d*$" inputmode="decimal">
                 <span class="trade-panel__currency">USDT</span>
             </div>
             <div class="trade-panel__input-group">
-                <input type="text" placeholder="Quantity" class="trade-panel__input" id="trade-panel__input--quantity">
+                <input type="number" placeholder="Quantity" class="trade-panel__input" id="trade-panel__input--quantity" pattern="^\d*\.?\d*$" inputmode="decimal">
                 <span class="trade-panel__currency">BTC</span>
             </div>
             <div class="trade-panel__quick-select">
@@ -93,7 +75,7 @@
                 <button data-value="1">100%</button>
             </div>
             <div class="trade-panel__input-group">
-                <input type="text" placeholder="Total" class="trade-panel__input" id="trade-panel__input--total">
+                <input type="number" placeholder="Total" class="trade-panel__input" id="trade-panel__input--total" pattern="^\d*\.?\d*$" inputmode="decimal">
                 <span class="trade-panel__currency">USDT</span>
             </div>
             <div class="trade-panel__available">
@@ -105,15 +87,35 @@
         <!-- open-orders -->
         <div class="open-orders">
             <div class="open-orders__header">
-                <div>Open orders(0)</div>
+                <div>Open orders(1)</div>
                 <button class="open-orders__history-btn">History</button>
             </div>
-            <hr>
-            <div class="open-orders__content">
-                <div class="open-orders__empty-state">
-                    <p>You have no trades</p>
-                </div>
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Pair</th>
+                        <th>Type</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Filled</th>
+                        <th>Unfilled</th>
+                        <th>Cancel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>08/13/2024 15:50:51</td>
+                        <td>ETH/USDT</td>
+                        <td>Limit</td>
+                        <td>3,000 USDT</td>
+                        <td>0.009679 ETH</td>
+                        <td>- ETH</td>
+                        <td>0.009679 ETH</td>
+                        <td><button class="cancel-btn">Cancel</button></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
         <!-- recent-trades -->
         <div class="recent-trades">

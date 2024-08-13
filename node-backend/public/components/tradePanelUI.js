@@ -4,6 +4,7 @@ let isPriceSet = false;
 // get websocket recent price
 function initTradePanelWebSocket(){
     document.addEventListener("recentPrice", handlePriceUpdate);
+    document.addEventListener("orderBook", handleOrderBookUpdate);
 }
 
 // get available balance
@@ -23,6 +24,34 @@ async function initAvailableBalance () {
         const globalAvailablePrice = new Decimal(data.available);
         availablePrice.textContent = `${globalAvailablePrice.toFixed(2)} USDT`;
     }
+}
+
+function handleOrderBookUpdate(event){
+    const orderBook = event.detail;
+    const asksSide = document.getElementById("order-book__asks");
+    updateOrderBookContent(asksSide, orderBook.asks);
+
+    const bidsSide = document.getElementById("order-book__bids");
+    updateOrderBookContent(bidsSide, orderBook.bids);
+}
+
+function updateOrderBookContent(element, orders) {
+    // clear all child nodes
+    while(element.firstChild){
+        element.removeChild(element.firstChild);
+    }
+
+    orders.forEach(order => {
+        const [price, total] = order;
+        const priceDiv = document.createElement("div");
+        const totalDiv = document.createElement("div");
+
+        priceDiv.textContent = price;
+        totalDiv.textContent = total;
+
+        element.appendChild(priceDiv);
+        element.appendChild(totalDiv);
+    })
 }
 
 // update price
@@ -54,7 +83,7 @@ function handlePriceUpdate(event) {
         priceUsdElement.textContent = `≈${currentPrice.toFixed(2)} USD`;
     }
 
-    // ser price only once
+    // set price only once
     if (!isPriceSet){
         const inputPrice = document.getElementById("trade-panel__input--price");
         if (inputPrice) {
@@ -169,8 +198,17 @@ function quickSelectButtonAndInputHandler(){
             clearActiveButtons();
         });
 
-        input.addEventListener("input", () => {
-            calculateAndUpdate(this.id.split("--")[1]); // price , quantity , total
+        // prevent arrow key from changing input value
+        input.addEventListener("keydown", function(event) {
+            if (event.key === "ArrowUp" || e.key === "ArrowDown") {
+                event.preventDefault();
+            }
+        });
+
+        input.addEventListener("input", (event) => {
+            const inputId = event.target.id;
+            const inputType = inputId.split("--")[1]; // price, quantity, or total
+            calculateAndUpdate(inputType);
         });
 
         input.addEventListener("keydown", validateNumberInput);
@@ -185,42 +223,3 @@ export async function initTradePanel() {
     await initAvailableBalance();
     quickSelectButtonAndInputHandler();
 }
-
-
-
-// function quickSelectButtonHandler(globalAvailablePrice, currentPrice) {
-//     console.log(globalAvailablePrice, currentPrice);
-//     const buttons = document.querySelectorAll(".trade-panel__quick-select button");
-//     const inputTotal = document.getElementById("trade-panel__input--total");
-//     const inputQuantity = document.getElementById("trade-panel__input--quantity");
-
-//     function updateCalculations(percentage) {
-//         const availableAmount = globalAvailablePrice.times(percentage);
-//         inputTotal.value = availableAmount.toFixed(2);
-//         const quantity = availableAmount.dividedBy(currentPrice);
-//         inputQuantity.value = quantity.toFixed(8);
-//     }
-    
-//     function deactivateAllButtons(){
-//         buttons.forEach(button => {
-//             button.classList.remove("active");
-//         })
-//     }
-
-//     buttons.forEach(button => {
-//         button.addEventListener("click", () => {
-//             deactivateAllButtons();
-//             button.classList.add("active");
-//             const percentage = new Decimal(button.textContent.replace("%", "")).dividedBy(100);
-//             updateCalculations(percentage);
-//             inputTotal.focus();
-//         })
-//     })
-
-//     // [inputTotal, inputPrice, inputQuantity].forEach(input => {
-//     //     input.addEventListener("input", () =>{
-//     //         deactivateAllButtons();
-//     //     })
-//     // })
-//     }
-// }
