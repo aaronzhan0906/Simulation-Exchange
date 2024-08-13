@@ -72,7 +72,7 @@ function processOrderBookData(){
     const combineBids = { ... latestDepthData.bids, ... myExchangeData.bids };
     const processedData = {
         asks: Object.entries(combineAsks)
-        .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity]),
+        .sort((a, b) => parseFloat(a[0] - parseFloat(b[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity]),
         bids: Object.entries(combineBids)
         .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity])
     }

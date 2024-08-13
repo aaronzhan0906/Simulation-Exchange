@@ -55,9 +55,9 @@
                 <button class="trade-panel__tab--buy" id="trade-panel__tab--buy">Buy</button>
                 <button class="trade-panel__tab--sell" id="trade-panel__tab--sell">Sell</button>
             </div>
-            <div class="trade-panel__order-type">
-                <select>
-                    <option>Limit</option>
+            <div class="trade-panel__order-type" id="trade-panel__order-type">
+                <select id="orderTypeSelect">
+                    <option value="limit">Limit</option>
                 </select>
             </div>
             <div class="trade-panel__input-group">
@@ -87,7 +87,7 @@
         <!-- open-orders -->
         <div class="open-orders">
             <div class="open-orders__header">
-                <div>Open orders(1)</div>
+                <div id="open-orders-count">Open orders(0)</div>
                 <button class="open-orders__history-btn">History</button>
             </div>
             <table>
@@ -96,24 +96,16 @@
                         <th>Time</th>
                         <th>Pair</th>
                         <th>Type</th>
+                        <th>Side</th>
                         <th>Price</th>
                         <th>Quantity</th>
                         <th>Filled</th>
-                        <th>Unfilled</th>
+                        <th>Status</th>
                         <th>Cancel</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>08/13/2024 15:50:51</td>
-                        <td>ETH/USDT</td>
-                        <td>Limit</td>
-                        <td>3,000 USDT</td>
-                        <td>0.009679 ETH</td>
-                        <td>- ETH</td>
-                        <td>0.009679 ETH</td>
-                        <td><button class="cancel-btn">Cancel</button></td>
-                    </tr>
+                <tbody id="open-orders__tbody">
+
                 </tbody>
             </table>
         </div>

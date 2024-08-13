@@ -8,7 +8,7 @@ router.use(authenticateToken)
 
 
 
-// router.get("/orders", HistoryController.getOrderHistory);
+// router.get("/transactions", HistoryController.getOrderHistory);
 router.get("/transactions", HistoryController.getTransactionHistory );
 
 

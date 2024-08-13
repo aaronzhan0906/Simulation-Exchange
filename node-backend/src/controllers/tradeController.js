@@ -4,6 +4,36 @@ import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 
 class TradeController {
+    // router.get("/order", TradeController.getOrders);
+    async getOrders(req, res){
+        const userId = req.user.userId;
+
+        try {
+            const result = await TradeModel.getOrders(userId)
+            const formattedOrders = result.map(order => ({
+                orderId: order.order_id,
+                userId: order.user_id,
+                symbol: order.symbol,
+                side: order.side,
+                type: order.type,
+                price: order.price,
+                quantity: order.quantity,
+                status: order.status,
+                createdAt: order.created_at
+            }));
+
+
+
+            return res.status(200).json({
+                ok: true,
+                message: "Orders retrieved successfully",
+                orders: formattedOrders});
+        } catch(error) {
+            console.error("getOrders error:", error);
+            throw error;
+        }
+    }
+        
     // router.post("/order", TradeController.createOrder);
     async createOrder(req, res){
         const { symbol, side, type, price, quantity } = req.body;
@@ -62,8 +92,7 @@ class TradeController {
                     side: order.side,
                     type: order.type,
                     price: order.price,
-                    quantity: order.price,
-                    amount: order.amount,
+                    quantity: order.quantity,
                     status: order.status,
                     createdAt: order.created_at
                 }

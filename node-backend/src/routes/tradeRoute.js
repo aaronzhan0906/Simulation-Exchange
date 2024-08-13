@@ -6,6 +6,9 @@ const router = express.Router();
 
 router.use(authenticateToken)
 
+// get orders
+router.get("/order", TradeController.getOrders);
+
 // create order
 router.post("/order", TradeController.createOrder);
 

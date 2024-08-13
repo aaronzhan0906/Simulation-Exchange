@@ -2,6 +2,29 @@ import db from "../config/database.js";
 import Decimal from 'decimal.js';
 
 class TradeModel {
+    // get orders
+    async getOrders(userId) {
+        const connection = await db.getConnection();
+
+        try {
+            const [result] = await connection.query(
+                `SELECT * FROM orders 
+                WHERE user_id = ?
+                AND status IN ("open", "partially_filled")
+                ORDER BY created_at DESC`,
+                userId
+            );
+            
+            return result;
+        } catch(error) {
+            console.error("Error in getOrders:", error);
+            throw error
+        } finally {
+            connection.release();
+        }
+    }
+    
+
     // order feature
     async createOrder(order_id, user_id, symbol, side, type, price, quantity, status) {
         const insertQuery = `
@@ -118,7 +141,7 @@ class TradeModel {
 
     async releaseLockedAsset (cancelResult){
         const userId = cancelResult.user_id;
-        const updateSymbol = cancelResult.symbol.replace("/USDT","");
+        const updateSymbol = cancelResult.symbol.replace("_USDT","");
         const updateQuantity = new Decimal(cancelResult.canceled_quantity);
         try {
             const result = await db.query(
@@ -181,7 +204,7 @@ class TradeModel {
     }
 
     async getQuantityBySymbolAndUserId(userId, symbol,){
-        const updateSymbol = symbol.replace("/USDT","");
+        const updateSymbol = symbol.replace("_usdt","");
         const result = await db.query(
             `SELECT available_quantity 
             FROM assets 
@@ -191,7 +214,7 @@ class TradeModel {
     }
 
     async lockAsset(userId, symbol, quantity){
-        const updateSymbol = symbol.replace("/USDT","");
+        const updateSymbol = symbol.replace("_usdt","");
         console.log(updateSymbol)
         await db.query(
             `UPDATE assets
@@ -258,7 +281,7 @@ class TradeModel {
 
     async increaseAsset(updateAssetData) {
         const updateUserId = updateAssetData.user_id;
-        const updateSymbol = updateAssetData.symbol.replace("/USDT","");
+        const updateSymbol = updateAssetData.symbol.replace("_usdt","");
         try {
             const existingAsset = await db.query(
                 `SELECT quantity, average_price
@@ -300,7 +323,7 @@ class TradeModel {
     
     async decreaseAsset(updateAssetData) {
         const updateUserId = updateAssetData.user_id;
-        const updateSymbol = updateAssetData.symbol.replace("/USDT","");
+        const updateSymbol = updateAssetData.symbol.replace("_usdt","");
         let newQuantity;
 
         try {
@@ -328,7 +351,7 @@ class TradeModel {
 
     async unlockAsset(updateAssetData) {
         const updateUserId = updateAssetData.user_id;
-        const updateSymbol = updateAssetData.symbol.replace("/USDT","");
+        const updateSymbol = updateAssetData.symbol.replace("_usdt","");
         try {
             await db.query(
                 `UPDATE assets
