@@ -18,7 +18,7 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
     for trade_result in results:
         await kafka_client.produce_result("trade_result", trade_result)
         print("========================")
-        print(f"Sent 'matched_orders': {trade_result}")
+        print(f"Sent 'trade_result': {trade_result}")
 
     order_book_snapshot = order_book.get_order_book()
     await kafka_client.produce_result("order_book_snapshot", order_book_snapshot)

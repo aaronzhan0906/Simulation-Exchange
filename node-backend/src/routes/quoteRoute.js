@@ -79,6 +79,9 @@ function processOrderBookData(){
     return processedData;
 }
 
+
+
+
 // GET latest-ticker //
 router.get("/latest-ticker",(req, res)=> {
     if (latestTickerData) {

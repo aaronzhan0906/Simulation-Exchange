@@ -59,7 +59,7 @@ class MatchingEngine:
                 "executed_quantity": str(match["trade_quantity"]),
                 "executed_price": str(match["executed_price"]),
                 "remaining_quantity": str(match["matched_remaining_quantity"]),
-                "status": "filled" if Decimal(match["input_remaining_quantity"]) == 0 else "partially_filled",
+                "status": "filled" if Decimal(match["matched_remaining_quantity"]) == 0 else "partially_filled",
                 "buyer": {
                     "user_id": user_id if side == "buy" else match["matched_user_id"],
                     "order_id": order_id if side == "buy" else match["matched_order_id"]

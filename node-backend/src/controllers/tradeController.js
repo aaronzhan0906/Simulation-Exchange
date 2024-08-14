@@ -1,7 +1,9 @@
-import Decimal from 'decimal.js';
+import Decimal from "decimal.js";
 import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
+import WebSocket from "ws";
+import { wss } from "../app.js";
 
 class TradeController {
     // router.get("/order", TradeController.getOrders);
@@ -136,6 +138,11 @@ class TradeController {
                 await TradeModel.increaseBalance(resultOrderData)
                 await TradeModel.unlockAsset(resultOrderData)
             }
+            // websocket broadcast
+            const quantity = new Decimal(resultOrderData.quantity)
+            const remainingQuantity = new Decimal(resultOrderData.remaining_quantity)
+            const filledQuantity = quantity.minus(remainingQuantity).toString()
+            broadcastOrderUpdate(resultOrderData, filledQuantity);
             
         } catch (error) {
             console.error("updateOrderData error:", error);
@@ -165,6 +172,10 @@ class TradeController {
             });
             await kafkaProducer.sendMessage("cancel-orders", { orderId, userId, symbol });
             const cancelResult = await cancelResultPromise;
+            
+            if (cancelResult.status === "filled") {
+                return res.status(401).json({ error:true, message:"Order not found or already fully executed" });
+            } 
 
             const updateOrderId = cancelResult.order_id;
             const updateStatus = cancelResult.status;
@@ -299,4 +310,23 @@ async function preSellAuth(userId, symbol, quantity) {
         console.error("preSellAuth error:", error);
         throw error;
     }
+}
+
+async function broadcastOrderUpdate(resultOrderData, filledQuantity) {
+    const message = JSON.stringify({
+        type: "order-update",
+        data: {
+            orderId: resultOrderData.order_id,
+            filledQuantity: filledQuantity,
+            averagePrice: resultOrderData.average_price,
+            status: resultOrderData.status,
+        }
+    })
+
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN){
+            client.send(message)
+        }
+    })
+
 }

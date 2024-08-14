@@ -48,21 +48,21 @@ class TradeModel {
         const newData = updateOrderData
 
         try {
-            const oldData = await db.query(
+            const [oldData] = await db.query(
                 `SELECT quantity, executed_quantity, remaining_quantity, average_price
                 FROM orders
                 WHERE order_id = ?`,
                 [newData.order_id]
             )
-
            
             // calculate logic
             const old = {
-                quantity: new Decimal(oldData.quantity || 0),
-                executed_quantity: new Decimal(oldData.executed_quantity || 0),
-                remaining_quantity: new Decimal(oldData.remaining_quantity || 0),
-                average_price: new Decimal(oldData.average_price || 0)
+                quantity: new Decimal(oldData.quantity),
+                executed_quantity: new Decimal(oldData.executed_quantity),
+                remaining_quantity: new Decimal(oldData.remaining_quantity),
+                average_price: new Decimal(oldData.average_price)
             };
+            
             
             const newExecutedQuantity = new Decimal(old.executed_quantity).plus(newData.executed_quantity);
             const newRemainingQuantity = new Decimal(old.quantity).minus(newData.executed_quantity);
@@ -70,6 +70,7 @@ class TradeModel {
             const newValue = new Decimal(newData.executed_price).times(newData.executed_quantity);
             const totalQuantity = new Decimal(old.quantity).minus(newRemainingQuantity);
             const newAveragePrice = oldValue.plus(newValue).dividedBy(totalQuantity);
+            
             await db.query(
                 `UPDATE orders
                 SET executed_quantity = ?,
@@ -203,19 +204,18 @@ class TradeModel {
         )
     }
 
-    async getQuantityBySymbolAndUserId(userId, symbol,){
+    async getQuantityBySymbolAndUserId(userId, symbol){
         const updateSymbol = symbol.replace("_usdt","");
-        const result = await db.query(
+        const [result] = await db.query(
             `SELECT available_quantity 
             FROM assets 
             WHERE user_id = ? AND symbol = ?
             `,[userId, updateSymbol]);
-        return result[0].available_quantity;
+        return result.available_quantity;
     }
 
     async lockAsset(userId, symbol, quantity){
         const updateSymbol = symbol.replace("_usdt","");
-        console.log(updateSymbol)
         await db.query(
             `UPDATE assets
             SET locked_quantity = locked_quantity + ?

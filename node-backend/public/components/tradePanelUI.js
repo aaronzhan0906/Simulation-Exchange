@@ -2,11 +2,19 @@ import { formatLocalTime } from "../utils/timeUtil.js";
 
 let lastPrice = null;
 let isPriceSet = false;
+let isOrderUpdateListening = false;
 
-// get websocket recent price
+// get websocket data
 function initTradePanelWebSocket(){
     document.addEventListener("recentPrice", handlePriceUpdate);
     document.addEventListener("orderBook", handleOrderBookUpdate);
+}
+
+async function startListeningForOrderUpdate(){
+   if (!isOrderUpdateListening){
+        document.addEventListener("orderUpdate", handleOrderUpdate);
+        isOrderUpdateListening = true;
+   }
 }
 
 // get available balance
@@ -42,6 +50,9 @@ async function getOpenOrders(){
             data.orders.forEach(order => {
                 addOrderToUI(order);
             })
+            if (data.orders.length > 0){
+                startListeningForOrderUpdate();
+            }
         }
     } catch (error) {
         console.error("Fail to get open orders in getOpenOrders():", error);
@@ -71,7 +82,7 @@ async function submitOrder(orderType, orderSide, price, quantity) {
         if (response.ok) {
             addOrderToUI(data.order);
             initAvailableBalance() ;
-            console.log(data);
+            startListeningForOrderUpdate();
         } else {
             throw new Error(response.status);
         }
@@ -147,6 +158,27 @@ function addOrderToUI(orderData) {
     updateOpenOrdersCount();
 }
 
+async function handleOrderUpdate(event) {
+    const orderData = event.detail;
+    const orderRow = document.querySelector(`[orderId="${orderData.orderId}"]`);
+    const symbol = orderRow.children[1].textContent.split("/")[0];
+    const cancelBtn = orderRow.children[8].children[0];
+    const filledQuantityCell = orderRow.children[6];
+    const statusCell = orderRow.children[7];
+    try {
+        filledQuantityCell.textContent = `${orderData.filledQuantity} ${symbol}`;
+        statusCell.textContent = orderData.status;
+        if (orderData.status === "filled") {
+            cancelBtn.remove();
+            updateOpenOrdersCount();
+        }
+    } catch (error) {
+        console.error("Fail to handle order update in handleOrderUpdate():", error);
+        throw error;
+    }
+
+}
+
 async function cancelOrder(orderId) {
     const orderRow = document.querySelector(`[orderId="${orderId}"]`);
     const symbol = orderRow.children[1].textContent.split("/")[0];
@@ -167,6 +199,9 @@ async function cancelOrder(orderId) {
             orderRow.remove();
             updateOpenOrdersCount();
             initAvailableBalance();
+        } else if (response.status === 401) {
+            // alert("Order already filled");
+            console.log("Order already filled");
         } else {
             console.error("Fail to cancel order in cancelOrder():", response.error);
             throw new Error(response.error);
@@ -181,8 +216,8 @@ async function cancelOrder(orderId) {
 
 function updateOpenOrdersCount() {
     const openOrdersCount = document.getElementById("open-orders-count");
-    const openOrders = document.querySelectorAll("[orderId]");
-    openOrdersCount.textContent = `Open orders(${openOrders.length})`;
+    const cancelButtons = document.querySelectorAll(".cancel-btn");
+    openOrdersCount.textContent = `Open orders(${cancelButtons.length})`;
 }
 
 
