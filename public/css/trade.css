@@ -5,7 +5,7 @@
     font-family: "Roboto", sans-serif;
     font-optical-sizing: auto;
     box-sizing: border-box;
-    letter-spacing: 1.1px;
+    letter-spacing: 1px;
 
 }
 
@@ -470,9 +470,9 @@ input:-webkit-autofill:focus {
     border-radius: 5px;
     padding: 15px;
     color: #ffffff;
+    /* overflow */
     overflow-y: auto;
     overflow-x: hidden;
-
     scrollbar-width: thin; 
     scrollbar-color: #888 #1a1a1a;
 }
@@ -570,20 +570,25 @@ td {
 
 
 /* recent-trades */
-.recent-trades, .my-trades {
+.recent-trades {
     background-color: #1a1a1a;
     color: #ffffff;
     padding: 15px;
     border-radius: 5px;
+    /* overflow */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin; 
+    scrollbar-color: #888 #1a1a1a;
 }
 
-.recent-trades__title,.my-trades__title {
+.recent-trades__title {
     font-size: 16px;
     font-weight: normal;
     margin-bottom: 15px;
 }
 
-.recent-trades__header,.my-trades__header {
+.recent-trades__header {
     display: flex;
     justify-content: space-between;
     color: #999;
@@ -592,31 +597,49 @@ td {
     border-bottom: 1px solid #333;
 }
 
-.recent-trades__list,.my-trades__list {
+.recent-trades__list {
+    max-height: 400px;
     overflow-y: auto;
 }
 
-.recent-trades__item,.my-trades__item {
+.recent-trade__item {
     display: flex;
     justify-content: space-between;
     padding: 5px 0;
-    font-size: 14px;
+    font-size: 11px;
 }
 
-.recent-trades__price,.my-trades__price {
-    font-weight: bold;
+
+.recent-trade__item.buy .trade-price {
+    color: #259a32; 
 }
 
-.recent-trades__price--up,.my-trades__price--up {
-    color: #2ecc40; 
+.recent-trade__item.sell .trade-price {
+    color: #db3a32;
 }
 
-.recent-trades__price--down,.my-trades__price--down {
-    color: #ff4136;
+
+/* my-trades */
+.my-trades {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    padding: 15px;
+    border-radius: 5px;
 }
 
-.recent-trades__time,.my-trades__price--time {
+.my-trades__title {
+    font-size: 16px;
+    font-weight: normal;
+    margin-bottom: 15px;
+}
+
+.my-trades__header {
+    display: flex;
+    justify-content: space-between;
     color: #999;
+    font-size: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
 }
 
 

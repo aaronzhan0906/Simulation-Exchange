@@ -26,6 +26,7 @@ export default {
                         console.log("(CONSUMER)trade_result:", data);
                         TradeController.createTradeHistory(data);
                         TradeController.updateOrderData(data);
+                        TradeController.broadcastRecentTrade(data);
                         break;
 
                     case "order_book_snapshot":

@@ -1,4 +1,4 @@
-import { formatLocalTime } from "../utils/timeUtil.js";
+import { formatLocalTime, formatLocalTimeOnly } from "../utils/timeUtil.js";
 
 let lastPrice = null;
 let isPriceSet = false;
@@ -15,6 +15,10 @@ async function startListeningForOrderUpdate(){
         document.addEventListener("orderUpdate", handleOrderUpdate);
         isOrderUpdateListening = true;
    }
+}
+
+async function listenForRecentTrade(){
+    document.addEventListener("recentTrade", handleRecentTrade);
 }
 
 // get available balance
@@ -116,7 +120,7 @@ async function setupOrder(){
 function addOrderToUI(orderData) {
     const tbody = document.getElementById("open-orders__tbody");
     const newRow = document.createElement("tr");
-    newRow.setAttribute("orderId", orderData.orderId);
+    newRow.setAttribute("order-id", orderData.orderId);
 
     const [baseCurrency, quoteCurrency] = orderData.symbol.toUpperCase().split("_");
     
@@ -154,14 +158,21 @@ function addOrderToUI(orderData) {
         newRow.appendChild(td);
     });
 
-    tbody.appendChild(newRow);
+    if (tbody.firstChild) {
+        tbody.insertBefore(newRow, tbody.firstChild);
+    } else {
+        tbody.appendChild(newRow);
+    }
     updateOpenOrdersCount();
 }
 
 async function handleOrderUpdate(event) {
     const orderData = event.detail;
-    const orderRow = document.querySelector(`[orderId="${orderData.orderId}"]`);
-    const symbol = orderRow.children[1].textContent.split("/")[0];
+    const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
+    // 記得在後端處理房間問題，不然會一直有不必要的開銷
+    const cells = orderRow.getElementsByTagName("td");
+
+    const symbol = cells[1].textContent.split("/")[0];
     const cancelBtn = orderRow.children[8].children[0];
     const filledQuantityCell = orderRow.children[6];
     const statusCell = orderRow.children[7];
@@ -179,8 +190,37 @@ async function handleOrderUpdate(event) {
 
 }
 
+// recent trade
+function handleRecentTrade(event) {
+    const recentTradeData = event.detail;
+    const tradesList = document.querySelector(".recent-trades__list");
+    const tradeItem = document.createElement("div");
+    tradeItem.className = `recent-trade__item ${recentTradeData.side}`;
+    
+    const tradeDetails = [
+        { classList: "trade-price", content: Decimal(recentTradeData.price).toFixed(2) },
+        { classList: "trade-time", content: formatLocalTimeOnly(recentTradeData.timestamp) }
+    ];
+    
+    tradeDetails.forEach(detail => {
+        const span = document.createElement("span");
+        span.className = detail.class;
+        span.textContent = detail.content;
+        tradeItem.appendChild(span);
+    });
+    
+    tradesList.insertBefore(tradeItem, tradesList.firstChild);
+    
+    const maxTrades = 25;
+    while (tradesList.children.length > maxTrades) {
+        tradesList.removeChild(tradesList.lastChild);
+    }
+    
+
+}
+
 async function cancelOrder(orderId) {
-    const orderRow = document.querySelector(`[orderId="${orderId}"]`);
+    const orderRow = document.querySelector(`[order-id="${orderId}"]`);
     const symbol = orderRow.children[1].textContent.split("/")[0];
 
     try {
@@ -201,6 +241,7 @@ async function cancelOrder(orderId) {
             initAvailableBalance();
         } else if (response.status === 401) {
             // alert("Order already filled");
+            orderRow.remove();
             console.log("Order already filled");
         } else {
             console.error("Fail to cancel order in cancelOrder():", response.error);
@@ -420,6 +461,7 @@ export async function initTradePanel() {
     getOpenOrders();
     await initAvailableBalance();
     quickSelectButtonAndInputHandler();
+    listenForRecentTrade();
 
     // event listener
     setupOrder();

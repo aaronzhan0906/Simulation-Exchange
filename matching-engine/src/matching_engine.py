@@ -46,7 +46,8 @@ class MatchingEngine:
                 "seller": {
                     "user_id": match["matched_user_id"] if side == "buy" else user_id,
                     "order_id": match["matched_order_id"] if side == "buy" else order_id
-                }
+                },
+                "isTaker": True
             }
 
             matched_order_result = {
@@ -67,7 +68,8 @@ class MatchingEngine:
                 "seller": {
                     "user_id": match["matched_user_id"] if side == "buy" else user_id,
                     "order_id": match["matched_order_id"] if side == "buy" else order_id
-                }
+                },
+                "isTaker": False
             }
 
 

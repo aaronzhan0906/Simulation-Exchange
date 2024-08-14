@@ -55,21 +55,29 @@ class TradeModel {
                 [newData.order_id]
             )
            
-            // calculate logic
+            // calculate logic  0 is probably and need to be adjust
             const old = {
-                quantity: new Decimal(oldData.quantity),
-                executed_quantity: new Decimal(oldData.executed_quantity),
-                remaining_quantity: new Decimal(oldData.remaining_quantity),
-                average_price: new Decimal(oldData.average_price)
+                quantity: new Decimal(oldData.quantity || 0),
+                executed_quantity: new Decimal(oldData.executed_quantity || 0),
+                remaining_quantity: new Decimal(oldData.remaining_quantity || 0),
+                average_price: new Decimal(oldData.average_price || 0)
             };
             
-            
             const newExecutedQuantity = new Decimal(old.executed_quantity).plus(newData.executed_quantity);
-            const newRemainingQuantity = new Decimal(old.quantity).minus(newData.executed_quantity);
-            const oldValue = new Decimal(old.average_price).times(old.executed_quantity);
-            const newValue = new Decimal(newData.executed_price).times(newData.executed_quantity);
-            const totalQuantity = new Decimal(old.quantity).minus(newRemainingQuantity);
-            const newAveragePrice = oldValue.plus(newValue).dividedBy(totalQuantity);
+            // const newRemainingQuantity = new Decimal(old.quantity).minus(newData.remaining_quantity);
+            const oldTotal = new Decimal(old.average_price).times(old.executed_quantity);
+            const newTotal = new Decimal(newData.executed_price).times(newData.executed_quantity);
+            const allTotal = new Decimal(oldTotal).plus(newTotal);
+            if (newExecutedQuantity.isZero()) {
+                throw new Error('新的已執行數量不能為零');
+            }
+
+            const newAveragePrice = allTotal.dividedBy(newExecutedQuantity);
+
+            if (newAveragePrice.isNaN() || !newAveragePrice.isFinite()) {
+                throw new Error('平均價格計算結果無效');
+            }
+            
             
             await db.query(
                 `UPDATE orders
@@ -84,10 +92,10 @@ class TradeModel {
                 newData.updated_at,
                 newData.order_id]);
 
-            const resultOrderData = await db.query(
+            const [resultOrderData] = await db.query(
                 `SELECT * FROM orders WHERE order_id = ?`,[newData.order_id]
             )
-            return resultOrderData[0]
+            return resultOrderData;
         } catch (error) {
         console.error("Error in updateOrderData:", error);
         throw error;
@@ -120,7 +128,6 @@ class TradeModel {
         const updatePrice = new Decimal(cancelResult.price);
         const updateQuantity = new Decimal(cancelResult.canceled_quantity);
         const updateAmount = updatePrice.times(updateQuantity);
-        console.log(updateAmount)
         try {
             const result = await db.query(
                 `UPDATE accounts

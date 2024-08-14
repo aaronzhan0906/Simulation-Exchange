@@ -34,25 +34,25 @@ kafkaConsumer.init();
 
 
 // static
-app.use(express.static(path.join(__dirname, "..", "public")))
+app.use(express.static(path.join(__dirname,"..", "..", "public")))
 // html 
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname,".." ,"public","home.html"))
+    res.sendFile(path.join(__dirname,"..",".." ,"public","home.html"))
 })
 app.get("/trade", (req, res) => {
-    res.sendFile(path.join(__dirname,".." ,"public","trade.html"))
+    res.sendFile(path.join(__dirname,"..",".." ,"public","trade.html"))
 })
 app.get("/wallet", (req, res) => {
-    res.sendFile(path.join(__dirname,".." ,"public","wallet.html"))
+    res.sendFile(path.join(__dirname,"..",".." ,"public","wallet.html"))
 })
 app.get("/history", (req, res) => {
-    res.sendFile(path.join(__dirname,".." ,"public","history.html"))
+    res.sendFile(path.join(__dirname,"..",".." ,"public","history.html"))
 })
 app.get("/login", (req, res) => {
-    res.sendFile(path.join(__dirname,".." ,"public","login.html"))
+    res.sendFile(path.join(__dirname,"..",".." ,"public","login.html"))
 })
 app.get("/signup", (req, res) => {
-    res.sendFile(path.join(__dirname,".." ,"public","signup.html"))
+    res.sendFile(path.join(__dirname,"..", ".." ,"public","signup.html"))
 })
 
 // route

@@ -24,8 +24,6 @@ class TradeController {
                 createdAt: order.created_at
             }));
 
-
-
             return res.status(200).json({
                 ok: true,
                 message: "Orders retrieved successfully",
@@ -106,6 +104,7 @@ class TradeController {
         }
     }
 
+    // WS broadcast order update
     async updateOrderData(trade_result){
         const {
             order_id,
@@ -149,6 +148,35 @@ class TradeController {
             throw error;
         }
     }
+
+    // WS broadcast current trade and time 
+    async broadcastRecentTrade(trade_result) {
+        const { side, executed_price, timestamp, isTaker } = trade_result;
+        if (!isTaker) {
+            return;
+        }
+
+        try {
+            const message = JSON.stringify({
+                type: "recentTrade",
+                data: {
+                    side,
+                    price: executed_price,  
+                    timestamp
+                }
+            });
+    
+            wss.clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(message);
+                }
+            });
+        } catch (error) {  
+            console.error("broadcastRecentTrade error:", error);
+            throw error;
+        }
+    }
+
 
     // router.patch("/order", TradeController.cancelOrder);
     async cancelOrder(req, res){
@@ -217,9 +245,7 @@ class TradeController {
         }
     }    
 
-    async processCancelResult(data) {
-        console.log("Processing cancel result:", data);
-        
+    async processCancelResult(data) {        
         try {
             await TradeModel.cancelOrder(data.orderId, data.status);
             
@@ -230,7 +256,7 @@ class TradeController {
     }
 
 
-    // consumer trade result from kafka
+    // consume trade result from kafka
     async createTradeHistory(trade_result){
         const {
             trade_id: originalTradeId,
@@ -314,7 +340,7 @@ async function preSellAuth(userId, symbol, quantity) {
 
 async function broadcastOrderUpdate(resultOrderData, filledQuantity) {
     const message = JSON.stringify({
-        type: "order-update",
+        type: "orderUpdate",
         data: {
             orderId: resultOrderData.order_id,
             filledQuantity: filledQuantity,

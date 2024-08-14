@@ -31,9 +31,14 @@ class TradeWebSocket {
             case "orderbook":
                 this.emitOrderBook(message.data);
                 break;
-            case "order-update":
+            case "orderUpdate":
                 this.emitOrderUpdate(message.data);
                 break;
+
+            case "recentTrade":
+                this.emitRecentTrade(message.data);
+                break;
+            
             default:
                 console.log("Unhandled message type:", message.type);
         }
@@ -51,6 +56,11 @@ class TradeWebSocket {
 
     emitOrderUpdate(orderUpdateData) {
         const event = new CustomEvent("orderUpdate", { detail: orderUpdateData });
+        document.dispatchEvent(event);
+    }
+
+    emitRecentTrade(recentTradeData){
+        const event = new CustomEvent("recentTrade", {detail: recentTradeData});
         document.dispatchEvent(event);
     }
     
