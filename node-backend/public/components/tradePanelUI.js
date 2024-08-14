@@ -105,7 +105,7 @@ async function setupOrder(){
 function addOrderToUI(orderData) {
     const tbody = document.getElementById("open-orders__tbody");
     const newRow = document.createElement("tr");
-    newRow.setAttribute("order-id", orderData.orderId);
+    newRow.setAttribute("orderId", orderData.orderId);
 
     const [baseCurrency, quoteCurrency] = orderData.symbol.toUpperCase().split("_");
     
@@ -131,8 +131,7 @@ function addOrderToUI(orderData) {
             cancelBtn.className = "cancel-btn";
             cancelBtn.addEventListener("click", async () => {
                 try {
-                    console.log("Cancel button clicked for order:", orderData.orderId);
-                    // await cancelOrder(orderData.orderId);
+                    await cancelOrder(orderData.orderId);
                 } catch (error) {
                     console.error("Failed to cancel order:", error);
                 }
@@ -148,10 +147,41 @@ function addOrderToUI(orderData) {
     updateOpenOrdersCount();
 }
 
+async function cancelOrder(orderId) {
+    const orderRow = document.querySelector(`[orderId="${orderId}"]`);
+    const symbol = orderRow.children[1].textContent.split("/")[0];
+
+    try {
+        const response = await fetch("api/trade/order",{
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                orderId: orderId,
+                symbol: symbol,
+            })
+        })
+
+        if (response.ok){
+            orderRow.remove();
+            updateOpenOrdersCount();
+            initAvailableBalance();
+        } else {
+            console.error("Fail to cancel order in cancelOrder():", response.error);
+            throw new Error(response.error);
+        }
+    } catch (error) {
+        console.error("Fail to cancel order in cancelOrder():", error);
+        throw error;
+    }
+}
+
+
 
 function updateOpenOrdersCount() {
     const openOrdersCount = document.getElementById("open-orders-count");
-    const openOrders = document.querySelectorAll("[order-id]");
+    const openOrders = document.querySelectorAll("[orderId]");
     openOrdersCount.textContent = `Open orders(${openOrders.length})`;
 }
 
@@ -349,10 +379,13 @@ function quickSelectButtonAndInputHandler(){
 
 
 export async function initTradePanel() {
+    // init
     initTradePanelWebSocket();
     initTabsAndSubmit(); 
     getOpenOrders();
     await initAvailableBalance();
     quickSelectButtonAndInputHandler();
-    setupOrder()
+
+    // event listener
+    setupOrder();
 }
