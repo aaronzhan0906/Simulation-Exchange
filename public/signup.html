@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+TC:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+    <title>Signup</title>
+    <link rel="stylesheet" href="./css/signup.css">
+    <script type="module" src="./pages/signup.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header__container">
+            <h2 class="header__logo"><a class="header__logo--link" href="https://localhost:9091/">SIMU</a></h2>
+            <div class="header__nav">
+            </div>
+        </div>
+    </header>
+    <hr>
+    <!-- main -->
+    <main class="main">
+        <section class="slogan">
+            <div class="slogan__text">Sign up and receive<br><span>10,000 USDT</span><br><span>in simulated funds</span></div>
+        </section>
+        <section class="signup">
+            <div class="signup__container">
+                <div class="signup__title">
+                    <div>Sign up</div>
+                </div>
+                <hr>
+                <div class="signup__subtitle" >Please enter your email and password to sign up</div>
+                <form class="signup__form" id="signup__form">
+                    <label for="email">Email address</label>
+                    <input type="email" class="signup__form--email" id="signup__form--email"  placeholder="Enter your email address" required>
+                    <label for="password">Password</label>
+                    <input type="password" class="signup__form--password" id="signup__form--password" placeholder="Enter your password" required>
+                    <button class="signup__button" type="submit">Sign Up</button>
+                </form>
+            </div>
+            <div class="login__container">
+                <div class="login__link" id="login__link">Already have a SIMU Account? Log in</div>
+            </div>
+        </section>
+    </main>
+    <!-- <footer class="footer">
+        <div class="footer__container">
+            <div>SIMU EXCHANGE</div>
+        </div>
+    </footer> -->
+    </body>
+</html>

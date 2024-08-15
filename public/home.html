@@ -3,31 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+TC:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
     <title>Home</title>
     <link rel="stylesheet" href="./css/home.css">
-    <script type="module" src="./js/home.js"></script>
+    <script type="module" src="./pages/home.js"></script>
 </head>
 <body>
     <header class="header">
         <div class="header__container">
-            <h2 class="header__logo"><a class="header__logo--link" href="https://localhost:9091/">SIMU</a></h2>
+            <h2 class="header__logo"><a class="header__logo--link" id="header__logo--link">SIMU</a></h2>
             <div class="header__nav">
-                <a href="https://localhost:9091/" class="header__link">Home</a>
-                <a href="https://localhost:9091/trade" class="header__link">Trade</a>
-                <a href="#" class="header__link">Wallet</a>
+                <a class="header__link" id="header__link--home">Home</a>
+                <a class="header__link" id="header__link--trade">Trade</a>
+                <a class="header__link" id="header__link--wallet">Wallet</a>
+                <a class="header__link" id="header__link--history">History</a>
             </div>
-            <div class="header__actions">
-                <button class="header__button">Login / Sign up</button>
+            <div class="header__actions" id="header__actions">
+                <!-- generate button by login status -->
             </div>
         </div>
     </header>
     <hr>
+    <!-- Hero section  -->
+    <div class="hero">
+        <div class="hero__container">
+            <h2 class="hero__title">Simu Exchange</h2>
+            <div class="hero__text">A trading simulator  that replicates real-world market conditions.</div>
+            <form class="hero__register">
+                <input type="text" class="hero__register--input" placeholder="Email">
+                <button type="submit" class="hero__register--button">Sign Up</button>
+            </form>
+        </div>
+    </div>
     <!-- main -->
     <main class="main">
-        <h1 class="stock__btc"></h1>
-    
-    
-
+        <!-- Cryptocurrency list -->
+        <section class="symbol-list">
+            <div class="symbol-list__container">
+                <div class="symbol-list__header">
+                    <span>Name</span>
+                    <span>Price</span>
+                    <span>24h Change</span>
+                    <span>Actions</span>
+                </div>
+                <div class="symbol-item symbol-item__btc" onclick="window.location.href='https://localhost:9091/trade';">
+                    <div class="symbol-item__name">
+                        <img src="./images/bitcoin.png" alt="BTC icon" >
+                        <span>BTC/USDT</span>
+                    </div>
+                    <div class="symbol-item__price">
+                        <span class="symbol-item__price--usdt"></span>
+                        <span class="symbol-item__price--usd"></span>
+                    </div>
+                    <div class="symbol-item__change"></div>
+                    <div class="symbol-item__actions">
+                        <a href="#" class="symbol-item__link">Spot trade</a>
+                    </div>
+                </div>
+                <hr>
+                <div class="symbol-item">
+                    <div class="symbol-item__name">
+                        <img src="./images/temp.png" alt="Temp icon">
+                        <span>Temp</span>
+                    </div>
+                    <div class="symbol-item__price">
+                        <span>Temp</span>
+                        <span>Temp</span>
+                    </div>
+                    <div class="symbol-item__change">Temp</div>
+                    <div class="symbol-item__actions">
+                        <a href="#" class="symbol-item__link">Spot trade</a>
+                    </div>
+                </div>
+                <hr>
+                <!-- 其他加密貨幣項目-->
+            </div>
+        </section>
     </main>
 
     <!-- <footer class="footer">

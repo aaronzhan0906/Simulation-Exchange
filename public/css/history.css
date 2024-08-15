@@ -1,0 +1,230 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    font-family: "Roboto", sans-serif;
+    font-optical-sizing: auto;
+    box-sizing: border-box;
+    letter-spacing: 1px;
+
+}
+
+body {
+    background-color: #0d0e0f;
+    color: #ffffff;
+}
+
+hr {
+    border: 0;
+    height: 0.2px;
+    background-color: #272727;
+}
+
+/* Container */
+.header__container {
+    width: calc(40% + 550px);
+    margin: 0 auto;
+}
+
+/* Header */
+.header {
+    background-color: #0d0e0f;
+    padding: 10px 0;
+}
+
+.header__container {
+    display: flex;
+    align-items: center;
+}
+
+.header__nav {
+    margin-left: 20px;
+}
+
+.header__logo {
+    color: rgb(0, 132, 255);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.header__logo--link {
+    text-decoration: none;
+
+}
+
+.header__logo--link:visited {
+    color: rgb(0, 132, 255);
+}
+
+.header__logo--link:active {
+    color: rgb(158, 201, 241);
+}
+
+.header__link {
+    color: white;
+    font-size: 12px;
+    padding: 10px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.header__link:hover{
+    color: rgb(169, 191, 212);
+}
+
+/* Buttons */
+.header__actions {
+    margin-left: auto; 
+}
+
+
+.header__login {
+    margin-left: 5px;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #3b424a;
+    color: #ffffff;
+}
+
+.header__signup {
+    margin-left: 5px;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #559cec, #357abd);
+    color: #ffffff;
+}
+
+.header__login:hover {
+    background: linear-gradient(135deg, #485058, #3b424a);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.header__signup:hover {
+    background: linear-gradient(135deg, #5a9ee8, #4a90e2);
+    box-shadow: 0 2px 4px rgba(74, 144, 226, 0.1);
+}
+
+.header__logout {
+    margin-left: 5px;
+    font-size: 10px;
+    padding: 7px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #222931;
+    color: #ffffff;
+}
+
+.header__logout:hover {
+    background: linear-gradient(135deg, #485058, #3b424a);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+/* Main */
+.main {
+    background-color: #0d0e0f;
+    color: #ffffff;
+}
+
+.order-history {
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    width: calc(40% + 550px);
+    margin: 0 auto;
+}
+  
+.order-history__title {
+    font-size: 24px;
+    font-weight: 500;
+    margin: 35px 0 60px 0 ;
+}
+  
+.order-history__tabs {
+    margin-bottom: 15px;
+}
+  
+.order-history__tab {
+    color: #ffffff;
+    text-decoration: none;
+    padding: 15px 15px;
+    margin-right: 10px;
+}
+  
+.order-history__tab.active {
+    border-bottom: 2px solid #1890ff;
+}
+  
+.order-history__filters {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0 10px 0;
+    align-items: center;
+    font-weight: 300;
+}
+  
+.filter-select {
+    background-color: #2c2c2c;
+    color: #ffffff;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 30px;
+    font-size: 11px;
+    margin: 5px  0 5px 0;
+}
+  
+  
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+  
+.order-history__table {
+    display: grid;
+    grid-template-columns: 0.8fr 0.8fr 0.9fr 0.9fr 0.9fr 1.2fr 0.8fr;  
+    font-size: 12px;
+    font-weight: 500;
+    width: 100%;
+}
+
+.order-history__table thead,
+.order-history__table tbody,
+.order-history__table tr {
+    display: contents; 
+}
+
+.order-history__table th,
+.order-history__table td {
+    padding: 15px 0;
+    text-align: left;
+    border-bottom: 1px solid #333;
+}
+
+.order-history__table th {
+    font-weight: 700;
+    border-bottom: 2px solid #333;
+}
+
+.order-history__table td {
+    font-weight: 300;
+}
+
+  
+.order-history__no-data {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 50px 0;
+    color: #666;
+}
+  
+.order-history__no-data img {
+    width: 100px;
+    margin-bottom: 20px;
+}

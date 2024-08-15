@@ -1,0 +1,11 @@
+# requirements.txt
+
+sortedcontainers
+# SortedDict
+snowflake-id
+# SnowflakeGenerator
+aiokafka
+# AIOKafkaConsumer, AIOKafkaProducer
+
+# pymon
+pymon

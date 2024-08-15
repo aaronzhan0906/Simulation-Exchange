@@ -7,11 +7,17 @@ import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { WebSocketServer } from 'ws';
 // import helmet from "helmet";
+import kafkaProducer from "./services/kafkaProducer.js";
+import kafkaConsumer from "./services/kafkaConsumer.js";
 
 
+
+// path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
+// app, server, wss
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
@@ -22,23 +28,54 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
+// kafka
+kafkaProducer.init();
+kafkaConsumer.init();
+process.on('SIGINT', async () => {
+    try {
+        await kafkaProducer.disconnect();
+        console.log('Server gracefully shut down');
+        process.exit(0);
+    } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
+    }
+});
 
 // static
-app.use(express.static(path.join(__dirname, "..", "public")))
-
-
-// route
+app.use(express.static(path.join(__dirname,"..", "..", "public")))
+// html 
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname,".." ,"public","home.html"))
+    res.sendFile(path.join(__dirname,"..",".." ,"public","home.html"))
 })
 app.get("/trade", (req, res) => {
-    res.sendFile(path.join(__dirname,".." ,"public","trade.html"))
+    res.sendFile(path.join(__dirname,"..",".." ,"public","trade.html"))
+})
+app.get("/wallet", (req, res) => {
+    res.sendFile(path.join(__dirname,"..",".." ,"public","wallet.html"))
+})
+app.get("/history", (req, res) => {
+    res.sendFile(path.join(__dirname,"..",".." ,"public","history.html"))
+})
+app.get("/login", (req, res) => {
+    res.sendFile(path.join(__dirname,"..",".." ,"public","login.html"))
+})
+app.get("/signup", (req, res) => {
+    res.sendFile(path.join(__dirname,"..", ".." ,"public","signup.html"))
 })
 
-import userRoute from "./route/userRoute.js"
-import quoteRoute from "./route/quoteRoute.js"
+// route
+import userRoute from "./routes/userRoute.js";
+import quoteRoute from "./routes/quoteRoute.js";
+import walletRoute from "./routes/walletRoute.js";
+import tradeRoute from "./routes/tradeRoute.js";
+import historyRoute from "./routes/historyRoute.js";
 app.use("/api/user", userRoute);
-app.use("/api/quote", quoteRoute)
+app.use("/api/quote", quoteRoute);
+app.use("/api/wallet", walletRoute);
+app.use("/api/trade", tradeRoute);
+app.use("/api/history", historyRoute);
+
 
 
 // 404 
@@ -49,6 +86,7 @@ app.use((req, res, next) => {
     });
 });
 
+
 // 500 internal server error
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -57,6 +95,7 @@ app.use((err, req, res, next) => {
       message: "Internal Server Error"
     });
 });
+
 
 // start 
 export default app;

@@ -32,12 +32,12 @@ btcusdtWs.on("message", (data) => {
             Symbol: streamData.s,
             price: streamData.c,
             priceChange: streamData.p,
-            priceChangePercent: streamData.p,
+            priceChangePercent: streamData.P,
             high: streamData.h,
             low: streamData.l,
             volume: streamData.v
         }
-        broadcastMessage("ticker", latestDepthData);
+        broadcastMessage("ticker", latestTickerData);
     } else if (stream === "btcusdt@depth") {
         // renew bid
         streamData.b.forEach(([price, quantity]) => {
@@ -72,12 +72,15 @@ function processOrderBookData(){
     const combineBids = { ... latestDepthData.bids, ... myExchangeData.bids };
     const processedData = {
         asks: Object.entries(combineAsks)
-        .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity]),
+        .sort((a, b) => parseFloat(a[0] - parseFloat(b[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity]),
         bids: Object.entries(combineBids)
         .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity])
     }
     return processedData;
 }
+
+
+
 
 // GET latest-ticker //
 router.get("/latest-ticker",(req, res)=> {
