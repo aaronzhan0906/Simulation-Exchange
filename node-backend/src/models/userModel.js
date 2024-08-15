@@ -1,7 +1,7 @@
 import db from "../config/database.js";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 class UserModel {
     async checkEmailExist(email) {
