@@ -4,8 +4,6 @@ sortedcontainers
 # SortedDict
 snowflake-id
 # SnowflakeGenerator
-aiokafka
-# AIOKafkaConsumer, AIOKafkaProducer
+aiokafka==0.11.0
 
-# pymon
-pymon
+# AIOKafkaConsumer, AIOKafkaProducer
