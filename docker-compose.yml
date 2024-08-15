@@ -12,7 +12,7 @@ services:
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
 
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
@@ -25,6 +25,7 @@ services:
     build: 
       context: .
       dockerfile: node-backend/Dockerfile
+      platform: linux/amd64
     ports:
       - "3000:3000"
     volumes:
@@ -46,6 +47,7 @@ services:
     build:
       context: .
       dockerfile: matching-engine/Dockerfile
+      platform: linux/amd64
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
     environment:
