@@ -31,7 +31,16 @@ app.use(express.urlencoded({ extended: true }));
 // kafka
 kafkaProducer.init();
 kafkaConsumer.init();
-
+process.on('SIGINT', async () => {
+    try {
+        await kafkaProducer.disconnect();
+        console.log('Server gracefully shut down');
+        process.exit(0);
+    } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
+    }
+});
 
 // static
 app.use(express.static(path.join(__dirname,"..", "..", "public")))

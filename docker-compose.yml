@@ -12,8 +12,14 @@ services:
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - ALLOW_PLAINTEXT_LISTENER=yes
-    volumes:
-      - kafka_data:/bitnami/kafka
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   node-backend:
     build: 
@@ -30,24 +36,11 @@ services:
     env_file: .env
     environment:
       - NODE_ENV=${NODE_ENV}
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=${MYSQL_PORT}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - ACCESS_TOKEN_EXPIRY=${ACCESS_TOKEN_EXPIRY}
-      - REFRESH_TOKEN_EXPIRY=${REFRESH_TOKEN_EXPIRY}
-      - KAFKA_CLIENT_ID=${KAFKA_CLIENT_ID}
-      - KAFKA_BROKERS=${KAFKA_BROKERS}
-      - KAFKA_GROUP_ID=${KAFKA_GROUP_ID}
-      - KAFKAJS_NO_PARTITIONER_WARNING=${KAFKAJS_NO_PARTITIONER_WARNING}
-      - SNOWFLAKE_INSTANCE_ID=${SNOWFLAKE_INSTANCE_ID}
-      - SNOWFLAKE_CUSTOM_EPOCH=${SNOWFLAKE_CUSTOM_EPOCH}
+      - KAFKA_BROKERS=kafka:9092
     command: npm run start:dev
     depends_on:
-      - mysql
+      kafka:
+        condition: service_healthy
 
   matching-engine:
     build:
@@ -56,15 +49,10 @@ services:
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
     environment:
-      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - KAFKA_BROKERS=kafka:9092
     depends_on:
-      - kafka
-
-volumes:
-  mysql_data:
-    driver: local
-  kafka_data:
-    driver: local
+      kafka:
+        condition: service_healthy
 
 networks:
   default:
