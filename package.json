@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "init-kafka": "node node-backend/src/config/initKafkaTopics.js",
     "start:dev": "nodemon node-backend/src/app.js",
     "start": "node node-backend/src/app.js"
   },

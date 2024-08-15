@@ -11,4 +11,6 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start:dev"]
+
+CMD ["/bin/sh", "-c", "npm run init-kafka && npm run start:dev"]
+

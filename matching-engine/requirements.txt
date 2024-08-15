@@ -1,9 +1,5 @@
 # requirements.txt
-
-sortedcontainers
 # SortedDict
+sortedcontainers
 snowflake-id
-# SnowflakeGenerator
 aiokafka==0.11.0
-
-# AIOKafkaConsumer, AIOKafkaProducer

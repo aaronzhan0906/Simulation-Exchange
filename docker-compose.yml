@@ -12,8 +12,7 @@ services:
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 10s
@@ -25,7 +24,6 @@ services:
     build: 
       context: .
       dockerfile: node-backend/Dockerfile
-      platform: linux/amd64
     ports:
       - "3000:3000"
     volumes:
@@ -38,23 +36,28 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - KAFKA_BROKERS=kafka:9092
-    command: npm run start:dev
+    command: /bin/sh -c "npm run init-kafka && npm run start:dev && echo 'Node.js backend started' > /tmp/node_ready"
     depends_on:
       kafka:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/node_ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   matching-engine:
     build:
       context: .
       dockerfile: matching-engine/Dockerfile
-      platform: linux/amd64
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
     environment:
       - KAFKA_BROKERS=kafka:9092
     depends_on:
-      kafka:
+      node-backend:
         condition: service_healthy
+    command: sh -c "while ! test -f /tmp/node_ready; do sleep 1; done && python main.py"
 
 networks:
   default:
