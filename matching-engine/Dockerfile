@@ -1,6 +1,5 @@
 FROM python:3.12.3-slim
 
-# 安裝編譯工具和依賴
 RUN apt-get update && apt-get install -y gcc g++ make
 
 WORKDIR /usr/src/app

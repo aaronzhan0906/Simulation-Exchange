@@ -36,15 +36,11 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - KAFKA_BROKERS=kafka:9092
-    command: /bin/sh -c "npm run init-kafka && npm run start:dev && echo 'Node.js backend started' > /tmp/node_ready"
+    command: /bin/sh -c "npm run init-kafka && npm run start:dev"
     depends_on:
       kafka:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/node_ready || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    
 
   matching-engine:
     build:
@@ -53,12 +49,8 @@ services:
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
     environment:
-      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_BROKERS=simu-exchange-kafka-1:9092
+    command: python /usr/src/app/matching-engine/src/main.py
     depends_on:
-      node-backend:
+      kafka:
         condition: service_healthy
-    command: sh -c "while ! test -f /tmp/node_ready; do sleep 1; done && python main.py"
-
-networks:
-  default:
-    name: simu-exchange_default

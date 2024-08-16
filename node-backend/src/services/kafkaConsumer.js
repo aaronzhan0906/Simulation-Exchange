@@ -90,7 +90,7 @@ export default {
             }
         };
 
-        process.on('SIGINT', gracefulShutdown);
-        process.on('SIGTERM', gracefulShutdown);
+        process.on("SIGINT", gracefulShutdown);
+        process.on("SIGTERM", gracefulShutdown);
     },
 };
