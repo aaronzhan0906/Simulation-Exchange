@@ -1,4 +1,5 @@
 import { formatLocalTime, formatLocalTimeOnly } from "../utils/timeUtil.js";
+import { checkLoginStatus } from "../utils/auth.js";
 
 let lastPrice = null;
 let isPriceSet = false;
@@ -8,6 +9,15 @@ let isOrderUpdateListening = false;
 function initTradePanelWebSocket(){
     document.addEventListener("recentPrice", handlePriceUpdate);
     document.addEventListener("orderBook", handleOrderBookUpdate);
+
+
+    const submitBtn = document.getElementById("trade-panel__submit");
+    const isLoggedIn = checkLoginStatus();
+    if (!isLoggedIn) {
+        submitBtn.classList.remove("buy");
+        submitBtn.classList.add("unauthorized");
+        submitBtn.disabled = true;
+    }
 }
 
 async function startListeningForOrderUpdate(){
@@ -21,11 +31,15 @@ async function listenForRecentTrade(){
     document.addEventListener("recentTrade", handleRecentTrade);
 }
 
-// get available balance
-async function initAvailableBalance () {
-    const availablePrice = document.getElementById("trade-panel__available-price");
-    
 
+// get available balance in TRADE PANEL
+async function initAvailableBalance () {
+    const isLoggedIn = checkLoginStatus();
+    const unAuthPrice = document.getElementById("trade-panel__available-price");
+    unAuthPrice.textContent = "- USDT";
+    if (!isLoggedIn) return;
+
+    const availablePrice = document.getElementById("trade-panel__available-price");
     const response = await fetch("api/wallet/available", {
         method: "GET",      
         headers: {
@@ -40,8 +54,34 @@ async function initAvailableBalance () {
     }
 }
 
-// get open orders 
+//get available asset in TRADE PANEL
+async function initAvailableAsset(){
+    const isLoggedIn = checkLoginStatus();
+    const unAuthAsset = document.getElementById("trade-panel__available-asset");
+    unAuthAsset.textContent = "- BTC";
+    if (!isLoggedIn) return;
+
+    const availableAsset = document.getElementById("trade-panel__available-asset");
+    const response = await fetch("api/wallet/assetbtc", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    
+    if (response.ok){
+        const data = await response.json();
+        const availableAmount = new Decimal(data.amount.available_quantity);
+        availableAsset.textContent = `${availableAmount.toFixed(5)} BTC`;
+    }
+
+}
+
+// get open orders in OPEN ORDERS
 async function getOpenOrders(){
+    const isLoggedIn = checkLoginStatus();
+    if (!isLoggedIn) return;
+
     try {
         const response = await fetch("api/trade/order", {
             method: "GET",
@@ -64,8 +104,15 @@ async function getOpenOrders(){
     }
 }
 
-// create order  post  api/trade/order //
+// create order  in TRADE PANEL 
 async function submitOrder(orderType, orderSide, price, quantity) {
+    const isLoggedIn = checkLoginStatus();
+
+    if (!isLoggedIn) {
+        alert("Please login first");
+        return;
+    };
+
     try {
         const response = await fetch("api/trade/order", {
             method: "POST",
@@ -85,7 +132,8 @@ async function submitOrder(orderType, orderSide, price, quantity) {
 
         if (response.ok) {
             addOrderToUI(data.order);
-            initAvailableBalance() ;
+            initAvailableBalance();
+            initAvailableAsset();
             startListeningForOrderUpdate();
         } else {
             throw new Error(response.status);
@@ -96,6 +144,7 @@ async function submitOrder(orderType, orderSide, price, quantity) {
     }
 }
 
+// decide this order is buy or sell
 async function setupOrder(){
     const submitButton = document.getElementById("trade-panel__submit");
     const priceInput = document.getElementById("trade-panel__input--price");
@@ -117,6 +166,7 @@ async function setupOrder(){
     });
 }
 
+// add order to OPEN ORDERS
 function addOrderToUI(orderData) {
     const tbody = document.getElementById("open-orders__tbody");
     const newRow = document.createElement("tr");
@@ -166,6 +216,7 @@ function addOrderToUI(orderData) {
     updateOpenOrdersCount();
 }
 
+// handle orders in OPEN ORDERS update status
 async function handleOrderUpdate(event) {
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
@@ -190,7 +241,80 @@ async function handleOrderUpdate(event) {
 
 }
 
-// recent trade
+// handle cancel order in OPEN ORDERS
+async function cancelOrder(orderId) {
+    const orderRow = document.querySelector(`[order-id="${orderId}"]`);
+    const symbol = orderRow.children[1].textContent.split("/")[0];
+
+    try {
+        const response = await fetch("api/trade/order",{
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                orderId: orderId,
+                symbol: symbol,
+            })
+        })
+
+        if (response.ok){
+            orderRow.remove();
+            updateOpenOrdersCount();
+            initAvailableBalance();
+            initAvailableAsset();
+        } else if (response.status === 401) {
+            // alert("Order already filled");
+            orderRow.remove();
+            console.log("Order already filled");
+        } else {
+            console.error("Fail to cancel order in cancelOrder():", response.error);
+            throw new Error(response.error);
+        }
+    } catch (error) {
+        console.error("Fail to cancel order in cancelOrder():", error);
+        throw error;
+    }
+}
+
+// update open orders count in OPEN ORDERS
+function updateOpenOrdersCount() {
+    const openOrdersCount = document.getElementById("open-orders-count");
+    const cancelButtons = document.querySelectorAll(".cancel-btn");
+    openOrdersCount.textContent = `Open orders(${cancelButtons.length})`;
+}
+
+// ORDER BOOK
+function handleOrderBookUpdate(event){
+    const orderBook = event.detail;
+    const asksSide = document.getElementById("order-book__asks");
+    updateOrderBookContent(asksSide, orderBook.asks);
+
+    const bidsSide = document.getElementById("order-book__bids");
+    updateOrderBookContent(bidsSide, orderBook.bids);
+}
+
+// ORDER BOOK
+function updateOrderBookContent(element, orders) {
+    // clear all child nodes
+    while(element.firstChild){
+        element.removeChild(element.firstChild);
+    }
+
+    orders.forEach(order => {
+        const [price, total] = order;
+        const priceDiv = document.createElement("div");
+        const totalDiv = document.createElement("div");
+
+        priceDiv.textContent = price;
+        totalDiv.textContent = total;
+
+        element.appendChild(priceDiv);
+        element.appendChild(totalDiv);
+    })
+}
+
+// handle RECENT TRADE
 function handleRecentTrade(event) {
     const recentTradeData = event.detail;
     const tradesList = document.querySelector(".recent-trades__list");
@@ -217,77 +341,6 @@ function handleRecentTrade(event) {
     }
     
 
-}
-
-async function cancelOrder(orderId) {
-    const orderRow = document.querySelector(`[order-id="${orderId}"]`);
-    const symbol = orderRow.children[1].textContent.split("/")[0];
-
-    try {
-        const response = await fetch("api/trade/order",{
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                orderId: orderId,
-                symbol: symbol,
-            })
-        })
-
-        if (response.ok){
-            orderRow.remove();
-            updateOpenOrdersCount();
-            initAvailableBalance();
-        } else if (response.status === 401) {
-            // alert("Order already filled");
-            orderRow.remove();
-            console.log("Order already filled");
-        } else {
-            console.error("Fail to cancel order in cancelOrder():", response.error);
-            throw new Error(response.error);
-        }
-    } catch (error) {
-        console.error("Fail to cancel order in cancelOrder():", error);
-        throw error;
-    }
-}
-
-
-
-function updateOpenOrdersCount() {
-    const openOrdersCount = document.getElementById("open-orders-count");
-    const cancelButtons = document.querySelectorAll(".cancel-btn");
-    openOrdersCount.textContent = `Open orders(${cancelButtons.length})`;
-}
-
-
-function handleOrderBookUpdate(event){
-    const orderBook = event.detail;
-    const asksSide = document.getElementById("order-book__asks");
-    updateOrderBookContent(asksSide, orderBook.asks);
-
-    const bidsSide = document.getElementById("order-book__bids");
-    updateOrderBookContent(bidsSide, orderBook.bids);
-}
-
-function updateOrderBookContent(element, orders) {
-    // clear all child nodes
-    while(element.firstChild){
-        element.removeChild(element.firstChild);
-    }
-
-    orders.forEach(order => {
-        const [price, total] = order;
-        const priceDiv = document.createElement("div");
-        const totalDiv = document.createElement("div");
-
-        priceDiv.textContent = price;
-        totalDiv.textContent = total;
-
-        element.appendChild(priceDiv);
-        element.appendChild(totalDiv);
-    })
 }
 
 // update price
@@ -329,17 +382,24 @@ function handlePriceUpdate(event) {
     }
 }
 
-// buy sell button setting
+// buy and sell mode status 
 function initTabsAndSubmit() {
     const buyButton = document.getElementById("trade-panel__tab--buy");
     const sellButton = document.getElementById("trade-panel__tab--sell");
     const submitButton = document.getElementById("trade-panel__submit");
+    const availablePrice = document.getElementById("trade-panel__available-price");
+    const availableAsset = document.getElementById("trade-panel__available-asset");
 
+    function updateDisplayAvailable(isBuyMode){
+        availablePrice.style.display = isBuyMode ? "block" : "none";
+        availableAsset.style.display = isBuyMode ? "none" : "block";
+    } 
 
     // init
     buyButton.classList.add("active");
     sellButton.classList.remove("active");
     submitButton.classList.add("buy")
+    updateDisplayAvailable(true);
 
 
     // status change
@@ -348,7 +408,8 @@ function initTabsAndSubmit() {
         sellButton.classList.remove("active");
         submitButton.classList.add("buy");   
         submitButton.classList.remove("sell");
-
+        submitButton.textContent = "Buy BTC"; 
+        updateDisplayAvailable(true);
     });
 
     sellButton.addEventListener("click", () => {
@@ -356,17 +417,23 @@ function initTabsAndSubmit() {
         buyButton.classList.remove("active");
         submitButton.classList.add("sell");
         submitButton.classList.remove("buy");
+        submitButton.textContent = "Sell BTC"; 
+        updateDisplayAvailable(false);
+
     });
 }
 
-
+// quick select button and input handler in TRADE PANEL
 function quickSelectButtonAndInputHandler(){
     const buttons = document.querySelectorAll(".trade-panel__quick-select button");
     const availablePriceElement = document.getElementById("trade-panel__available-price");
+    const availableAssetElement = document.getElementById("trade-panel__available-asset");
     const priceInput = document.getElementById("trade-panel__input--price");
     const quantityInput = document.getElementById("trade-panel__input--quantity");
     const totalInput = document.getElementById("trade-panel__input--total");
     const inputs = [priceInput, quantityInput, totalInput];
+    const buyButton = document.getElementById("trade-panel__tab--buy");
+
 
     function clearActiveButtons(){
         buttons.forEach(btn => btn.classList.remove("active"));
@@ -377,7 +444,7 @@ function quickSelectButtonAndInputHandler(){
         const quantity = new Decimal(quantityInput.value || "0");
         const total = new Decimal(totalInput.value || "0");
 
-        if(price.isZero()) return; // avoid division by zero
+        if (price.isZero()) return; // avoid division by zero
 
         if (changedInput === "price" || changedInput === "quantity") {
             totalInput.value = price.times(quantity).toFixed(2);
@@ -385,6 +452,35 @@ function quickSelectButtonAndInputHandler(){
             quantityInput.value = total.dividedBy(price).toFixed(5);
         }
     }
+
+    // percentage button click handler and separate buy and sell mode
+    buttons.forEach(button => {
+        button.addEventListener("click", function(){
+            clearActiveButtons();
+            this.classList.add("active");
+
+            const availablePrice = new Decimal(availablePriceElement.textContent.replace(" USDT", ""));
+            const availableAsset = new Decimal(availableAssetElement.textContent.replace(" BTC", ""));
+            const currentPrice = new Decimal(priceInput.value || "0");
+            const dataValue = new Decimal(this.dataset.value); // 0.25, 0.5, 0.75, 1
+
+            const isBuyMode = buyButton.classList.contains("active");
+
+            if (isBuyMode){
+                const totalAmount = availablePrice.times(dataValue);
+                const quantity = currentPrice.isZero()? new Decimal(0) : totalAmount.dividedBy(currentPrice);
+                quantityInput.value = quantity.toFixed(5);
+                totalInput.value = totalAmount.toFixed(2);
+            } else {
+                const quantity = availableAsset.times(dataValue);
+                const totalAmount = quantity.times(currentPrice);
+                quantityInput.value = quantity.toFixed(5);
+                totalInput.value = totalAmount.toFixed(2);
+            }
+            
+        })
+    })
+
 
     // validate input, allow only number and decimal point
     function validateNumberInput(event){
@@ -409,25 +505,6 @@ function quickSelectButtonAndInputHandler(){
         }
     }
 
-    // percentage button click handler
-    buttons.forEach(button => {
-        button.addEventListener("click", function(){
-            clearActiveButtons();
-            this.classList.add("active");
-
-            const availablePrice = new Decimal(availablePriceElement.textContent.replace(" USDT", ""));
-            const currentPrice = new Decimal(priceInput.value || "0");
-            const dataValue = new Decimal(this.dataset.value);
-
-            const totalAmount = availablePrice.times(dataValue);
-            const quantity = currentPrice.isZero()? new Decimal(0) : totalAmount.dividedBy(currentPrice);
-
-            quantityInput.value = quantity.toFixed(5);
-            totalInput.value = totalAmount.toFixed(2);
-
-        })
-    })
-
 
     // input focus, input , and keyboard event handling
     inputs.forEach(input => {
@@ -443,6 +520,7 @@ function quickSelectButtonAndInputHandler(){
         });
 
         input.addEventListener("input", (event) => {
+
             const inputId = event.target.id;
             const inputType = inputId.split("--")[1]; // price, quantity, or total
             calculateAndUpdate(inputType);
@@ -460,6 +538,7 @@ export async function initTradePanel() {
     initTabsAndSubmit(); 
     getOpenOrders();
     await initAvailableBalance();
+    await initAvailableAsset();
     quickSelectButtonAndInputHandler();
     listenForRecentTrade();
 

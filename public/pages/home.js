@@ -1,6 +1,6 @@
 import { initializeHeader } from "../components/headerUI.js";
 
-document.addEventListener("DOMContentLoaded", (event) => {
+document.addEventListener("DOMContentLoaded", () => {
     initializeHeader();
 
     const ws = new WebSocket(`wss://${location.host}`);

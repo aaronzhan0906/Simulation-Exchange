@@ -54,6 +54,19 @@ class WalletModel {
             connection.release();
         }
     }
+
+    async getAvailableAmountOfSymbol(userId, symbol){
+        const connection = await pool.getConnection();
+        try {
+            const [[availableAmount]] = await connection.query(
+                "SELECT available_quantity FROM assets WHERE user_id = ? AND symbol = ?",
+                [userId, symbol]
+            );
+            return availableAmount;
+        } finally {
+            connection.release();
+        }
+    }
 }
 
 export default new WalletModel();

@@ -436,7 +436,7 @@ input:-webkit-autofill:focus {
     color: #999;
 }
 
-.trade-panel__available-price {
+.trade-panel__available-price, .trade-panel__available-asset {
     margin-left: auto;
     font-size: 11px;
     color: #e7e7e7;
@@ -451,6 +451,10 @@ input:-webkit-autofill:focus {
     border-radius: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+.trade-panel__submit.unauthorized {
+    background-color: #356049;
 }
 
 .trade-panel__submit.buy {

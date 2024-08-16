@@ -23,7 +23,7 @@ class WalletController {
     }
 
     // router.get("/assets". AccountController.getAssets)
-    async getAssets(req, res, next) {
+    async getAssets(req, res) {
         try {
             const assets = await WalletModel.getAssetsById(req.user.userId);
             res.status(200).json({ 
@@ -38,6 +38,21 @@ class WalletController {
             console.error("Failed to get assets:", error);
         }
     }
+
+    // 之後改多種資產 router.get("/asset/btc", WalletController.getAssetBTC)
+    async getAvailableAmount(req, res) {
+        try {
+            const amountOfSymbol = await WalletModel.getAvailableAmountOfSymbol(req.user.userId, "btc");
+            res.status(200).json({ 
+                "ok": true, 
+                "amount": amountOfSymbol
+            });
+        } catch(error) {
+            console.error("Failed to get amount of symbol:", error);
+        }
+    }
+
+
 }
 
 
