@@ -31,7 +31,7 @@
         <div class="chart"></div>
         <!-- order-book -->
         <div class="order-book">
-            <div class="order-book-header">
+            <div class="order-book__title">
                 Order Book
             </div>
             <div class="order-book__table-header">
@@ -39,14 +39,32 @@
                 <span>Qty(BTC)</span>
             </div>
             <div class="order-book__asks" id="order-book__asks">
-                
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
             </div>
             <div class="order-book__spread">
                 <span class="order-book__price" id="order-book__price"></span>
                 <div class="order-book__price--usd" id="order-book__price--usd"></div>
             </div>
             <div class="order-book__bids" id="order-book__bids">
-            
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
+                <div>&nbsp;</div><div>&nbsp;</div>
             </div>
         </div>
         <!-- trade-panel -->
@@ -61,11 +79,11 @@
                 </select>
             </div>
             <div class="trade-panel__input-group">
-                <input type="number" placeholder="Price" class="trade-panel__input" id="trade-panel__input--price" pattern="^\d*\.?\d*$" inputmode="decimal">
+                <input type="text" placeholder="Price" class="trade-panel__input" id="trade-panel__input--price">
                 <span class="trade-panel__currency">USDT</span>
             </div>
             <div class="trade-panel__input-group">
-                <input type="number" placeholder="Quantity" class="trade-panel__input" id="trade-panel__input--quantity" pattern="^\d*\.?\d*$" inputmode="decimal">
+                <input type="text" placeholder="Quantity" class="trade-panel__input" id="trade-panel__input--quantity">
                 <span class="trade-panel__currency">BTC</span>
             </div>
             <div class="trade-panel__quick-select">
@@ -121,7 +139,7 @@
                 <!-- order list -->
             </div>
         </div>
-        <div class="my-trades">
+        <!-- <div class="my-trades">
             <h3 class="my-trades__title">My assets</h3>
             <div class="my-trades__header">
                 <span>Symbol</span>
@@ -129,7 +147,7 @@
             </div>
             <div class="my-trades__list">
             </div>
-        </div>
+        </div> -->
     </main>
 
     <!-- <footer class="footer">

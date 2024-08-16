@@ -5,6 +5,8 @@ import { generateSnowflakeId } from "../utils/snowflake.js"
 import WebSocket from "ws";
 import { wss } from "../app.js";
 
+
+
 class TradeController {
     // router.get("/order", TradeController.getOrders);
     async getOrders(req, res){
@@ -145,6 +147,36 @@ class TradeController {
             
         } catch (error) {
             console.error("updateOrderData error:", error);
+            throw error;
+        }
+    }
+
+    // WS broadcast order book
+    async broadcastOrderBook(orderBookSnapshot) {
+        const rawAsks = orderBookSnapshot.asks.map( order => {
+            return [Decimal(order.price).toFixed(2), Decimal(order.quantity).toFixed(5)]
+        });
+        const rawBids = orderBookSnapshot.bids.map( order => { 
+            return [Decimal(order.price).toFixed(2), Decimal(order.quantity).toFixed(5)]})
+        const askArray = rawAsks.sort((a, b) => parseFloat(a[0]) - parseFloat(b[0])).slice(-10).reverse();
+        const bidArray = rawBids.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0])).slice(0, 10);
+        const processedData = {
+            asks: askArray,
+            bids: bidArray
+        }
+        try {
+            const message = JSON.stringify({
+                type: "orderBook",
+                data: processedData
+            })
+
+            wss.clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN){
+                    client.send(message)
+                }
+            })
+        } catch (error) {
+            console.error("broadcastOrderBook error:", error);
             throw error;
         }
     }

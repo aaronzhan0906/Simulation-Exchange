@@ -314,7 +314,7 @@ function updateOrderBookContent(element, orders) {
     })
 }
 
-// handle RECENT TRADE
+// handle  ORDER BOOK RECENT TRADE
 function handleRecentTrade(event) {
     const recentTradeData = event.detail;
     const tradesList = document.querySelector(".recent-trades__list");
@@ -327,27 +327,24 @@ function handleRecentTrade(event) {
     ];
     
     tradeDetails.forEach(detail => {
-        const span = document.createElement("span");
+        const span = document.createElement("div");
         span.className = detail.class;
         span.textContent = detail.content;
         tradeItem.appendChild(span);
     });
     
-    tradesList.insertBefore(tradeItem, tradesList.firstChild);
-    
+     tradesList.insertBefore(tradeItem, tradesList.firstChild);
+
+
     const maxTrades = 25;
     while (tradesList.children.length > maxTrades) {
         tradesList.removeChild(tradesList.lastChild);
     }
-    
-
 }
 
-// update price
+// update  ORDER BOOK PRICE 
 function handlePriceUpdate(event) {
     const currentPrice = new Decimal(event.detail.price);
-
-    
     const priceElement = document.getElementById("order-book__price");
     if (priceElement) {
         priceElement.textContent = currentPrice.toFixed(2);
@@ -382,7 +379,7 @@ function handlePriceUpdate(event) {
     }
 }
 
-// buy and sell mode status 
+// buy and sell mode status TRADE PANEL
 function initTabsAndSubmit() {
     const buyButton = document.getElementById("trade-panel__tab--buy");
     const sellButton = document.getElementById("trade-panel__tab--sell");
@@ -424,7 +421,7 @@ function initTabsAndSubmit() {
 }
 
 // quick select button and input handler in TRADE PANEL
-function quickSelectButtonAndInputHandler(){
+function quickSelectButtonAndInputHandler() {
     const buttons = document.querySelectorAll(".trade-panel__quick-select button");
     const availablePriceElement = document.getElementById("trade-panel__available-price");
     const availableAssetElement = document.getElementById("trade-panel__available-asset");
@@ -434,12 +431,18 @@ function quickSelectButtonAndInputHandler(){
     const inputs = [priceInput, quantityInput, totalInput];
     const buyButton = document.getElementById("trade-panel__tab--buy");
 
-
-    function clearActiveButtons(){
+    function clearActiveButtons() {
         buttons.forEach(btn => btn.classList.remove("active"));
     }
 
-    function calculateAndUpdate(changedInput){
+    // restrict input to positive numbers with specified decimal places
+    function restrictPositiveNum(value, decimalPlaces) {
+        const reg = new RegExp(`^\\d*(\\.\\d{0,${decimalPlaces}})?$`);
+        
+        return reg.test(value) ? value : value.slice(0, -1);
+    }
+
+    function calculateAndUpdate(changedInput) {
         const price = new Decimal(priceInput.value || "0");
         const quantity = new Decimal(quantityInput.value || "0");
         const total = new Decimal(totalInput.value || "0");
@@ -448,14 +451,14 @@ function quickSelectButtonAndInputHandler(){
 
         if (changedInput === "price" || changedInput === "quantity") {
             totalInput.value = price.times(quantity).toFixed(2);
-        } else if (changedInput === "total"){
+        } else if (changedInput === "total") {
             quantityInput.value = total.dividedBy(price).toFixed(5);
         }
     }
 
-    // percentage button click handler and separate buy and sell mode
+    // Percentage button click handler
     buttons.forEach(button => {
-        button.addEventListener("click", function(){
+        button.addEventListener("click", function() {
             clearActiveButtons();
             this.classList.add("active");
 
@@ -466,9 +469,9 @@ function quickSelectButtonAndInputHandler(){
 
             const isBuyMode = buyButton.classList.contains("active");
 
-            if (isBuyMode){
+            if (isBuyMode) {
                 const totalAmount = availablePrice.times(dataValue);
-                const quantity = currentPrice.isZero()? new Decimal(0) : totalAmount.dividedBy(currentPrice);
+                const quantity = currentPrice.isZero() ? new Decimal(0) : totalAmount.dividedBy(currentPrice);
                 quantityInput.value = quantity.toFixed(5);
                 totalInput.value = totalAmount.toFixed(2);
             } else {
@@ -477,42 +480,14 @@ function quickSelectButtonAndInputHandler(){
                 quantityInput.value = quantity.toFixed(5);
                 totalInput.value = totalAmount.toFixed(2);
             }
-            
-        })
-    })
-
-
-    // validate input, allow only number and decimal point
-    function validateNumberInput(event){
-        const input = event.target
-        const value = input.value;
-
-        // allow backspace and arrow keys
-        if (event.key === "Backspace" || event.key === "ArrowLeft" || event.key === "ArrowRight"){
-            return;
-        }
-
-        // check valid number input
-        if(!/^\d*\.?\d*$/.test(value)){
-            event.preventDefault();
-            event.target.value = value.replace(/[^\d.]/g, "");
-        }
-
-        // ensure only one decimal point
-        if ((value.match(/\./g) || []).length > 1){
-            event.preventDefault();
-            input.value = value.replace(/\.+$/, "");
-        }
-    }
-
-
-    // input focus, input , and keyboard event handling
-    inputs.forEach(input => {
-        input.addEventListener("focus", () => {
-            clearActiveButtons();
         });
+    });
 
-        // prevent arrow key from changing input value
+    // Input event handling
+    inputs.forEach(input => {
+        input.addEventListener("focus", clearActiveButtons);
+
+        // Prevent arrow keys from changing input value
         input.addEventListener("keydown", function(event) {
             if (event.key === "ArrowUp" || event.key === "ArrowDown") {
                 event.preventDefault();
@@ -520,15 +495,21 @@ function quickSelectButtonAndInputHandler(){
         });
 
         input.addEventListener("input", (event) => {
-
             const inputId = event.target.id;
             const inputType = inputId.split("--")[1]; // price, quantity, or total
+            
+            // Apply appropriate restrictions based on input type
+            if (inputType === "price") {
+                event.target.value = restrictPositiveNum(event.target.value, 2);
+            } else if (inputType === "quantity") {
+                event.target.value = restrictPositiveNum(event.target.value, 5);
+            } else {
+                event.target.value = restrictPositiveNum(event.target.value, 2);
+            }
+            
             calculateAndUpdate(inputType);
         });
-
-        input.addEventListener("keydown", validateNumberInput);
-    })
-
+    });
 }
 
 

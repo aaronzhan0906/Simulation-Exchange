@@ -169,7 +169,7 @@ input::-webkit-inner-spin-button {
 
 .trade-panel {
     grid-column: 3;
-    grid-row: 1 / 2;
+    grid-row: 1 / -1;
     background-color: #5888a8;
     border-radius: 2px;
 }
@@ -181,12 +181,12 @@ input::-webkit-inner-spin-button {
     border-radius: 2px;
 }
 
-.my-trades{
+/* .my-trades{
     grid-column: 3 ;
     grid-row: 2;
     background-color: #337850;
     border-radius: 2px;
-}
+} */
 
 
 /* order-book */
@@ -198,7 +198,7 @@ input::-webkit-inner-spin-button {
     max-height: 570px;
 }
 
-.order-book-header {
+.order-book__title {
     font-size: 16px;
     font-weight: bold;
     padding-top: 6px;
@@ -220,17 +220,43 @@ input::-webkit-inner-spin-button {
 .order-book__bids {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(10, 1fr);
     font-size: 11px;
     font-weight: 300;
     gap: 3px 0;
     min-height: 172px;
 }
 
+
 .order-book__asks div,
 .order-book__bids div {
+    
+    height: 12.5px;
     padding: 1px 0;
 }
 
+.order-book__table-header span:first-child,
+.order-book__asks div:nth-child(odd),
+.order-book__bids div:nth-child(odd) {
+    text-align: left;
+}
+
+.order-book__table-header span:last-child,
+.order-book__asks div:nth-child(even),
+.order-book__bids div:nth-child(even) {
+    text-align: right;
+}
+
+.order-book__asks div:nth-child(odd) {
+    color: #db3a32; 
+}
+
+.order-book__bids div:nth-child(odd) {
+    color: #259a32; 
+}
+
+
+/* SPREAD */
 .order-book__spread {
     text-align: center;
     font-size: 16px;
@@ -263,25 +289,7 @@ input::-webkit-inner-spin-button {
     color: #db3a32;
 }
 
-.order-book__table-header span:first-child,
-.order-book__asks div:nth-child(odd),
-.order-book__bids div:nth-child(odd) {
-    text-align: left;
-}
 
-.order-book__table-header span:last-child,
-.order-book__asks div:nth-child(even),
-.order-book__bids div:nth-child(even) {
-    text-align: right;
-}
-
-.order-book__asks div:nth-child(odd) {
-    color: #db3a32; 
-}
-
-.order-book__bids div:nth-child(odd) {
-    color: #259a32; 
-}
 
 
 /* trade-panel */
@@ -294,6 +302,7 @@ input::-webkit-inner-spin-button {
 .trade-panel__tab {
     display: flex;
     gap: 10px;
+    margin-top:5px;
     margin-bottom: 15px;
     position: relative;
     background-color: #333;
@@ -340,11 +349,6 @@ input::-webkit-inner-spin-button {
     text-indent: 0;
 
 }
-
-
-
-
-
 
 
 .trade-panel__order-type select {
@@ -624,7 +628,7 @@ td {
 
 
 /* my-trades */
-.my-trades {
+/* .my-trades {
     background-color: #1a1a1a;
     color: #ffffff;
     padding: 15px;
@@ -644,7 +648,7 @@ td {
     font-size: 12px;
     padding-bottom: 10px;
     border-bottom: 1px solid #333;
-}
+} */
 
 
  /* hide scrollbar */

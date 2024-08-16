@@ -42,7 +42,7 @@ const handleMessage = async ({ topic, message }) => {
             break;
 
         case "order_book_snapshot":
-            console.log("(CONSUMER)order_book_snapshot:", data);
+            await TradeController.broadcastOrderBook(data);
             break;
 
         case "cancel_result":

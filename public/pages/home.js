@@ -31,6 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
             priceElement.textContent = parseFloat(tickerData.price).toFixed(2);
         }
 
+        
+
         const priceUsdElement = document.querySelector(".symbol-item__price--usd");
         if (priceUsdElement) {
             priceUsdElement.textContent = `≈${parseFloat(tickerData.price).toFixed(2)} USD`;

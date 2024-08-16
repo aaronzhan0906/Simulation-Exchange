@@ -28,11 +28,14 @@ class TradeWebSocket {
             case "ticker":
                 this.emitRecentPrice(message.data.price);
                 break;
-            case "orderbook":
+
+            case "orderBook":
                 this.emitOrderBook(message.data);
                 break;
+
             case "orderUpdate":
                 this.emitOrderUpdate(message.data);
+
                 break;
 
             case "recentTrade":

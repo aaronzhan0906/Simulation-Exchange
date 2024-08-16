@@ -264,6 +264,10 @@ hr {
     justify-self: end;
 }
 
+.symbol-item__change.positive {
+    color: #259a32;
+}
+
 .symbol-item__change.negative {
     color: #ff4d4f;
 }
