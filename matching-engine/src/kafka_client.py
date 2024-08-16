@@ -13,7 +13,7 @@ def stringify_serializer(obj):
     return json.dumps(obj, cls=StringifyEncoder).encode("utf-8")
 
 class KafkaClient:
-    def __init__(self, bootstrap_servers="kafka:9092"):
+    def __init__(self, bootstrap_servers="localhost:9092"):
         self.bootstrap_servers = bootstrap_servers
         self.consumer = None
         self.producer = None
