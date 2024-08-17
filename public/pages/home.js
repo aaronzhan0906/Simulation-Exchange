@@ -1,6 +1,6 @@
 import { initializeHeader } from "../components/headerUI.js";
 
-document.addEventListener("DOMContentLoaded", (event) => {
+document.addEventListener("DOMContentLoaded", () => {
     initializeHeader();
 
     const ws = new WebSocket(`wss://${location.host}`);
@@ -30,6 +30,8 @@ document.addEventListener("DOMContentLoaded", (event) => {
         if (priceElement) {
             priceElement.textContent = parseFloat(tickerData.price).toFixed(2);
         }
+
+        
 
         const priceUsdElement = document.querySelector(".symbol-item__price--usd");
         if (priceUsdElement) {

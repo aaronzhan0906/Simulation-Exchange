@@ -11,7 +11,6 @@ import kafkaProducer from "./services/kafkaProducer.js";
 import kafkaConsumer from "./services/kafkaConsumer.js";
 
 
-
 // path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +21,10 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
+// health 
+app.get("/health", (req, res) => {
+    res.status(200).json({ status: "OK" });
+  });
 
 // middleware 
 app.use(express.json());

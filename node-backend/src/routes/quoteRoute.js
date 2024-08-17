@@ -31,11 +31,7 @@ btcusdtWs.on("message", (data) => {
         latestTickerData = {
             Symbol: streamData.s,
             price: streamData.c,
-            priceChange: streamData.p,
             priceChangePercent: streamData.P,
-            high: streamData.h,
-            low: streamData.l,
-            volume: streamData.v
         }
         broadcastMessage("ticker", latestTickerData);
     } else if (stream === "btcusdt@depth") {
@@ -56,8 +52,8 @@ btcusdtWs.on("message", (data) => {
             }
         })
 
-        const processedData = processOrderBookData();
-        broadcastMessage("orderbook", processedData)
+        // const processedData = processOrderBookData();
+        // broadcastMessage("orderBook", processedData)
     }
 })
 
@@ -65,48 +61,19 @@ btcusdtWs.on("error",(error)=>{
     console.error("Websocket error:", error)
 })
 
-function processOrderBookData(){
-    const myExchangeData = getMyExchangeOrderBook();
-
-    const combineAsks = { ... latestDepthData.asks, ... myExchangeData.asks };
-    const combineBids = { ... latestDepthData.bids, ... myExchangeData.bids };
-    const processedData = {
-        asks: Object.entries(combineAsks)
-        .sort((a, b) => parseFloat(a[0] - parseFloat(b[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity]),
-        bids: Object.entries(combineBids)
-        .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity])
-    }
-    return processedData;
-}
-
-
-
-
-// GET latest-ticker //
-router.get("/latest-ticker",(req, res)=> {
-    if (latestTickerData) {
-        res.json(latestTickerData);
-    } else {
-        res.status(503).json({error: "ok", message:"Ticker data not available yet"});
-    }
-});
-
-
-// GET order-book //
-router.get("/order-book", (req, res) => {
-    const processedData = processOrderBookData();
-    if (Object.keys(processedData.bids).length > 0 || Object.keys(processedData.asks).length > 0) {
-        res.json(processedData);
-    } else {
-        res.status(503).json({ error: "ok", message: "Order book data not available yet" });
-    }
-});
-
-router.get("/ws-status",(req, res) => {
-    res.json({
-        connected: btcusdtWs.readyState === WebSocket.OPEN
-    });
-});
+// function processOrderBookData(){
+//     const myExchangeData = getMyExchangeOrderBook();
+    
+//     const combineAsks = { ... latestDepthData.asks, ... myExchangeData.asks };
+//     const combineBids = { ... latestDepthData.bids, ... myExchangeData.bids };
+//     const processedData = {
+//         asks: Object.entries(combineAsks)
+//         .sort((a, b) => parseFloat(a[0] - parseFloat(b[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity]),
+//         bids: Object.entries(combineBids)
+//         .sort((a, b) => parseFloat(b[0] - parseFloat(a[0]))).slice(0, 10).map(([price, quantity]) => [parseFloat(price), quantity])
+//     }
+//     return processedData;
+// }
 
 
 // getMyExchangeOrderBook

@@ -12,8 +12,7 @@ services:
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 10s
@@ -25,7 +24,6 @@ services:
     build: 
       context: .
       dockerfile: node-backend/Dockerfile
-      platform: linux/amd64
     ports:
       - "3000:3000"
     volumes:
@@ -38,24 +36,21 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - KAFKA_BROKERS=kafka:9092
-    command: npm run start:dev
+    command: /bin/sh -c "npm run init-kafka && npm run start:dev"
     depends_on:
       kafka:
         condition: service_healthy
+    
 
   matching-engine:
     build:
       context: .
       dockerfile: matching-engine/Dockerfile
-      platform: linux/amd64
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
     environment:
-      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_BROKERS=simu-exchange-kafka-1:9092
+    command: python /usr/src/app/matching-engine/src/main.py
     depends_on:
       kafka:
         condition: service_healthy
-
-networks:
-  default:
-    name: simu-exchange_default

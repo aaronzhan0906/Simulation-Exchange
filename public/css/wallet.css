@@ -75,11 +75,13 @@ hr {
 /* Buttons */
 .header__actions {
     margin-left: auto; 
+    display: flex;
+    align-items: center;
 }
 
 
 .header__login {
-    margin-left: 5px;
+    margin-left: 20px;
     font-size: 10px;
     padding: 7px 14px;
     border: none;
@@ -89,8 +91,13 @@ hr {
     color: #ffffff;
 }
 
+.header__login:hover {
+    background: linear-gradient(135deg, #485058, #3b424a);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .header__signup {
-    margin-left: 5px;
+    margin-left: 10px;
     font-size: 10px;
     padding: 7px 14px;
     border: none;
@@ -98,11 +105,6 @@ hr {
     cursor: pointer;
     background: linear-gradient(135deg, #559cec, #357abd);
     color: #ffffff;
-}
-
-.header__login:hover {
-    background: linear-gradient(135deg, #485058, #3b424a);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .header__signup:hover {
