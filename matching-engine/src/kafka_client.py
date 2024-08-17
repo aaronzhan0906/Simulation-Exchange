@@ -1,4 +1,5 @@
 import asyncio
+import os
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 import json
 from decimal import Decimal
@@ -13,8 +14,8 @@ def stringify_serializer(obj):
     return json.dumps(obj, cls=StringifyEncoder).encode("utf-8")
 
 class KafkaClient:
-    def __init__(self, bootstrap_servers="localhost:9092"):
-        self.bootstrap_servers = bootstrap_servers
+    def __init__(self, bootstrap_servers=None):
+        self.bootstrap_servers = bootstrap_servers or os.environ.get("KAFKA_BROKERS", "localhost:9092")
         self.consumer = None
         self.producer = None
         self.topic_handlers = {}

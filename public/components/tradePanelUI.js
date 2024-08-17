@@ -288,10 +288,10 @@ function updateOpenOrdersCount() {
 function handleOrderBookUpdate(event){
     const orderBook = event.detail;
     const asksSide = document.getElementById("order-book__asks");
-    updateOrderBookContent(asksSide, orderBook.asks);
+    updateOrderBookContent(asksSide, orderBook.asks, true);  
 
     const bidsSide = document.getElementById("order-book__bids");
-    updateOrderBookContent(bidsSide, orderBook.bids);
+    updateOrderBookContent(bidsSide, orderBook.bids, false);  
 }
 
 // ORDER BOOK
@@ -309,8 +309,8 @@ function updateOrderBookContent(element, orders, isAsk = false) {
         const priceSpan = document.createElement("span");
         const totalSpan = document.createElement("span");
 
-        priceSpan.textContent = parseFloat(price).toFixed(2);  // Format price to 2 decimal places
-        totalSpan.textContent = parseFloat(total).toFixed(5);  // Format total to 5 decimal places
+        priceSpan.textContent = price;
+        totalSpan.textContent = total;  
 
         itemDiv.appendChild(priceSpan);
         itemDiv.appendChild(totalSpan);

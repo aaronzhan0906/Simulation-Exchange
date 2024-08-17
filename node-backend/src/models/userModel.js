@@ -42,7 +42,12 @@ class UserModel {
                 "INSERT INTO accounts (user_id, balance) VALUES (?, ?)",
                 [userId, 10000] 
             );
-            
+
+            await connection.query(
+                `INSERT INTO assets (user_id, symbol, quantity) VALUES (?, ?, ?)`,
+                [userId, "btc", 0.17]
+            );
+
             await connection.commit();
             return { user_id: userId };
         } catch(error) {
