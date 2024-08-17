@@ -295,26 +295,31 @@ function handleOrderBookUpdate(event){
 }
 
 // ORDER BOOK
-function updateOrderBookContent(element, orders) {
-    // clear all child nodes
-    while(element.firstChild){
+function updateOrderBookContent(element, orders, isAsk = false) {
+    // Clear all child nodes
+    while (element.firstChild) {
         element.removeChild(element.firstChild);
     }
 
     orders.forEach(order => {
         const [price, total] = order;
-        const priceDiv = document.createElement("div");
-        const totalDiv = document.createElement("div");
+        const itemDiv = document.createElement("div");
+        itemDiv.className = isAsk ? "asks__item" : "bids__item";
 
-        priceDiv.textContent = price;
-        totalDiv.textContent = total;
+        const priceSpan = document.createElement("span");
+        const totalSpan = document.createElement("span");
 
-        element.appendChild(priceDiv);
-        element.appendChild(totalDiv);
-    })
+        priceSpan.textContent = parseFloat(price).toFixed(2);  // Format price to 2 decimal places
+        totalSpan.textContent = parseFloat(total).toFixed(5);  // Format total to 5 decimal places
+
+        itemDiv.appendChild(priceSpan);
+        itemDiv.appendChild(totalSpan);
+
+        element.appendChild(itemDiv);
+    });
 }
 
-// handle  ORDER BOOK RECENT TRADE
+// handle  ORDER BOOK 
 function handleRecentTrade(event) {
     const recentTradeData = event.detail;
     const tradesList = document.querySelector(".recent-trades__list");
@@ -327,10 +332,10 @@ function handleRecentTrade(event) {
     ];
     
     tradeDetails.forEach(detail => {
-        const span = document.createElement("div");
-        span.className = detail.class;
-        span.textContent = detail.content;
-        tradeItem.appendChild(span);
+        const recentTradeDiv = document.createElement("div");
+        recentTradeDiv.className = detail.class;
+        recentTradeDiv.textContent = detail.content;
+        tradeItem.appendChild(recentTradeDiv);
     });
     
      tradesList.insertBefore(tradeItem, tradesList.firstChild);

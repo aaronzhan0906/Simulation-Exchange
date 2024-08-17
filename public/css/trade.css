@@ -193,7 +193,7 @@ input::-webkit-inner-spin-button {
 .order-book {
     background-color: #1a1a1a;
     color: #ffffff;
-    padding: 10px;
+    padding: 10px 10px 6px 10px;
     border-radius: 5px;
     max-height: 570px;
 }
@@ -216,42 +216,44 @@ input::-webkit-inner-spin-button {
     margin-bottom: 10px;
 }
 
-.order-book__asks,
-.order-book__bids {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(10, 1fr);
-    font-size: 11px;
-    font-weight: 300;
-    gap: 3px 0;
-    min-height: 172px;
+.order-book__asks {
+    flex-direction: column-reverse;
+    display: flex;
 }
 
 
-.order-book__asks div,
-.order-book__bids div {
-    
-    height: 12.5px;
-    padding: 1px 0;
+.order-book__asks,
+.order-book__bids {
+    font-size: 11px;
+    font-weight: 300;
+    height: 160px;
+}
+
+.asks__item, .bids__item {
+    height: 16px;
+    display: flex;
+    justify-content: space-between;
 }
 
 .order-book__table-header span:first-child,
-.order-book__asks div:nth-child(odd),
-.order-book__bids div:nth-child(odd) {
+.asks__item span:first-child,
+.bids__item span:first-child {
     text-align: left;
 }
 
 .order-book__table-header span:last-child,
-.order-book__asks div:nth-child(even),
-.order-book__bids div:nth-child(even) {
+.asks__item span:last-child,
+.bids__item span:last-child {
     text-align: right;
 }
 
-.order-book__asks div:nth-child(odd) {
+
+
+.order-book__asks div> span:nth-child(odd) {
     color: #db3a32; 
 }
 
-.order-book__bids div:nth-child(odd) {
+.order-book__bids div > span:nth-child(odd) {
     color: #259a32; 
 }
 

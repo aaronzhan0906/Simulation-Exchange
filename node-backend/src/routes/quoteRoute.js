@@ -53,7 +53,7 @@ btcusdtWs.on("message", (data) => {
         })
 
         // const processedData = processOrderBookData();
-        // broadcastMessage("orderbook", processedData)
+        // broadcastMessage("orderBook", processedData)
     }
 })
 
