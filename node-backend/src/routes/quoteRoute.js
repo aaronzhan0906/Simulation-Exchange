@@ -4,8 +4,9 @@ import WebSocket from "ws";
 
 const router = express.Router();
 
+const wsBaseUrl = process.env.WEBSOCKET_URL 
 const streamName = "btcusdt@ticker/btcusdt@depth";
-const wsUrl = `wss://stream.binance.com:9443/stream?streams=${streamName}`;
+const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 const btcusdtWs = new WebSocket(wsUrl)
 
 let latestTickerData = null;
@@ -77,9 +78,9 @@ btcusdtWs.on("error",(error)=>{
 
 
 // getMyExchangeOrderBook
-async function getMyExchangeOrderBook () {
-    return { bids: {}, asks: {} };
-}
+// async function getMyExchangeOrderBook () {
+//     return { bids: {}, asks: {} };
+// }
 
 // export 
 export default router;
