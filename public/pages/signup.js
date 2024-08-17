@@ -2,6 +2,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("signup__form");
     const emailInput = document.getElementById("signup__form--email");
     const passwordInput = document.getElementById("signup__form--password");
+    const getEmail = localStorage.getItem("email");
+
+    if (getEmail) {
+        emailInput.value = getEmail;
+        localStorage.removeItem("email");
+    }
 
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault(); 

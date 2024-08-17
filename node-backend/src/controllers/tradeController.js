@@ -158,7 +158,7 @@ class TradeController {
         });
         const rawBids = orderBookSnapshot.bids.map( order => { 
             return [Decimal(order.price).toFixed(2), Decimal(order.quantity).toFixed(5)]})
-        const askArray = rawAsks.sort((a, b) => parseFloat(a[0]) - parseFloat(b[0])).slice(-10).reverse();
+        const askArray = rawAsks.sort((a, b) => parseFloat(a[0]) - parseFloat(b[0])).slice(-10);
         const bidArray = rawBids.sort((a, b) => parseFloat(b[0]) - parseFloat(a[0])).slice(0, 10);
         const processedData = {
             asks: askArray,

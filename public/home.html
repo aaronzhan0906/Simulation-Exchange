@@ -31,9 +31,9 @@
         <div class="hero__container">
             <h2 class="hero__title">Simu Exchange</h2>
             <div class="hero__text">A trading simulator  that replicates real-world market conditions.</div>
-            <form class="hero__register">
-                <input type="text" class="hero__register--input" placeholder="Email">
-                <button type="submit" class="hero__register--button">Sign Up</button>
+            <form class="hero__register" id="hero__register--form">
+                <input type="text" class="hero__register--input"  id="hero__register--input" placeholder="Email">
+                <button type="button" class="hero__register--button" id="hero__register--button">Sign Up</button>
             </form>
         </div>
     </div>
@@ -48,7 +48,7 @@
                     <span>24h Change</span>
                     <span>Actions</span>
                 </div>
-                <div class="symbol-item symbol-item__btc" onclick="window.location.href='https://localhost:9091/trade';">
+                <div class="symbol-item symbol-item__btc" id="symbol-item__btc">
                     <div class="symbol-item__name">
                         <img src="./images/bitcoin.png" alt="BTC icon" >
                         <span>BTC/USDT</span>
