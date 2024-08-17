@@ -23,7 +23,6 @@ hr {
 /* Container */
 .header__container {
     width: calc(40% + 550px);
-
     margin: 0 auto;
 }
 
@@ -45,7 +44,9 @@ hr {
 .header__logo {
     color: rgb(0, 132, 255);
     font-size: 20px;
+    cursor: pointer;
 }
+
 .header__logo--link {
     text-decoration: none;
 
@@ -58,19 +59,6 @@ hr {
 .header__logo--link:active {
     color: rgb(158, 201, 241);
 }
-
-.header__link {
-    color: white;
-    font-size: 12px;
-    padding: 10px;
-    text-decoration: none;
-}
-
-.header__link:hover{
-    color: rgb(169, 191, 212);
-}
-
-
 
 
 /* Main */

@@ -2,7 +2,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("signup__form");
     const emailInput = document.getElementById("signup__form--email");
     const passwordInput = document.getElementById("signup__form--password");
+    const homeLink = document.getElementById("header__logo--link");
     const getEmail = localStorage.getItem("email");
+
+    homeLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        location.href = "/";
+    });
+
 
     if (getEmail) {
         emailInput.value = getEmail;
