@@ -27,13 +27,12 @@ function broadcastMessage(type ,data) {
 
 function processBufferData(newData) {
     dataBuffer.push(newData);
-
     if (dataBuffer.length > BUFFER_SIZE) {
         dataBuffer.shift();
     }
-
-    return dataBuffer;
+    return dataBuffer[dataBuffer.length - 1]; // 返回最後一個元素
 }
+
 
 // get ticker and order book from binance wss
 btcusdtWs.on("message", (data) => {
@@ -48,7 +47,7 @@ btcusdtWs.on("message", (data) => {
             priceChangePercent: streamData.P,
         }
         const processedData = processBufferData(latestTickerData);
-        broadcastMessage("ticker", processedData[0]);
+        broadcastMessage("ticker", processedData);
  }
     // } else if (stream === "btcusdt@depth") {
     //     // renew bid
