@@ -5,6 +5,7 @@ from order_book import OrderBook
 from matching_engine import MatchingEngine
 
 async def handle_new_order(order, matching_engine, kafka_client, order_book):
+    # Process the order using the matching engine
     print("Received new-orders:",order)
     results = matching_engine.process_order(
         order["orderId"], 
@@ -16,6 +17,7 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
         order["status"]
     )
     
+    # Send the results executed by matching engine to Kafka
     for trade_result in results:
         await kafka_client.produce_result("trade_result", trade_result)
         print("========================")
@@ -27,6 +29,7 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
     print(f"Sent 'order_book_snapshot': {order_book_snapshot}")
     print("========================")
 
+# Function to handel order cancellation
 async def handle_cancel_order(cancel_request, matching_engine, kafka_client, order_book):
     print(f"Received cancel-orders:", cancel_request)
     cancel_result = matching_engine.cancel_order(
@@ -44,6 +47,7 @@ async def handle_cancel_order(cancel_request, matching_engine, kafka_client, ord
     print(f"Sent 'order_book_snapshot': {order_book_snapshot}")
     print("========================")
 
+# Function to periodically send order book snapshots
 async def send_order_book_every_two_second(order_book, kafka_client):
     while True:
         start_time = time.time()
@@ -55,15 +59,15 @@ async def send_order_book_every_two_second(order_book, kafka_client):
         sleep_time = max(0, 2 - elapsed_time)
         await asyncio.sleep(sleep_time)
 
-
+# Main function to setup and run the trading engine
 async def main():
     kafka_client = KafkaClient()
     order_book = OrderBook()
     matching_engine = MatchingEngine(order_book)
 
     await kafka_client.setup()
-    print("Trading engine started. Waiting for orders and cancellations...")
-    print("---------------------------------------------")
+    print("Trading engine started")
+    print("----------------------")
 
     kafka_client.add_topic_handler("new-orders", 
         lambda order: handle_new_order(order, matching_engine, kafka_client, order_book))

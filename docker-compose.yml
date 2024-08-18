@@ -51,7 +51,7 @@ services:
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
     environment:
-      - kafka:9092
+      - KAFKA_BROKERS=kafka:9092
     command: python /usr/src/app/matching-engine/src/main.py
     depends_on:
       kafka:

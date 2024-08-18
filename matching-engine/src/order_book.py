@@ -4,9 +4,9 @@ from collections import deque
 
 class OrderBook:
     def __init__(self):
-        self.bids = SortedDict()
+        self.bids = SortedDict()  # SortedDict for efficient price-based ordering of bids and asks
         self.asks = SortedDict()
-        self.order_index = {}
+        self.order_index = {} # Add index to quick access to order details by order_id
 
     def add_order(self, order):
         side = order["side"]
@@ -17,21 +17,19 @@ class OrderBook:
 
         book = self.bids if side == "buy" else self.asks
         if price not in book:
-            book[price] = deque()
-        book[price].append((order_id))
-        # save details in index
-        self.order_index[order_id] = (side, price, quantity, quantity, user_id)
+            book[price] = deque() # Create new price level if it doesn't exsit
+        book[price].append((order_id)) 
+        self.order_index[order_id] = (side, price, quantity, quantity, user_id) # Store order details in the index for quick access
 
     def cancel_order(self, order_id):
         if order_id in self.order_index:
-            side, price, _, _, _ = self.order_index[order_id]
+            side, price, _, _, _ = self.order_index[order_id]  # Extract the side and price for the order , ignoring the other values
             book = self.bids if side == "buy" else self.asks
             book[price].remove(order_id)
             if not book[price]:
-                del book[price]
+                del book[price] # Remove price level if it becomes empty 
             return self.order_index.pop(order_id)
         return None
-        
 
     def match_order(self, order):
         side = order["side"]
@@ -39,18 +37,17 @@ class OrderBook:
         input_quantity = Decimal(str(order["quantity"]))
         input_order_id = order["order_id"]
         input_user_id = order["user_id"]
-
         
         if side == "buy":
-            opposite_book = self.asks
-            iterate_book = iter
+            opposite_book = self.asks 
+            iterate_book = iter # Iterate from lowest to highest prcie
             price_condition = lambda op, ip: op <= ip
         else:  
             opposite_book = self.bids
-            iterate_book = reversed
+            iterate_book = reversed # Iterate from hightest to lowest price
             price_condition = lambda op, ip: op >= ip
 
-        for opposite_price, order_ids in iterate_book(opposite_book.items()):
+        for opposite_price, order_ids in iterate_book(opposite_book.items()): # Iterate through the oppsite book
             if not price_condition(opposite_price, input_price):
                 break
 
@@ -78,22 +75,22 @@ class OrderBook:
                     "input_order_id": input_order_id
                 }
                 
-                if input_quantity == 0:
+                if input_quantity == 0: # fully matched, stop matching
                     break
 
-            if not order_ids:
+            if not order_ids: # If this price level is now empty, remove it from the book
                 del opposite_book[opposite_price]
 
-            if input_quantity == 0:
+            if input_quantity == 0: # If the input order is fully matched, stop looking for matches
                 break
 
-        if input_quantity > 0:
+        if input_quantity > 0:   # If no matching and there's any quantity left, add it as a new order
             self.add_order({**order, "quantity": input_quantity})
 
     def get_order_book(self, levels: int = 10) -> dict:
-        def aggregate_orders(book, reverse=False):
-            items = list(book.items())
-            if reverse:
+        def aggregate_orders(book, reverse=False):  # Aggregate orders at each price level
+            items = list(book.items()) # Convert SortedDict items to a list
+            if reverse: # Reverse the list for bids to get descending order
                 items.reverse()
             return [{"price": str(price), "quantity": str(sum(self.order_index[order_id][2] for order_id in orders))} 
                     for price, orders in items][:levels]

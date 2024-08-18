@@ -4,15 +4,18 @@ from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 import json
 from decimal import Decimal
 
+# Convert decoimal and int objects to strings for JSON serialization
 class StringifyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (int, Decimal)):
             return str(obj)
         return super(StringifyEncoder, self).default(obj)
 
+# Serialize the object to JSON string using StringifyEncoder
 def stringify_serializer(obj):
     return json.dumps(obj, cls=StringifyEncoder).encode("utf-8")
 
+# Initialize and start the Kafka consumer and producer
 class KafkaClient:
     def __init__(self, bootstrap_servers=None):
         self.bootstrap_servers = bootstrap_servers or os.environ.get("KAFKA_BROKERS", "localhost:9092")
@@ -45,7 +48,8 @@ class KafkaClient:
                     await asyncio.sleep(retry_delay)
                 else:
                     raise
-
+    
+    # Continuously consume messages from subscribed topics
     async def consume_messages(self):
         try:
             async for msg in self.consumer:
