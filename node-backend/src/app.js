@@ -21,11 +21,6 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-// health 
-app.get("/health", (req, res) => {
-    res.status(200).json({ status: "OK" });
-  });
-
 // middleware 
 app.use(express.json());
 app.use(cookieParser());
@@ -34,13 +29,13 @@ app.use(express.urlencoded({ extended: true }));
 // kafka
 kafkaProducer.init();
 kafkaConsumer.init();
-process.on('SIGINT', async () => {
+process.on("SIGINT", async () => {
     try {
         await kafkaProducer.disconnect();
-        console.log('Server gracefully shut down');
+        console.log("Server gracefully shut down");
         process.exit(0);
     } catch (error) {
-        console.error('Error during shutdown:', error);
+        console.error("Error during shutdown:", error);
         process.exit(1);
     }
 });
