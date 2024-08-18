@@ -10,7 +10,11 @@ const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 const btcusdtWs = new WebSocket(wsUrl)
 
 let latestTickerData = null;
-let latestDepthData = { bids: {}, asks: {}};
+// let latestDepthData = { bids: {}, asks: {}};
+
+// store 15 seconds data
+const dataBuffer = [];
+const BUFFER_SIZE = 15; 
 
 // broadcast function
 function broadcastMessage(type ,data) {
@@ -21,6 +25,15 @@ function broadcastMessage(type ,data) {
     });
 }
 
+function processBufferData(newData) {
+    dataBuffer.push(newData);
+
+    if (dataBuffer.length > BUFFER_SIZE) {
+        dataBuffer.shift();
+    }
+
+    return dataBuffer;
+}
 
 // get ticker and order book from binance wss
 btcusdtWs.on("message", (data) => {
@@ -34,34 +47,35 @@ btcusdtWs.on("message", (data) => {
             price: streamData.c,
             priceChangePercent: streamData.P,
         }
-        broadcastMessage("ticker", latestTickerData);
-    } else if (stream === "btcusdt@depth") {
-        // renew bid
-        streamData.b.forEach(([price, quantity]) => {
-            if (parseFloat(quantity) === 0){
-                delete latestDepthData[price];
-            } else {
-                latestDepthData.bids[price] = parseFloat(quantity);
-            }
-        });
+        const processedData = processBufferData(latestTickerData);
+        broadcastMessage("ticker", processedData[0]);
+ }
+    // } else if (stream === "btcusdt@depth") {
+    //     // renew bid
+    //     streamData.b.forEach(([price, quantity]) => {
+    //         if (parseFloat(quantity) === 0){
+    //             delete latestDepthData[price];
+    //         } else {
+    //             latestDepthData.bids[price] = parseFloat(quantity);
+    //         }
+    //     });
 
-        streamData.a.forEach(([price, quantity]) => {
-            if (parseFloat(quantity) === 0){
-                delete latestDepthData.asks[price];
-            } else {
-                latestDepthData.asks[price] = parseFloat(quantity);
-            }
-        })
+    //     streamData.a.forEach(([price, quantity]) => {
+    //         if (parseFloat(quantity) === 0){
+    //             delete latestDepthData.asks[price];
+    //         } else {
+    //             latestDepthData.asks[price] = parseFloat(quantity);
+    //         }
+    //     })
 
-        // const processedData = processOrderBookData();
-        // broadcastMessage("orderBook", processedData)
-    }
+    //     const processedData = processBufferData(latestDepthData);
+    //     broadcastMessage("orderBook", processedData)
+    // }
 })
 
 btcusdtWs.on("error",(error)=>{
     console.error("Websocket error:", error)
 })
-
 // function processOrderBookData(){
 //     const myExchangeData = getMyExchangeOrderBook();
     
