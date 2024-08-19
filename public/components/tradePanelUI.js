@@ -28,6 +28,9 @@ async function startListeningForOrderUpdate(){
 }
 
 async function listenForRecentTrade(){
+    // order book spread
+    document.addEventListener("recentTrade", handlePriceUpdate);
+    // recent trade
     document.addEventListener("recentTrade", handleRecentTrade);
 }
 
@@ -327,13 +330,17 @@ function updateOrderBookContent(element, orders, isAsk = false) {
     });
 }
 
-// handle  ORDER BOOK 
+// handle RECENT TRADE
 function handleRecentTrade(event) {
     const recentTradeData = event.detail;
     const tradesList = document.querySelector(".recent-trades__list");
     const tradeItem = document.createElement("div");
     tradeItem.className = `recent-trade__item ${recentTradeData.side}`;
+
+    // Order Book spread
     
+
+    // recent trade
     const tradeDetails = [
         { classList: "trade-price", content: Decimal(recentTradeData.price).toFixed(2) },
         { classList: "trade-time", content: formatLocalTimeOnly(recentTradeData.timestamp) }
@@ -346,7 +353,7 @@ function handleRecentTrade(event) {
         tradeItem.appendChild(recentTradeDiv);
     });
     
-     tradesList.insertBefore(tradeItem, tradesList.firstChild);
+    tradesList.insertBefore(tradeItem, tradesList.firstChild);
 
 
     const maxTrades = 25;
@@ -357,10 +364,15 @@ function handleRecentTrade(event) {
 
 // update  ORDER BOOK PRICE 
 function handlePriceUpdate(event) {
+    // my trade(current price) for temp
+    const myCurrentPrice = new Decimal(event.detail.price);
+
     const currentPrice = new Decimal(event.detail.price);
     const priceElement = document.getElementById("order-book__price");
     if (priceElement) {
         priceElement.textContent = currentPrice.toFixed(2);
+        // my trade(current price)for temp
+        priceElement.textContent = myCurrentPrice.toFixed(2);
 
         if (lastPrice !== null) {
             if (currentPrice.greaterThan(lastPrice)) {
