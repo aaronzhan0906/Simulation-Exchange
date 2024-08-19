@@ -23,7 +23,7 @@ function broadcastMessage(type, data) {
 
 // random volatility for demo
 function getRandomVolatility() {
-  return (Math.random() - 0.001) * 0.00001;
+  return (Math.random() - 0.0001) * 0.00001;
 }
 
 function processBuffer() {
@@ -34,12 +34,10 @@ function processBuffer() {
     const originalPrice = parseFloat(lastData.price);
     const newPrice = originalPrice * (1 + volatility);
     
-    const newPriceChangePercent = ((newPrice / originalPrice - 1) * 100).toFixed(3);
-    
     const enhancedData = {
       symbol: lastData.symbol,
       price: newPrice.toFixed(8),
-      priceChangePercent: newPriceChangePercent
+      priceChangePercent: lastData.priceChangePercent,
     };
     
     dataBuffer = [];
