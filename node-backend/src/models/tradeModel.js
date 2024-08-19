@@ -11,7 +11,7 @@ class TradeModel {
                 `SELECT * FROM orders 
                 WHERE user_id = ?
                 AND status IN ("open", "partially_filled")
-                ORDER BY created_at DESC`,
+                ORDER BY created_at ASC`,
                 userId
             );
             

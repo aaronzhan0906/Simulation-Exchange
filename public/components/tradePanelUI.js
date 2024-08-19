@@ -180,9 +180,7 @@ function addOrderToUI(orderData) {
         orderData.type.charAt(0).toUpperCase() + orderData.type.slice(1),
         orderData.side.charAt(0).toUpperCase() + orderData.side.slice(1),
         `${new Decimal(orderData.price).toFixed(2)} ${quoteCurrency}`,
-        orderData.side === 'buy'
-            ? `${new Decimal(orderData.quantity).toFixed(5)} ${baseCurrency}`
-            : `${new Decimal(orderData.quantity).mul(orderData.price).toFixed(2)} ${quoteCurrency}`,
+        `${new Decimal(orderData.quantity).toFixed(5)} ${baseCurrency}`,
         `- ${baseCurrency}`,
         orderData.status,
         "Cancel"
@@ -205,6 +203,12 @@ function addOrderToUI(orderData) {
         } else {
             td.textContent = cellData;
         }
+
+        // buy and sell color
+        if (index === 3) {
+            td.classList.add(orderData.side === "buy" ? "open-orders__cell--buy" : "open-orders__cell--sell");
+        }
+
         newRow.appendChild(td);
     });
 
@@ -213,8 +217,12 @@ function addOrderToUI(orderData) {
     } else {
         tbody.appendChild(newRow);
     }
+
+
     updateOpenOrdersCount();
 }
+
+
 
 // handle orders in OPEN ORDERS update status
 async function handleOrderUpdate(event) {

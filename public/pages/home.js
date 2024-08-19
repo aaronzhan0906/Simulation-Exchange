@@ -1,14 +1,25 @@
 import { initializeHeader } from "../components/headerUI.js";
+import { checkLoginStatus } from "../utils/auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     initializeHeader();
     linkToTradePage();
     initializeWebSocket();
-    signUpButton();
+    const signUpForm = generateSignUpForm();
+    if (signUpForm) {
+        const heroContainer = document.querySelector(".hero__container");
+        if (heroContainer) {
+            heroContainer.appendChild(signUpForm);
+        } else {
+            console.error("Could not find .hero__container element");
+        }
+    }
 });
 
+
+
 function initializeWebSocket() {
-    const wsUrl = `wss://${location.host}/ws`; // 假設您的後端 WebSocket 端點是 /ws
+    const wsUrl = `wss://${location.host}/ws`; 
     let ws;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 5;
@@ -54,22 +65,46 @@ function initializeWebSocket() {
     connect();
 }
 
-function signUpButton() {
-    const signUpButton = document.getElementById("hero__register--button");
-    const form = document.getElementById("hero__register--form");
+function generateSignUpForm() {
+    const isLoggedIn = checkLoginStatus();
+
+    // If user is logged in, don't generate the form
+    if (isLoggedIn) {
+        return null;
+    }
+
+    const form = document.createElement("form");
+    form.className = "hero__register";
+    form.id = "hero__register--form";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "hero__register--input";
+    input.id = "hero__register--input";
+    input.placeholder = "Email";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "hero__register--button";
+    button.id = "hero__register--button";
+    button.textContent = "Sign Up";
+
+    form.appendChild(input);
+    form.appendChild(button);
 
     form.addEventListener("submit", (event) => {
-        event.preventDefault(); 
+        event.preventDefault();
     });
 
-    signUpButton.addEventListener("click", (event) => {
-        event.preventDefault(); 
-        const inputEmail = document.getElementById("hero__register--input");
-        if (inputEmail.value) {
-            localStorage.setItem("email", inputEmail.value);
+    button.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (input.value) {
+            localStorage.setItem("email", input.value);
         }
         window.location.href = "/signup";
     });
+
+    return form;
 }
 
 function linkToTradePage() {
