@@ -3,44 +3,93 @@ import { wss } from "../app.js";
 import WebSocket from "ws";
 
 const router = express.Router();
-
 const wsBaseUrl = process.env.WEBSOCKET_URL;
-const streamName = "btcusdt@ticker";  // "/btcusdt@depth"
+const streamName = "btcusdt@ticker";
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 const btcusdtWs = new WebSocket(wsUrl);
 
+let dataBuffer = [];
 let latestTickerData = null;
+let bufferInterval = null;
 
-// broadcast function
 function broadcastMessage(type, data) {
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type, data }));
-        }
-    });
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type, data }));
+    }
+  });
 }
 
-// get ticker from binance wss
-btcusdtWs.on("message", (data) => {
-    const parsedData = JSON.parse(data);
-    const { stream, data: streamData } = parsedData;
 
-    // ticker
-    if (stream === "btcusdt@ticker") {
-        latestTickerData = {
-            symbol: streamData.s,
-            price: streamData.c,
-            priceChangePercent: streamData.P,
-        };
-        broadcastMessage("ticker", latestTickerData);
-    }
+// random volatility for demo
+function getRandomVolatility() {
+  return (Math.random() - 0.001) * 0.00001;
+}
+
+function processBuffer() {
+  if (dataBuffer.length > 0) {
+    const lastData = dataBuffer[dataBuffer.length - 1];
+    const volatility = getRandomVolatility();
+    
+    const originalPrice = parseFloat(lastData.price);
+    const newPrice = originalPrice * (1 + volatility);
+    
+    const newPriceChangePercent = ((newPrice / originalPrice - 1) * 100).toFixed(3);
+    
+    const enhancedData = {
+      symbol: lastData.symbol,
+      price: newPrice.toFixed(8),
+      priceChangePercent: newPriceChangePercent
+    };
+    
+    dataBuffer = [];
+    broadcastMessage("ticker", enhancedData);
+  }
+}
+
+btcusdtWs.on("open", () => {
+  console.log("WebSocket connection established");
+  bufferInterval = setInterval(processBuffer, 1000);
+});
+
+btcusdtWs.on("message", (data) => {
+  const parsedData = JSON.parse(data);
+  const { stream, data: streamData } = parsedData;
+
+  if (stream === "btcusdt@ticker") {
+    latestTickerData = {
+      symbol: streamData.s,
+      price: streamData.c,
+      priceChangePercent: streamData.P,
+    };
+    dataBuffer.push(latestTickerData);
+  }
 });
 
 btcusdtWs.on("error", (error) => {
-    console.error("Websocket error:", error);
+  console.error("WebSocket error:", error);
+});
+
+btcusdtWs.on("close", () => {
+  console.log("WebSocket connection closed");
+  if (bufferInterval) {
+    clearInterval(bufferInterval);
+  }
+});
+
+process.on("SIGINT", () => {
+  if (bufferInterval) {
+    clearInterval(bufferInterval);
+  }
+  if (btcusdtWs.readyState === WebSocket.OPEN) {
+    btcusdtWs.close();
+  }
+  process.exit();
 });
 
 export default router;
+
+
 // } else if (stream === "btcusdt@depth") {
     //     // renew bid
     //     streamData.b.forEach(([price, quantity]) => {

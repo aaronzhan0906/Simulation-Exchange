@@ -5,7 +5,7 @@ import chalk from "chalk";
 import path from "path";
 import { createServer } from "http";
 import { fileURLToPath } from "url";
-import { WebSocketServer } from 'ws';
+import { WebSocketServer } from "ws";
 // import helmet from "helmet";
 import kafkaProducer from "./services/kafkaProducer.js";
 import kafkaConsumer from "./services/kafkaConsumer.js";

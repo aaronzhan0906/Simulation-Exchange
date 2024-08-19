@@ -2,9 +2,9 @@ import { initializeHeader } from "../components/headerUI.js";
 import { initTradePanel } from "../components/tradePanelUI.js";
 import tradeWebSocket from "../utils/tradeWebsocket.js";
 
-document.addEventListener("DOMContentLoaded", (event) => {
+document.addEventListener("DOMContentLoaded", () => {
     tradeWebSocket.init();
-
-    initializeHeader();
     initTradePanel();
+    initializeHeader();
+    
 });
