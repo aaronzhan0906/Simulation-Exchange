@@ -47,12 +47,18 @@ class TradeController {
 
         try { 
             if (side === "buy") {
-                await preBuyAuth(userId, price, quantity);
+                try {
+                    await preBuyAuth(userId, price, quantity);
+                } catch (error) {
+                    return res.status(400).json({ error: true, message: error.message });
+                }
             } else if (side === "sell") {
-                await preSellAuth(userId, symbol, quantity);
-            } else {
-                throw new Error("Invalid side");
-            }
+                try {
+                    await preSellAuth(userId, symbol, quantity);
+                } catch (error) {
+                    return res.status(400).json({ error: true, message: error.message });
+                }
+            } 
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
@@ -346,7 +352,7 @@ async function preBuyAuth(userId, price, quantity) {
         const availableBalance = await TradeModel.getAvailableBalanceById(userId)
         const usableBalance = new Decimal(availableBalance);
         if (usableBalance.lessThan(costAmount)) {
-            return res.status(400).json({ error:true, message:"Insufficient available balance" });
+            throw new Error("Insufficient available balance");
         } 
         await TradeModel.lockBalance(userId, price, quantity)
     } catch (error) {
@@ -361,7 +367,7 @@ async function preSellAuth(userId, symbol, quantity) {
     try {
         const availableQuantity = await TradeModel.getQuantityBySymbolAndUserId(userId, symbol);
         if (new Decimal(availableQuantity).lessThan(sellQuantity)) {
-            return res.status(400).json({ error:true, message:"Insufficient available asset" });
+            throw new Error("Insufficient available asset");
         }
         await TradeModel.lockAsset(userId, symbol, quantity)
     } catch (error) {

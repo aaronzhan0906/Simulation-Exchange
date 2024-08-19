@@ -69,13 +69,13 @@ class TradeModel {
             const newTotal = new Decimal(newData.executed_price).times(newData.executed_quantity);
             const allTotal = new Decimal(oldTotal).plus(newTotal);
             if (newExecutedQuantity.isZero()) {
-                throw new Error('新的已執行數量不能為零');
+                throw new Error("新的已執行數量不能為零");
             }
 
             const newAveragePrice = allTotal.dividedBy(newExecutedQuantity);
 
             if (newAveragePrice.isNaN() || !newAveragePrice.isFinite()) {
-                throw new Error('平均價格計算結果無效');
+                throw new Error("平均價格計算結果無效");
             }
             
             
@@ -334,22 +334,24 @@ class TradeModel {
         let newQuantity;
 
         try {
-            const existingAsset = await db.query(
+            const [existingAsset] = await db.query(
                 `SELECT quantity
                 FROM assets
                 WHERE user_id = ? AND symbol = ?`,
                 [updateUserId, updateSymbol]
             );
 
-            const currentQuantity = new Decimal(existingAsset[0].quantity);
+            console.log(existingAsset);
+            const currentQuantity = new Decimal(existingAsset.quantity);
             newQuantity = currentQuantity.minus(updateAssetData.executed_quantity);
-
+            
             await db.query(
                 `UPDATE assets
                 SET quantity = ?
                 WHERE user_id = ? AND symbol = ?`,
                 [newQuantity.toString(), updateUserId, updateSymbol]
             );
+
         } catch (error) {
             console.error("Error in decreaseAsset:", error);
         throw error;
