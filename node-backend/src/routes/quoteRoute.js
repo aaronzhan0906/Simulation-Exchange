@@ -21,7 +21,7 @@ function broadcastMessage(type, data) {
 }
 
 
-// random volatility for demo
+// random volatility just for demo to solve slow ws
 function getRandomVolatility() {
   return (Math.random() - 0.0001) * 0.00001;
 }
