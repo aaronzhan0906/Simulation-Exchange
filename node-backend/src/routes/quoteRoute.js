@@ -36,7 +36,7 @@ function processBuffer() {
     
     const enhancedData = {
       symbol: lastData.symbol,
-      price: newPrice.toFixed(8),
+      price: newPrice.toFixed(2),
       priceChangePercent: lastData.priceChangePercent,
     };
     
