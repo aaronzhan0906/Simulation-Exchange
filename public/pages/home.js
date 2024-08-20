@@ -134,6 +134,7 @@ const generateAssetList = (symbols) => {
     item.appendChild(actionsDiv);
     symbolListContainer.appendChild(item);
 
+    // link to trade page
     item.addEventListener("click", () => {
         location.href = `/trade/${symbol.symbolName}_usdt`;
     })

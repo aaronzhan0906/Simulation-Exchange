@@ -190,6 +190,7 @@ hr {
 .main {
     background-color: #0d0e0f;
     color: #ffffff;
+    padding-bottom: 80px;
 }
 
 .symbol-list {
