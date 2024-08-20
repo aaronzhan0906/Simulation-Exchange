@@ -4,66 +4,58 @@ import WebSocket from "ws";
 
 const router = express.Router();
 
-const wsBaseUrl = process.env.WEBSOCKET_URL 
-const streamName = "btcusdt@ticker/btcusdt@depth";
+const wsBaseUrl = process.env.WEBSOCKET_URL;
+const tradingPairs = ["btcusdt", "ethusdt", "bnbusdt", "dogeusdt", "avaxusdt"];
+const streamName = tradingPairs.map(pair => `${pair}@ticker`).join('/');
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
-const btcusdtWs = new WebSocket(wsUrl)
 
-let latestTickerData = null;
-let latestDepthData = { bids: {}, asks: {}};
+const binanceWs = new WebSocket(wsUrl);
+
+let latestTickerData = {};
 
 // broadcast function
-function broadcastMessage(type ,data) {
-    wss.clients.forEach((client)=> {
-        if (client.readyState === WebSocket.OPEN){
-            client.send(JSON.stringify({type ,data}));
+function broadcastMessage(type, data) {
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type, data }));
         }
     });
 }
 
-
-// get ticker and order book from binance wss
-btcusdtWs.on("message", (data) => {
+// get ticker from binance wss
+binanceWs.on("message", (data) => {
     const parsedData = JSON.parse(data);
-    const { stream, data:streamData } = parsedData;
+    const { stream, data: streamData } = parsedData;
 
-    // ticker
-    if ( stream === "btcusdt@ticker") {
-        latestTickerData = {
-            Symbol: streamData.s,
-            price: streamData.c,
-            priceChangePercent: streamData.P,
-        }
-        broadcastMessage("tickerBTC", latestTickerData);
-    } else if (stream === "btcusdt@depth") {
-        // renew bid
-        streamData.b.forEach(([price, quantity]) => {
-            if (parseFloat(quantity) === 0){
-                delete latestDepthData[price];
-            } else {
-                latestDepthData.bids[price] = parseFloat(quantity);
-            }
-        });
+    // Extract the trading pair from the stream name
+    const pair = stream.split('@')[0].toUpperCase();
 
-        streamData.a.forEach(([price, quantity]) => {
-            if (parseFloat(quantity) === 0){
-                delete latestDepthData.asks[price];
-            } else {
-                latestDepthData.asks[price] = parseFloat(quantity);
-            }
-        })
+    latestTickerData[pair] = {
+        symbol: streamData.s,
+        price: streamData.c,
+        priceChangePercent: streamData.P,
+    };
+    
+    // Broadcast the ticker data
+    console.log(`ticker${pair.replace('USDT', '')}`, latestTickerData[pair]);
+    broadcastMessage(`ticker${pair.replace('USDT', '')}`, latestTickerData[pair]);
+});
 
-        // const processedData = processOrderBookData();
-        // broadcastMessage("orderBook", processedData)
-    }
-})
+binanceWs.on("error", (error) => {
+    console.error("Websocket error:", error);
+});
 
-btcusdtWs.on("error",(error)=>{
-    console.error("Websocket error:", error)
-})
+// Optional: Add a route to get the latest ticker data
+router.get('/latest-ticker', (req, res) => {
+    res.json(latestTickerData);
+});
 
 export default router;
 
+// let latestDepthData = { bids: {}, asks: {}};
+
+// const processedData = processOrderBookData();
+// broadcastMessage("orderBook", processedData)
 
 // } else if (stream === "btcusdt@depth") {
     //     // renew bid

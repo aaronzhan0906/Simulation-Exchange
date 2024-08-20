@@ -71,7 +71,7 @@ function generateSignUpForm() {
 function linkToTradePage() {
     const btcTradeButton = document.getElementById("symbol-item__btc");
     btcTradeButton.addEventListener("click", () => {
-        location.href = "/trade";
+        location.href = "/trade/btc_usdt";
     });
 }
 
