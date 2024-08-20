@@ -4,6 +4,8 @@ import { checkLoginStatus } from "../utils/auth.js";
 let lastPrice = null;
 let isPriceSet = false;
 let isOrderUpdateListening = false;
+const pair = location.pathname.split("/")[2];
+const baseAsset = pair.split("_")[0];
 
 // get websocket data
 function initTradePanelWebSocket(){
@@ -18,6 +20,10 @@ function initTradePanelWebSocket(){
         submitBtn.classList.add("unauthorized");
         submitBtn.disabled = true;
     }
+
+    const tradePanelAsset = document.getElementById("trade-panel__currency");
+    tradePanelAsset.textContent = `${baseAsset.toUpperCase()}`;
+    submitBtn.textContent = `Buy ${baseAsset.toUpperCase()}`;
 }
 
 async function startListeningForOrderUpdate(){
@@ -35,6 +41,21 @@ async function listenForRecentTrade(){
 }
 
 
+// ORDER BOOK //
+function initOrderBook () {
+    const tableHeader = document.getElementById("order-book__table-header");
+    const priceSpan = document.createElement("span");
+    priceSpan.textContent = `Price(USDT)`;
+    tableHeader.appendChild(priceSpan);
+
+    const qtySpan = document.createElement("span");
+    qtySpan.textContent = `Qty(${baseAsset.toUpperCase()})`;
+    tableHeader.appendChild(qtySpan);
+}   
+
+
+
+
 // get available balance in TRADE PANEL
 async function initAvailableBalance () {
     const isLoggedIn = checkLoginStatus();
@@ -43,7 +64,7 @@ async function initAvailableBalance () {
     if (!isLoggedIn) return;
 
     const availablePrice = document.getElementById("trade-panel__available-price");
-    const response = await fetch("api/wallet/available");
+    const response = await fetch("/api/wallet/available");
         
     if (response.ok){
         const data = await response.json();
@@ -56,16 +77,16 @@ async function initAvailableBalance () {
 async function initAvailableAsset(){
     const isLoggedIn = checkLoginStatus();
     const unAuthAsset = document.getElementById("trade-panel__available-asset");
-    unAuthAsset.textContent = "- BTC";
+    unAuthAsset.textContent = `- ${baseAsset.toUpperCase()}`;
     if (!isLoggedIn) return;
 
     const availableAsset = document.getElementById("trade-panel__available-asset");
-    const response = await fetch("api/wallet/assetbtc");
+    const response = await fetch(`/api/wallet/asset/${baseAsset}`);
     
     if (response.ok){
         const data = await response.json();
         const availableAmount = new Decimal(data.amount.available_quantity);
-        availableAsset.textContent = `${availableAmount.toFixed(5)} BTC`;
+        availableAsset.textContent = `${availableAmount.toFixed(5)} ${baseAsset.toUpperCase()}`;
     }
 
 }
@@ -76,7 +97,7 @@ async function getOpenOrders(){
     if (!isLoggedIn) return;
 
     try {
-        const response = await fetch("api/trade/order")
+        const response = await fetch("/api/trade/order")
         const data = await response.json();
         if (response.ok){
             data.orders.forEach(order => {
@@ -102,13 +123,13 @@ async function submitOrder(orderType, orderSide, price, quantity) {
     };
 
     try {
-        const response = await fetch("api/trade/order", {
+        const response = await fetch("/api/trade/order", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                symbol: "btc_usdt",
+                symbol: `${baseAsset}_usdt`,
                 side: orderSide,
                 type: orderType,
                 price: price,
@@ -160,16 +181,16 @@ function addOrderToUI(orderData) {
     const newRow = document.createElement("tr");
     newRow.setAttribute("order-id", orderData.orderId);
 
-    const [baseCurrency, quoteCurrency] = orderData.symbol.toUpperCase().split("_");
+    const [base, quoteCurrency] = orderData.symbol.toUpperCase().split("_");
     
     const cells = [
         formatLocalTime(orderData.createdAt),
-        `${baseCurrency}/${quoteCurrency}`,
+        `${base}/${quoteCurrency}`,
         orderData.type.charAt(0).toUpperCase() + orderData.type.slice(1),
         orderData.side.charAt(0).toUpperCase() + orderData.side.slice(1),
         `${new Decimal(orderData.price).toFixed(2)} ${quoteCurrency}`,
-        `${new Decimal(orderData.quantity).toFixed(5)} ${baseCurrency}`,
-        `- ${baseCurrency}`,
+        `${new Decimal(orderData.quantity).toFixed(5)} ${base}`,
+        `- ${base}`,
         orderData.status,
         "Cancel"
     ];
@@ -243,7 +264,7 @@ async function cancelOrder(orderId) {
     const symbol = orderRow.children[1].textContent.split("/")[0];
 
     try {
-        const response = await fetch("api/trade/order",{
+        const response = await fetch("/api/trade/order",{
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
@@ -415,7 +436,7 @@ function initTabsAndSubmit() {
         sellButton.classList.remove("active");
         submitButton.classList.add("buy");   
         submitButton.classList.remove("sell");
-        submitButton.textContent = "Buy BTC"; 
+        submitButton.textContent = `Buy ${baseAsset.toUpperCase()}`; 
         updateDisplayAvailable(true);
     });
 
@@ -424,7 +445,7 @@ function initTabsAndSubmit() {
         buyButton.classList.remove("active");
         submitButton.classList.add("sell");
         submitButton.classList.remove("buy");
-        submitButton.textContent = "Sell BTC"; 
+        submitButton.textContent = `Sell ${baseAsset.toUpperCase()}`; 
         updateDisplayAvailable(false);
 
     });
@@ -473,7 +494,7 @@ function quickSelectButtonAndInputHandler() {
             this.classList.add("active");
 
             const availablePrice = new Decimal(availablePriceElement.textContent.replace(" USDT", ""));
-            const availableAsset = new Decimal(availableAssetElement.textContent.replace(" BTC", ""));
+            const availableAsset = new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, ""));
             const currentPrice = new Decimal(priceInput.value || "0");
             const dataValue = new Decimal(this.dataset.value); // 0.25, 0.5, 0.75, 1
 
@@ -525,6 +546,7 @@ function quickSelectButtonAndInputHandler() {
 
 export async function initTradePanel() {
     // init
+    initOrderBook ();
     initTradePanelWebSocket();
     initTabsAndSubmit(); 
     getOpenOrders();

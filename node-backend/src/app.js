@@ -10,11 +10,9 @@ import { WebSocketServer } from "ws";
 import kafkaProducer from "./services/kafkaProducer.js";
 import kafkaConsumer from "./services/kafkaConsumer.js";
 
-
 // path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 
 // app, server, wss
 const app = express();
@@ -41,26 +39,37 @@ process.on("SIGINT", async () => {
 });
 
 // static
-app.use(express.static(path.join(__dirname,"..", "..", "public")))
-// html 
+app.use(express.static(path.join(__dirname, "..", "..", "public")));
+
+// html routes
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","home.html"))
-})
-app.get("/trade", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","trade.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "home.html"));
+});
+
 app.get("/wallet", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","wallet.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "wallet.html"));
+});
+
 app.get("/history", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","history.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "history.html"));
+});
+
 app.get("/login", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","login.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "login.html"));
+});
+
 app.get("/signup", (req, res) => {
-    res.sendFile(path.join(__dirname,"..", ".." ,"public","signup.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "signup.html"));
+});
+
+
+// /trade/:pair 路由
+app.get("/trade/:pair", (req, res) => {
+    const { pair } = req.params;
+    console.log("Trading pair:", pair);  // 記錄交易對以進行調試
+    res.sendFile(path.join(__dirname, "..", "..", "public", "trade.html"));
+});
+
 
 // route
 import homeRoute from "./routes/homeRoute.js";
@@ -68,14 +77,16 @@ import userRoute from "./routes/userRoute.js";
 import walletRoute from "./routes/walletRoute.js";
 import tradeRoute from "./routes/tradeRoute.js";
 import historyRoute from "./routes/historyRoute.js";
-import quoteWS from "./services/quoteWS.js";
 app.use("/api/home", homeRoute);
 app.use("/api/user", userRoute);
 app.use("/api/wallet", walletRoute);
 app.use("/api/trade", tradeRoute);
 app.use("/api/history", historyRoute);
-app.use("/api/quote", quoteWS);
 
+
+// WS 
+import quoteWS from "./services/quoteWS.js";
+app.use("/api/quote", quoteWS);
 
 
 

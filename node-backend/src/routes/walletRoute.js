@@ -11,7 +11,6 @@ router.get("/balance", WalletController.getBalance)
 router.get("/available", WalletController.getAvailable)
 router.get("/assets", WalletController.getAssets)
 
-// 之後改多種資產
-router.get("/assetbtc", WalletController.getAvailableAmount)
+router.get("/asset/:symbol", WalletController.getAvailableAmount)
 
 export default router

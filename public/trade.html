@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+TC:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
     <title>Trade</title>
-    <link rel="stylesheet" href="./css/trade.css">
-    <script type="module" src="./pages/trade.js"></script>
+    <link rel="stylesheet" href="/css/trade.css">
+    <script type="module" src="/pages/trade.js"></script>
 </head>
 <body>
     <header class="header">
@@ -34,9 +34,9 @@
             <div class="order-book__title">
                 Order Book
             </div>
-            <div class="order-book__table-header">
-                <span>Price(USDT)</span>
-                <span>Qty(BTC)</span>
+            <div class="order-book__table-header" id="order-book__table-header">
+                <!-- <span>Price(USDT)</span>
+                <span>Qty(BTC)</span> -->
             </div>
             <div class="order-book__asks" id="order-book__asks"> 
                 <!-- asks__item -->
@@ -56,7 +56,7 @@
                 <button class="trade-panel__tab--sell" id="trade-panel__tab--sell">Sell</button>
             </div>
             <div class="trade-panel__order-type" id="trade-panel__order-type">
-                <select id="orderTypeSelect">
+                <select class="orderTypeSelect" id="orderTypeSelect">
                     <option value="limit">Limit</option>
                 </select>
             </div>
@@ -66,7 +66,7 @@
             </div>
             <div class="trade-panel__input-group">
                 <input type="text" placeholder="Quantity" class="trade-panel__input" id="trade-panel__input--quantity">
-                <span class="trade-panel__currency">BTC</span>
+                <span class="trade-panel__currency" id="trade-panel__currency"></span>
             </div>
             <div class="trade-panel__quick-select">
                 <button data-value="0.25">25%</button>
@@ -83,7 +83,7 @@
                 <div class="trade-panel__available-price" id="trade-panel__available-price"></div>
                 <div class="trade-panel__available-asset" id="trade-panel__available-asset"></div>
             </div>
-            <button class="trade-panel__submit" id="trade-panel__submit">Buy BTC</button>
+            <button class="trade-panel__submit" id="trade-panel__submit"></button>
         </div>
         <!-- open-orders -->
         <div class="open-orders">

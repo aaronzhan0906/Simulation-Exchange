@@ -39,10 +39,11 @@ class WalletController {
         }
     }
 
-    // 之後改多種資產 router.get("/asset/btc", WalletController.getAssetBTC)
+    // router.get("/asset/:symbol", WalletController.getAvailableAmount)
     async getAvailableAmount(req, res) {
         try {
-            const amountOfSymbol = await WalletModel.getAvailableAmountOfSymbol(req.user.userId, "btc");
+            const { symbol } = req.params;
+            const amountOfSymbol = await WalletModel.getAvailableAmountOfSymbol(req.user.userId, symbol);
             res.status(200).json({ 
                 "ok": true, 
                 "amount": amountOfSymbol

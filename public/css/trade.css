@@ -27,6 +27,18 @@ input::-webkit-inner-spin-button {
   margin: 0;
 }
 
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none;
+}
+
+/* IE 10+ */
+select::-ms-expand {
+  display: none;
+}
+
 
 /* Header */
 .header {
@@ -352,7 +364,7 @@ input::-webkit-inner-spin-button {
 
 .trade-panel__order-type select {
     width: 100%;
-    padding: 10px;
+    padding: 11.5px;
     margin-bottom: 15px;
     background-color: #333;
     color: #fff;

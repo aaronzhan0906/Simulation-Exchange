@@ -42,8 +42,8 @@ class TradeWebSocket {
                 this.emitRecentTrade(message.data);
                 break;
             
-            default:
-                console.log("Unhandled message type:", message.type);
+            // default:
+            //     console.log("Unhandled message type:", message.type);
         }
     }
 
