@@ -73,10 +73,8 @@ class TradeWebSocket {
 
     onClose() {
         console.log("WS connection closed");
-        // 添加重連邏輯
         setTimeout(() => this.init(), 5000);
     }
 }
 
-// 創建一個實例並導出
 export default new TradeWebSocket();

@@ -1,69 +1,25 @@
 import { initializeHeader } from "../components/headerUI.js";
 import { checkLoginStatus } from "../utils/auth.js";
+import homeWebSocket from "../utils/homeWebsocket.js";
+
 
 document.addEventListener("DOMContentLoaded", () => {
+    homeWebSocket.init()
+    listenForRecentDetail();
     initializeHeader();
     linkToTradePage();
-    initializeWebSocket();
-    const signUpForm = generateSignUpForm();
-    if (signUpForm) {
-        const heroContainer = document.querySelector(".hero__container");
-        if (heroContainer) {
-            heroContainer.appendChild(signUpForm);
-        } else {
-            console.error("Could not find .hero__container element");
-        }
-    }
+    generateSignUpForm();
 });
 
 
-
-function initializeWebSocket() {
-    const wsUrl = `wss://${location.host}/ws`; 
-    let ws;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
-
-    function connect() {
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log("WebSocket connection established");
-            reconnectAttempts = 0;
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                if (message.type === "ticker") {
-                    updatePrice(message.data);
-                    console.log(message.data);
-                }
-            } catch (error) {
-                console.error("Error parsing WebSocket message:", error);
-            }
-        };
-
-        ws.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-
-        ws.onclose = (event) => {
-            console.log("WebSocket connection closed", event.reason);
-            if (reconnectAttempts < maxReconnectAttempts) {
-                const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                setTimeout(() => {
-                    reconnectAttempts++;
-                    connect();
-                }, timeout);
-            } else {
-                console.error("Max reconnect attempts reached. Please refresh the page.");
-            }
-        };
-    }
-
-    connect();
+function listenForRecentDetail() {
+    document.addEventListener("tickerBTC", updateTickerDetail);
+    document.addEventListener("tickerETH", updateTickerDetail);
+    document.addEventListener("tickerBNB", updateTickerDetail);
+    document.addEventListener("tickerAVAX", updateTickerDetail);
+    document.addEventListener("tickerDOGE", updateTickerDetail);
 }
+
 
 function generateSignUpForm() {
     const isLoggedIn = checkLoginStatus();
@@ -104,7 +60,12 @@ function generateSignUpForm() {
         window.location.href = "/signup";
     });
 
-    return form;
+    const heroContainer = document.querySelector(".hero__container");
+    if (heroContainer) {
+        heroContainer.appendChild(form);
+    } else {
+        console.error("Could not find .hero__container element");
+    }
 }
 
 function linkToTradePage() {
@@ -114,28 +75,33 @@ function linkToTradePage() {
     });
 }
 
-function updatePrice(tickerData) {
-    const priceElement = document.querySelector(".symbol-item__price--usdt");
+function updateTickerDetail(event) {
+    const recentPrice = event.detail.price; 
+
+    const priceElement = document.getElementById("symbol-item__price--usdt--btc");
     if (priceElement) {
-        priceElement.textContent = parseFloat(tickerData.price).toFixed(2);
+        priceElement.textContent = `${recentPrice} USDT`;
     }
 
-    const priceUsdElement = document.querySelector(".symbol-item__price--usd");
+    const priceUsdElement = document.getElementById("symbol-item__price--usd--btc");
     if (priceUsdElement) {
-        priceUsdElement.textContent = `≈${parseFloat(tickerData.price).toFixed(2)} USD`;
+        priceUsdElement.textContent = `≈${recentPrice} USD`;
     }
 
-    const pricePercentElement = document.querySelector(".symbol-item__change");
+    const pricePercentElement = document.getElementById("symbol-item__change--btc");
     if (pricePercentElement) {
-        const priceChangePercent = parseFloat(tickerData.priceChangePercent);
+        const priceChangePercent = event.detail.priceChangePercent;
         pricePercentElement.textContent = `${priceChangePercent.toFixed(2)}%`;
 
-        if (priceChangePercent >= 0) {
+        if (priceChangePercent > 0) {
             pricePercentElement.classList.remove("negative");
             pricePercentElement.classList.add("positive");
-        } else {
+        } else if (priceChangePercent < 0) {
             pricePercentElement.classList.remove("positive");
             pricePercentElement.classList.add("negative");
+        } else {
+            pricePercentElement.classList.remove("positive");
+            pricePercentElement.classList.remove("negative");
         }
     }
 }

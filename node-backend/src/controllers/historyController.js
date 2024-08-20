@@ -2,7 +2,7 @@ import HistoryModel from "../models/historyModel.js";
 
 class HistoryController {
 
-    async getTransactionHistory(req, res, next) {
+    async getTransactionHistory(req, res) {
         try {
             const transactions = await HistoryModel.getTransactionsById(req.user.userId);
             res.status(200).json({
@@ -19,7 +19,7 @@ class HistoryController {
                 }))
             })
         } catch(error) {
-            next(error);
+            console.error("getTransactionHistory", error);
         }
     }
 }

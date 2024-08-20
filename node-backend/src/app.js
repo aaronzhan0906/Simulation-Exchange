@@ -63,11 +63,13 @@ app.get("/signup", (req, res) => {
 })
 
 // route
+import homeRoute from "./routes/homeRoute.js";
 import userRoute from "./routes/userRoute.js";
 import quoteRoute from "./routes/quoteRoute.js";
 import walletRoute from "./routes/walletRoute.js";
 import tradeRoute from "./routes/tradeRoute.js";
 import historyRoute from "./routes/historyRoute.js";
+app.use("/api/home", homeRoute);
 app.use("/api/user", userRoute);
 app.use("/api/quote", quoteRoute);
 app.use("/api/wallet", walletRoute);

@@ -1,11 +1,12 @@
 import db from "../config/database.js";
+import pool from "../config/database.js";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import bcrypt from "bcryptjs";
 
 class UserModel {
     async checkEmailExist(email) {
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             const [result] = await connection.query(
