@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
     generateSignUpForm();
     // Main
     fetchSymbols();
-    linkToTradePage();
 });
 
 
@@ -149,12 +148,7 @@ const generateAssetList = (symbols) => {
 }
 
 
-function linkToTradePage() {
-    const btcTradeButton = document.getElementById("symbol-item__btc");
-    btcTradeButton.addEventListener("click", () => {
-        location.href = "/trade/btc_usdt";
-    });
-}
+
 
 function listenForRecentDetail(symbols) {
     symbols.forEach(symbol => {
@@ -168,12 +162,12 @@ function updateTickerDetail(event) {
 
     const priceElement = document.getElementById(`symbol-item__price--usdt--${pair}`);
     if (priceElement) {
-        priceElement.textContent = `${price} USDT`;
+        priceElement.textContent = `${price.toFixed(2)} USDT`;
     }
 
     const priceUsdElement = document.getElementById(`symbol-item__price--usd--${pair}`);
     if (priceUsdElement) {
-        priceUsdElement.textContent = `≈${price} USD`;
+        priceUsdElement.textContent = `≈${price.toFixed(2)} USD`;
     }
 
     const pricePercentElement = document.getElementById(`symbol-item__change--${pair}`);

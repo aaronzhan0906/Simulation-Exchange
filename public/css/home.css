@@ -210,6 +210,9 @@ hr {
     padding: 15px 0;
     border-bottom: 1px solid #272727;
 }
+.symbol-item {
+    min-height: 60.5px;
+}
 
 .symbol-list__header {
     font-size: 12px;

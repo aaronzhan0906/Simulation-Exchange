@@ -1,3 +1,5 @@
+const pair = location.pathname.split("/")[2];
+const baseAsset = pair.split("_")[0];
 class TradeWebSocket {
     constructor() {
         this.ws = null;
@@ -16,7 +18,11 @@ class TradeWebSocket {
     }
 
     onOpen() {
-        console.log("WS connection established");
+        console.log("WebSocket connected");
+        // subscribe tickerXXX
+        if (pair) {
+            this.ws.send(JSON.stringify({ action: "subscribe", pair: pair }));
+        }
     }
 
     onMessage(event) {
@@ -25,7 +31,7 @@ class TradeWebSocket {
             case "welcome":
                 break;
 
-            case "ticker":
+            case `ticker${baseAsset.toUpperCase()}`:
                 this.emitRecentPrice(message.data.price);
                 break;
 
@@ -42,8 +48,8 @@ class TradeWebSocket {
                 this.emitRecentTrade(message.data);
                 break;
             
-            // default:
-            //     console.log("Unhandled message type:", message.type);
+            default:
+                console.log("Unhandled message type:", message.type);
         }
     }
 

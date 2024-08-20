@@ -31,8 +31,8 @@ class HomeWebSocket {
             case "tickerBTC":
             case "tickerETH":
             case "tickerBNB":
+            case "tickerTON":
             case "tickerAVAX":
-            case "tickerDOGE":
                 this.emitRecentDetail(message.type, message.data);
                 break;
             

@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import chalk from "chalk";
 import path from "path";
+import { parse } from "url";
 import { createServer } from "http";
 import { fileURLToPath } from "url";
 import { WebSocketServer } from "ws";
@@ -124,8 +125,19 @@ server.listen(PORT, () => {
             console.log("Received", message.toString());
         })
 
-        ws.on("close", (code, reason) => {
-            console.log(`WebSocket disconnected: ${code}- ${reason}`)
+        ws.on("message", (message) => {
+            try {
+                const data = JSON.parse(message);
+                if (data.action === "subscribe") {
+                    ws.tradePair = data.pair;
+                    console.log(`Subscribed to ${data.pair}`);
+                } else if (data.action === "unsubscribe") {
+                    ws.tradePair = null;
+                    console.log(`Unsubscribed from ${data.pair}`);
+                }
+            } catch (error) {
+                console.error("Error processing message:", error);
+            }
         });
 
         ws.send(JSON.stringify({type:"welcome", message: "Welcome to the WebSocket server!"}));

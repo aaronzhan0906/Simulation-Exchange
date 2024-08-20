@@ -5,7 +5,7 @@ import WebSocket from "ws";
 const router = express.Router();
 
 const wsBaseUrl = process.env.WEBSOCKET_URL;
-const tradingPairs = ["btcusdt", "ethusdt", "bnbusdt", "dogeusdt", "avaxusdt"];
+const tradingPairs = ["btcusdt", "ethusdt", "bnbusdt", "tonusdt", "avaxusdt"];
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join('/');
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 
@@ -13,7 +13,7 @@ const binanceWs = new WebSocket(wsUrl);
 
 let latestTickerData = {};
 
-// broadcast function
+// broadcast function by condition
 function broadcastMessage(type, data) {
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
@@ -35,7 +35,6 @@ binanceWs.on("message", (data) => {
         price: streamData.c,
         priceChangePercent: streamData.P,
     };
-    
     broadcastMessage(`ticker${pair.replace("USDT", "")}`, latestTickerData[pair]);
 });
 
@@ -43,8 +42,8 @@ binanceWs.on("error", (error) => {
     console.error("Websocket error:", error);
 });
 
-// Optional: Add a route to get the latest ticker data
-router.get('/latest-ticker', (req, res) => {
+// router to get the latest ticker data
+router.get("latest-ticker", (req, res) => {
     res.json(latestTickerData);
 });
 
