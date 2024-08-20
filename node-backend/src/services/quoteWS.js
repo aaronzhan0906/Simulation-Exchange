@@ -28,7 +28,7 @@ binanceWs.on("message", (data) => {
     const { stream, data: streamData } = parsedData;
 
     // Extract the trading pair from the stream name
-    const pair = stream.split('@')[0].toUpperCase();
+    const pair = stream.split("@")[0].toUpperCase();
 
     latestTickerData[pair] = {
         symbol: streamData.s,
@@ -36,9 +36,7 @@ binanceWs.on("message", (data) => {
         priceChangePercent: streamData.P,
     };
     
-    // Broadcast the ticker data
-    console.log(`ticker${pair.replace('USDT', '')}`, latestTickerData[pair]);
-    broadcastMessage(`ticker${pair.replace('USDT', '')}`, latestTickerData[pair]);
+    broadcastMessage(`ticker${pair.replace("USDT", "")}`, latestTickerData[pair]);
 });
 
 binanceWs.on("error", (error) => {

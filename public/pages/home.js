@@ -4,23 +4,21 @@ import homeWebSocket from "../utils/homeWebsocket.js";
 
 
 document.addEventListener("DOMContentLoaded", () => {
+    // WS
     homeWebSocket.init()
-    listenForRecentDetail();
+    // Header
     initializeHeader();
-    linkToTradePage();
+    // Hero Section
     generateSignUpForm();
+    // Main
+    fetchSymbols();
+    linkToTradePage();
 });
 
 
-function listenForRecentDetail() {
-    document.addEventListener("tickerBTC", updateTickerDetail);
-    document.addEventListener("tickerETH", updateTickerDetail);
-    document.addEventListener("tickerBNB", updateTickerDetail);
-    document.addEventListener("tickerAVAX", updateTickerDetail);
-    document.addEventListener("tickerDOGE", updateTickerDetail);
-}
 
 
+// HERO SECTION //
 function generateSignUpForm() {
     const isLoggedIn = checkLoginStatus();
 
@@ -68,6 +66,88 @@ function generateSignUpForm() {
     }
 }
 
+
+// MAIN //
+async function fetchSymbols(){
+    try {
+        const response = await fetch("api/home/symbols")
+        const data = await response.json();
+
+        if (response.ok) {
+            generateAssetList(data.data);
+            listenForRecentDetail(data.data);
+        }
+    } catch (error) {
+        console.error("Fail to get symbols:", error);
+        throw error;
+    }
+}
+
+const generateAssetList = (symbols) => {
+    const symbolListContainer = document.getElementById("symbol-list__container");
+    
+    symbols.forEach(symbol => {
+        const item = document.createElement("div");
+        item.className = `symbol-item symbol-item--${symbol.symbolName}`;
+        item.id = `symbol-item__${symbol.symbolName}`;
+    
+    // name
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "symbol-item__name";
+    const img = document.createElement("img");
+    img.src = symbol.imageUrl;
+    img.alt = symbol.symbolName;
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = `${symbol.symbolName.toUpperCase()}/USDT`;
+    nameDiv.appendChild(img);
+    nameDiv.appendChild(nameSpan);
+
+    // price
+    const priceDiv = document.createElement("div");
+    priceDiv.className = "symbol-item__price";
+    const usdtSpan = document.createElement("span");
+    usdtSpan.className = "symbol-item__price--usdt";
+    usdtSpan.id = `symbol-item__price--usdt--${symbol.symbolName}`;
+    const usdSpan = document.createElement("span");
+    usdSpan.className = "symbol-item__price--usd";
+    usdSpan.id = `symbol-item__price--usd--${symbol.symbolName}`;
+    priceDiv.appendChild(usdtSpan);
+    priceDiv.appendChild(usdSpan);
+
+    // change percent
+    const changeDiv = document.createElement("div");
+    changeDiv.className = "symbol-item__change";
+    changeDiv.id = `symbol-item__change--${symbol.symbolName}`;
+
+    // action
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "symbol-item__actions";
+    const linkSpan = document.createElement("span");
+    linkSpan.className = "symbol-item__link";
+    linkSpan.textContent = "Spot Trade";
+    actionsDiv.appendChild(linkSpan);
+
+    // append to item
+    item.appendChild(nameDiv);
+    item.appendChild(priceDiv);
+    item.appendChild(changeDiv);
+    item.appendChild(actionsDiv);
+    symbolListContainer.appendChild(item);
+
+    item.addEventListener("click", () => {
+        location.href = `/trade/${symbol.symbolName}_usdt`;
+    })
+
+    // hr
+    if (symbol !== symbols[symbols.length - 1]){
+        const hr = document.createElement("hr");
+        symbolListContainer.appendChild(hr);
+    }
+
+    })
+}
+
+
 function linkToTradePage() {
     const btcTradeButton = document.getElementById("symbol-item__btc");
     btcTradeButton.addEventListener("click", () => {
@@ -75,22 +155,28 @@ function linkToTradePage() {
     });
 }
 
+function listenForRecentDetail(symbols) {
+    symbols.forEach(symbol => {
+        document.addEventListener(`ticker${symbol.symbolName.toUpperCase()}`, updateTickerDetail);
+    });
+}
+
 function updateTickerDetail(event) {
-    const recentPrice = event.detail.price; 
+    const pair = event.type.replace("ticker", "").toLowerCase();
+    const { price, priceChangePercent } = event.detail;
 
-    const priceElement = document.getElementById("symbol-item__price--usdt--btc");
+    const priceElement = document.getElementById(`symbol-item__price--usdt--${pair}`);
     if (priceElement) {
-        priceElement.textContent = `${recentPrice} USDT`;
+        priceElement.textContent = `${price} USDT`;
     }
 
-    const priceUsdElement = document.getElementById("symbol-item__price--usd--btc");
+    const priceUsdElement = document.getElementById(`symbol-item__price--usd--${pair}`);
     if (priceUsdElement) {
-        priceUsdElement.textContent = `≈${recentPrice} USD`;
+        priceUsdElement.textContent = `≈${price} USD`;
     }
 
-    const pricePercentElement = document.getElementById("symbol-item__change--btc");
+    const pricePercentElement = document.getElementById(`symbol-item__change--${pair}`);
     if (pricePercentElement) {
-        const priceChangePercent = event.detail.priceChangePercent;
         pricePercentElement.textContent = `${priceChangePercent.toFixed(2)}%`;
 
         if (priceChangePercent > 0) {

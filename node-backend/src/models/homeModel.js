@@ -9,7 +9,7 @@ class HomeModel {
             const symbols = await pool.query(
                 `select * from symbols`
             );
-            console.log(symbols);
+            
             // return symbols array
             return symbols;
         } finally {

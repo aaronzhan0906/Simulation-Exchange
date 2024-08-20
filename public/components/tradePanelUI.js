@@ -43,12 +43,7 @@ async function initAvailableBalance () {
     if (!isLoggedIn) return;
 
     const availablePrice = document.getElementById("trade-panel__available-price");
-    const response = await fetch("api/wallet/available", {
-        method: "GET",      
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
+    const response = await fetch("api/wallet/available");
         
     if (response.ok){
         const data = await response.json();
@@ -65,12 +60,7 @@ async function initAvailableAsset(){
     if (!isLoggedIn) return;
 
     const availableAsset = document.getElementById("trade-panel__available-asset");
-    const response = await fetch("api/wallet/assetbtc", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
+    const response = await fetch("api/wallet/assetbtc");
     
     if (response.ok){
         const data = await response.json();
@@ -86,12 +76,7 @@ async function getOpenOrders(){
     if (!isLoggedIn) return;
 
     try {
-        const response = await fetch("api/trade/order", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
+        const response = await fetch("api/trade/order")
         const data = await response.json();
         if (response.ok){
             data.orders.forEach(order => {

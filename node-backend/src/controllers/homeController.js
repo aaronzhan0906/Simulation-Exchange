@@ -4,10 +4,11 @@ class HomeController {
     async getSymbols(req, res) {
         try {
             const symbols = await HomeModel.getSymbols();
-            console.log(symbols);
+            
             res.status(200).json({
                 "ok": true,
-                "symbols": symbols.map(symbol => ({
+                message: "Get symbols successfully",
+                "data": symbols.map(symbol => ({
                     symbolId: symbol.symbol_id,
                     symbolName: symbol.name,
                     imageUrl: symbol.image_url
