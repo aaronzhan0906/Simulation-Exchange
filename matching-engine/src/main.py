@@ -15,10 +15,6 @@ matching_engines = {
 
 async def handle_new_order(order, matching_engine, kafka_client, order_book):
     symbol = order["symbol"]
-    matching_engine = matching_engines.get(symbol)
-    if not matching_engine:
-        print("Unsupported Asset:", symbol)
-
     # Process the order using the matching engine
     print("Received new-orders:",order)
     results = matching_engine.process_order(
@@ -46,17 +42,13 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
 # Function to handel order cancellation
 async def handle_cancel_order(cancel_request, matching_engine, kafka_client, order_book):
     symbol = cancel_request["symbol"]
-    matching_engine = matching_engines.get(symbol)
-    if not matching_engine:
-        print("Unsupported Asset:",symbol)
-
     print(f"Received cancel-orders:", cancel_request)
     cancel_result = matching_engine.cancel_order(
         cancel_request["orderId"],
         cancel_request["userId"],
         cancel_request["symbol"]
     )
-    await kafka_client.produce_result("cancel_result", cancel_result)
+    await kafka_client.produce_result(f"cancel_result_{symbol}", cancel_result)
     print("========================")
     print(f"Sent 'cancel_result_{symbol}': {cancel_result}")
 
@@ -75,7 +67,7 @@ async def send_order_book_every_two_second(symbol, order_book, kafka_client):
 
         # every 2s
         elapsed_time = time.time() - start_time
-        sleep_time = max(0, 2 - elapsed_time)
+        sleep_time = max(0, 10 - elapsed_time) # 先調低
         await asyncio.sleep(sleep_time)
 
 # Main function to setup and run the trading engine
@@ -86,12 +78,16 @@ async def main():
     print("----------------------")
 
     for symbol in SUPPORTED_SYMBOLS:
-        kafka_client.add_topic_handler(f"new-order-{symbol}"),
-        lambda order, s=symbol: handle_new_order({**order, "symbol": s}, kafka_client)
-        kafka_client.add_topic_handler(f"cancel-order-{symbol}")
-        lambda cancel_request, s=symbol: handle_cancel_order({**cancel_request, "symbol": s}, kafka_client)
+        kafka_client.add_topic_handler(
+            f"new-order-{symbol}",
+            lambda order, s=symbol: handle_new_order(order, matching_engines[s], kafka_client, order_books[s])
+        )
+        kafka_client.add_topic_handler(
+            f"cancel-order-{symbol}",
+            lambda cancel_request, s=symbol: handle_cancel_order(cancel_request, matching_engines[s], kafka_client, order_books[s])
+        )
     
-    for symbol, order_book in order_book.items():
+    for symbol, order_book in order_books.items():
         asyncio.create_task(send_order_book_every_two_second(symbol, order_book, kafka_client))
 
     try:
