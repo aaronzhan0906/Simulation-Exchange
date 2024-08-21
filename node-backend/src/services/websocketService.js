@@ -96,7 +96,7 @@ class WebSocketService {
         }
         this.rooms.get(symbol).add(ws);
         ws.rooms.add(symbol);
-        console.log(`Subscribed to ${symbol}`);
+        console.log(`Subscribed to room ${symbol}`);
         ws.send(JSON.stringify({type: "subscribed", symbol}));      
     }
 

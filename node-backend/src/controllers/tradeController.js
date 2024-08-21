@@ -3,6 +3,8 @@ import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 import WebSocket from "ws";
+import WebSocketService from "../services/websocketService.js";
+
 // import { wss } from "../app.js";
 
 
@@ -160,7 +162,7 @@ class TradeController {
     }
 
     // WS broadcast order book
-    async broadcastOrderBook(orderBookSnapshot) {
+    async broadcastOrderBookToRoom(orderBookSnapshot, symbol) {
         const rawAsks = orderBookSnapshot.asks.map( order => {
             return [Decimal(order.price).toFixed(2), Decimal(order.quantity).toFixed(5)]
         });
@@ -172,20 +174,16 @@ class TradeController {
             asks: askArray,
             bids: bidArray
         }
+
         try {
-            const message = JSON.stringify({
+            const roomSymbol = `${symbol}_usdt`
+            WebSocketService.broadcastToRoom(roomSymbol, {
                 type: "orderBook",
                 symbol: symbol,
                 data: processedData
-            })
-
-            wss.clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN){
-                    client.send(message)
-                }
-            })
+            }); 
         } catch (error) {
-            console.error("broadcastOrderBook error:", error);
+            console.error("broadcastOrderBookToRoom error:", error);
             throw error;
         }
     }

@@ -16,7 +16,7 @@ matching_engines = {
 async def handle_new_order(order, matching_engine, kafka_client, order_book):
     symbol = order["symbol"]
     # Process the order using the matching engine
-    print("Received new-orders:",order)
+    print(f"Received new-orders_{symbol}:",order)
     results = matching_engine.process_order(
         order["orderId"], 
         order["userId"], 

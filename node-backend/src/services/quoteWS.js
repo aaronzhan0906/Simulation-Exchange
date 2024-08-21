@@ -21,6 +21,13 @@ function broadcastMessage(type, data) {
     WebSocketService.broadcastToAllSubscribers({ type, data })
 }
 
+// to room 
+function broadcastToRoom(symbol, data) {
+    // BTCUSDT => btc_usdt
+    const roomSymbol = symbol.slice(0, -4).toLowerCase()+ "_usdt";
+    WebSocketService.broadcastToRoom(roomSymbol, { type: "ticker", ...data });
+}
+
 // get ticker from binance wss
 binanceWs.on("message", (data) => {
     const parsedData = JSON.parse(data);
@@ -33,8 +40,9 @@ binanceWs.on("message", (data) => {
         symbol: streamData.s,
         price: streamData.c,
         priceChangePercent: streamData.P,
-    };
+    }; 
     broadcastMessage(`ticker${pair.replace("USDT", "")}`, latestTickerData[pair]);
+    broadcastToRoom(pair, latestTickerData[pair]); 
 });
 
 binanceWs.on("error", (error) => {

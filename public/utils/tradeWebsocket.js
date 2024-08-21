@@ -19,9 +19,8 @@ class TradeWebSocket {
 
     onOpen() {
         console.log("WebSocket connected");
-        // subscribe tickerXXX
         if (pair) {
-            this.ws.send(JSON.stringify({ action: "subscribe", pair: pair }));
+            this.ws.send(JSON.stringify({ action: "subscribe", symbol: pair })); // subscribe ticker
         }
     }
 
@@ -31,8 +30,15 @@ class TradeWebSocket {
             case "welcome":
                 break;
 
-            case `ticker${baseAsset.toUpperCase()}`:
-                this.emitRecentPrice(message.data.price);
+            case "subscribed":
+
+                console.log(`Successfully subscribed to ${message.symbol}`);
+                break;
+    
+
+            case "ticker":
+                // {type: 'ticker', symbol: 'ETHUSDT', price: '2578.79000000', priceChangePercent: '-2.406'}
+                this.emitRecentPrice(message.price);
                 break;
 
             case "orderBook":
