@@ -1,11 +1,13 @@
 import express from "express";
 import { wss } from "../app.js";
 import WebSocket from "ws";
+import config from "../config/config.js";
 
 const router = express.Router();
 
 const wsBaseUrl = process.env.WEBSOCKET_URL;
-const tradingPairs = ["btcusdt", "ethusdt", "bnbusdt", "tonusdt", "avaxusdt"];
+const supportedSymbols = config.supportedSymbols;
+const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);   
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join('/');
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 

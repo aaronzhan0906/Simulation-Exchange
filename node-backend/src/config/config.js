@@ -36,6 +36,8 @@ const config = {
         instanceId: process.env.SNOWFLAKE_INSTANCE_ID,
         customEpoch: process.env.SNOWFLAKE_CUSTOM_EPOCH,
     },
+
+    supportedSymbols: process.env.SUPPORTED_SYMBOLS.split(",").map(symbol => symbol.trim()),
 };
 
 export default config;

@@ -4,6 +4,9 @@ from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 import json
 from decimal import Decimal
 
+SUPPORTED_SYMBOLS = os.environ.get("SUPPORTED_SYMBOLS", "btc,eth,bnb,ton,avax").split(',')
+SUPPORTED_SYMBOLS = [symbol.strip() for symbol in SUPPORTED_SYMBOLS]
+
 # Convert decoimal and int objects to strings for JSON serialization
 class StringifyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -26,9 +29,11 @@ class KafkaClient:
     async def setup(self, max_retries=15, retry_delay=10):
         for attempt in range(max_retries):
             try:
+                topics_to_subscribe = [f"new-order-{symbol}" for symbol in SUPPORTED_SYMBOLS] + \
+                                    [f"cancel-order-{symbol}" for symbol in SUPPORTED_SYMBOLS]
+
                 self.consumer = AIOKafkaConsumer(
-                    "new-orders",
-                    "cancel-orders",
+                    *topics_to_subscribe,
                     bootstrap_servers=self.bootstrap_servers,
                     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
                 )

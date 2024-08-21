@@ -103,16 +103,3 @@ class OrderBook:
     def __str__(self):
         return f"Asks: {dict(self.asks)}\nBids: {dict(self.bids)}"
     
-        # # Get the lowest ask price (first item in asks)
-    # def get_best_ask(self):
-    #     if self.asks:
-    #         best_price = self.asks.peekitem(0)[0] 
-    #         return {"price": best_price, "quantity": self.asks[best_price]}
-    #     return {"price": 0, "quantity": 0}
-
-    # # Get the highest bid price (last item in bids)
-    # def get_best_bid(self):
-    #     if self.bids:
-    #         best_price = self.bids.peekitem(-1)[0]  
-    #         return {"price": best_price, "quantity": self.bids[best_price]}
-    #     return {"price": 0, "quantity": 0}

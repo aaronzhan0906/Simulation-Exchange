@@ -3,6 +3,7 @@ import config from "../config/config.js";
 import TradeController from "../controllers/tradeController.js";
 import { pendingCancelResults } from "../controllers/tradeController.js";
 
+const supportedSymbols = config.supportedSymbols;
 const createKafkaClient = () => new Kafka({
     clientId: config.kafka.clientId,
     brokers: config.kafka.brokers
@@ -25,28 +26,34 @@ const connectWithRetry = async (kafka, maxRetries = 15, retryDelay = 10000) => {
 };
 
 const subscribeToTopics = async (consumer) => {
-    await consumer.subscribe({ topic: "trade_result", fromBeginning: true });
-    await consumer.subscribe({ topic: "order_book_snapshot", fromBeginning: true });
-    await consumer.subscribe({ topic: "cancel_result", fromBeginning: true });
+    for (const symbol of supportedSymbols){
+        await consumer.subscribe({ topic: `trade_result_${symbol}`, fromBeginning: true });
+        await consumer.subscribe({ topic: `order_book_snapshot_${symbol}`, fromBeginning: true });
+        await consumer.subscribe({ topic: `cancel_result_${symbol}`, fromBeginning: true });
+    }
 };
 
 const handleMessage = async ({ topic, message }) => {
     const data = JSON.parse(message.value.toString());
-    
-    switch (topic) {
+    const topicParts = topic.split("_");
+    const topicType = topicParts.slice(0, -1).join("_");
+    const symbol = topicParts[topicParts.length - 1];
+
+    switch (topicType) {
         case "trade_result":
-            console.log("(CONSUMER)trade_result:", data);
+            console.log(`(CONSUMER)trade_result_${symbol}:`, data);
             await TradeController.createTradeHistory(data);
             await TradeController.updateOrderData(data);
             await TradeController.broadcastRecentTrade(data);
             break;
 
         case "order_book_snapshot":
+            console.log(`(CONSUMER)order_book:_${symbol}`, data);
             await TradeController.broadcastOrderBook(data);
             break;
 
         case "cancel_result":
-            console.log("(CONSUMER)Cancel result:", data);
+            console.log(`(CONSUMER)cancel_result_${symbol}:`, data);
             const { order_id } = data;
             if (pendingCancelResults.has(order_id)){
                 const { resolve } = pendingCancelResults.get(order_id); 
@@ -90,7 +97,7 @@ export default {
             }
         };
 
-        process.on("SIGINT", gracefulShutdown);
-        process.on("SIGTERM", gracefulShutdown);
+        process.on("SIGINT", gracefulShutdown);  // ctrl + c
+        process.on("SIGTERM", gracefulShutdown); // docker stop
     },
 };
