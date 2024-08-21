@@ -49,7 +49,7 @@ class WalletModel {
                 [userId, symbol]
             );
 
-            return result.length > 0 ? result[0] : 0;
+            return result.length > 0 ? result[0] : 0; // if result is empty, return 0
         } finally {
             connection.release();
         }
@@ -62,11 +62,16 @@ class WalletModel {
                 "SELECT available_quantity FROM assets WHERE user_id = ? AND symbol = ?",
                 [userId, symbol]
             );
+            if (!availableAmount) {
+                return 0;
+            } // if result is empty, return 0
+
             return availableAmount;
         } finally {
             connection.release();
         }
     }
+    
 }
 
 export default new WalletModel();

@@ -85,7 +85,7 @@ async function initAvailableAsset(){
     
     if (response.ok){
         const data = await response.json();
-        const availableAmount = new Decimal(data.amount.available_quantity);
+        const availableAmount = new Decimal(data.amount.available_quantity || 0);
         availableAsset.textContent = `${availableAmount.toFixed(5)} ${baseAsset.toUpperCase()}`;
     }
 
@@ -481,7 +481,7 @@ function quickSelectButtonAndInputHandler() {
         if (price.isZero()) return; // avoid division by zero
 
         if (changedInput === "price" || changedInput === "quantity") {
-            totalInput.value = price.times(quantity).toFixed(2);
+            totalInput.value = price.times(quantity).toFixed(5);
         } else if (changedInput === "total") {
             quantityInput.value = total.dividedBy(price).toFixed(5);
         }
@@ -509,7 +509,7 @@ function quickSelectButtonAndInputHandler() {
                 const quantity = availableAsset.times(dataValue);
                 const totalAmount = quantity.times(currentPrice);
                 quantityInput.value = quantity.toFixed(5);
-                totalInput.value = totalAmount.toFixed(2);
+                totalInput.value = totalAmount.toFixed(3);
             }
         });
     });
