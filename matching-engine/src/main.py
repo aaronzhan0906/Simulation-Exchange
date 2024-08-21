@@ -14,9 +14,9 @@ matching_engines = {
 }  
 
 async def handle_new_order(order, matching_engine, kafka_client, order_book):
-    symbol = order["symbol"]
+    symbol = order["symbol"].replace("_usdt","")
     # Process the order using the matching engine
-    print(f"Received new-orders_{symbol}:",order)
+    print(f"Received new-order-{symbol}:",order)
     results = matching_engine.process_order(
         order["orderId"], 
         order["userId"], 
@@ -29,33 +29,33 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
     
     # Send the results executed by matching engine to Kafka
     for trade_result in results:
-        await kafka_client.produce_result(f"trade_result_{symbol}", trade_result)
+        await kafka_client.produce_result(f"trade-result-{symbol}", trade_result)
         print("========================")
-        print(f"Sent 'trade_result_{symbol}': {trade_result}")
+        print(f"Sent 'trade-result-{symbol}': {trade_result}")
 
     order_book_snapshot = order_book.get_order_book()
-    await kafka_client.produce_result(f"order_book_snapshot_{symbol}", order_book_snapshot)
+    await kafka_client.produce_result(f"order-book-snapshot-{symbol}", order_book_snapshot)
     print("========================")
-    print(f"Sent 'order_book_snapshot_{symbol}': {order_book_snapshot}")
+    print(f"Sent 'order-book-snapshot-{symbol}': {order_book_snapshot}")
     print("========================")
 
 # Function to handel order cancellation
 async def handle_cancel_order(cancel_request, matching_engine, kafka_client, order_book):
-    symbol = cancel_request["symbol"]
+    symbol = cancel_request["symbol"].replace("_usdt","")
     print(f"Received cancel-orders:", cancel_request)
     cancel_result = matching_engine.cancel_order(
         cancel_request["orderId"],
         cancel_request["userId"],
         cancel_request["symbol"]
     )
-    await kafka_client.produce_result(f"cancel_result_{symbol}", cancel_result)
+    await kafka_client.produce_result(f"cancel-result-{symbol}", cancel_result)
     print("========================")
-    print(f"Sent 'cancel_result_{symbol}': {cancel_result}")
+    print(f"Sent 'cancel-result-{symbol}': {cancel_result}")
 
     order_book_snapshot = order_book.get_order_book()
-    await kafka_client.produce_result(f"order_book_snapshot{symbol}", order_book_snapshot)
+    await kafka_client.produce_result(f"order-book-snapshot-{symbol}", order_book_snapshot)
     print("========================")
-    print(f"Sent 'order_book_snapshot_{symbol}': {order_book_snapshot}")
+    print(f"Sent 'order-book-snapshot-{symbol}': {order_book_snapshot}")
     print("========================")
 
 # Function to periodically send order book snapshots
@@ -63,7 +63,7 @@ async def send_order_book_every_two_second(symbol, order_book, kafka_client):
     while True:
         start_time = time.time()
         order_book_snapshot = order_book.get_order_book()
-        await kafka_client.produce_result(f"order_book_snapshot_{symbol}", order_book_snapshot)
+        await kafka_client.produce_result(f"order-book-snapshot-{symbol}", order_book_snapshot)
 
         # every 2s
         elapsed_time = time.time() - start_time

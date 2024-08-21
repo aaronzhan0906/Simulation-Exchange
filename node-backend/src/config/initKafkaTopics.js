@@ -12,9 +12,9 @@ const admin = kafka.admin();
 const supportedSymbols = config.supportedSymbols;
 const requiredTopics = [
     ...supportedSymbols.flatMap(symbol => [ // returns a new array formed by applying a given callback
-        `trade_result_${symbol}`,
-        `order_book_snapshot_${symbol}`,
-        `cancel_result_${symbol}`,
+        `trade-result-${symbol}`,
+        `order-book-snapshot-${symbol}`,
+        `cancel-result-${symbol}`,
         `new-order-${symbol}`,
         `cancel-order-${symbol}`
     ])

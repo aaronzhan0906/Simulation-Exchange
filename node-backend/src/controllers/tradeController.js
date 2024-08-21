@@ -2,10 +2,8 @@ import Decimal from "decimal.js";
 import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
-import WebSocket from "ws";
 import WebSocketService from "../services/websocketService.js";
 
-// import { wss } from "../app.js";
 
 
 
@@ -189,29 +187,24 @@ class TradeController {
     }
 
     // WS broadcast current trade and time 
-    async broadcastRecentTrade(trade_result) {
+    async broadcastRecentTradeToRoom(trade_result, symbol) {
         const { side, executed_price, timestamp, isTaker } = trade_result;
         if (!isTaker) {
             return;
         }
 
         try {
-            const message = JSON.stringify({
+            
+            const roomSymbol = `${symbol}_usdt`
+            WebSocketService.broadcastToRoom(roomSymbol,{
                 type: "recentTrade",
                 data: {
                     side,
                     price: executed_price,  
                     timestamp
-                }
-            });
-    
-            wss.clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(message);
-                }
-            });
+                }});
         } catch (error) {  
-            console.error("broadcastRecentTrade error:", error);
+            console.error("broadcastRecentTradeToRoom error:", error);
             throw error;
         }
     }
@@ -238,9 +231,9 @@ class TradeController {
                 pendingCancelResults.set(orderId, { resolve, reject, timeoutId, timestamp: new Date() });
             });
 
-            const topicSymbol = symbol.replace("_usdt","")
+            const topicSymbol = symbol.replace("_usdt", "");
             const topic = `cancel-order-${topicSymbol}`
-
+            console.log("cancelOrder topic:", topic);
             await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
             const cancelResult = await cancelResultPromise;
             
@@ -392,10 +385,10 @@ async function broadcastOrderUpdate(resultOrderData, filledQuantity) {
         }
     })
 
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN){
-            client.send(message)
-        }
-    })
+    // wss.clients.forEach(client => {
+    //     if (client.readyState === WebSocket.OPEN){
+    //         client.send(message)
+    //     }
+    // })
 
 }

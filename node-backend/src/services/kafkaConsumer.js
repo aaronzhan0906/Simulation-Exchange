@@ -27,33 +27,34 @@ const connectWithRetry = async (kafka, maxRetries = 15, retryDelay = 10000) => {
 
 const subscribeToTopics = async (consumer) => {
     for (const symbol of supportedSymbols){
-        await consumer.subscribe({ topic: `trade_result_${symbol}`, fromBeginning: true });
-        await consumer.subscribe({ topic: `order_book_snapshot_${symbol}`, fromBeginning: true });
-        await consumer.subscribe({ topic: `cancel_result_${symbol}`, fromBeginning: true });
+        await consumer.subscribe({ topic: `trade-result-${symbol}`, fromBeginning: true });
+        await consumer.subscribe({ topic: `order-book-snapshot-${symbol}`, fromBeginning: true });
+        await consumer.subscribe({ topic: `cancel-result-${symbol}`, fromBeginning: true });
     }
 };
 
 const handleMessage = async ({ topic, message }) => {
     const data = JSON.parse(message.value.toString());
-    const topicParts = topic.split("_");
-    const topicType = topicParts.slice(0, -1).join("_");
+    const topicParts = topic.split("-");
+    const topicType = topicParts.slice(0, -1).join("-"); // XXX-YYY-ZZZ -> XXX-YYY
+    console.log("topicType:", topicType);
     const symbol = topicParts[topicParts.length - 1];
 
     switch (topicType) {
-        case "trade_result":
-            console.log(`(CONSUMER)trade_result_${symbol}:`, data);
+        case "trade-result":
+            console.log(`(CONSUMER)trade-result-${symbol}:`, data);
             await TradeController.createTradeHistory(data);
             await TradeController.updateOrderData(data);
-            await TradeController.broadcastRecentTrade(data);
+            await TradeController.broadcastRecentTradeToRoom(data, symbol);
             break;
 
-        case "order_book_snapshot":
-            console.log(`(CONSUMER)order_book_snapshot_${symbol}`, data);
+        case "order-book-snapshot":
+            // console.log(`(CONSUMER)order-book-snapshot-${symbol}`, data);
             await TradeController.broadcastOrderBookToRoom(data, symbol);
             break;
 
-        case "cancel_result":
-            console.log(`(CONSUMER)cancel_result_${symbol}:`, data);
+        case "cancel-result":
+            console.log(`(CONSUMER)cancel-result-${symbol}:`, data);
             const { order_id } = data;
             if (pendingCancelResults.has(order_id)){
                 const { resolve } = pendingCancelResults.get(order_id); 

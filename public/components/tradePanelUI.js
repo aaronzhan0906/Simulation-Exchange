@@ -262,6 +262,7 @@ async function handleOrderUpdate(event) {
 async function cancelOrder(orderId) {
     const orderRow = document.querySelector(`[order-id="${orderId}"]`);
     const symbol = orderRow.children[1].textContent.split("/")[0];
+    const symbolPair = symbol.toLowerCase() + "_usdt"; // ABC -> abc_usdt
 
     try {
         const response = await fetch("/api/trade/order",{
@@ -271,7 +272,7 @@ async function cancelOrder(orderId) {
             },
             body: JSON.stringify({
                 orderId: orderId,
-                symbol: symbol,
+                symbol: symbolPair,
             })
         })
 
