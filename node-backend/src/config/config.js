@@ -38,6 +38,8 @@ const config = {
     },
 
     supportedSymbols: process.env.SUPPORTED_SYMBOLS.split(",").map(symbol => symbol.trim()),
+
+    
 };
 
 export default config;

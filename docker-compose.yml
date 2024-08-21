@@ -36,7 +36,8 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - KAFKA_BROKERS=kafka:9092
-      - WEBSOCKET_URL=wss://stream.binance.us:9443/stream
+      - WSS_BINANCE_URL=wss://stream.binance.us:9443/stream
+      - WSS_SERVER_URL=wss://simuexchange.online
 
     command: /bin/sh -c "npm run init-kafka && npm run start:dev"
     depends_on:

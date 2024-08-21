@@ -49,7 +49,7 @@ const handleMessage = async ({ topic, message }) => {
 
         case "order_book_snapshot":
             console.log(`(CONSUMER)order_book:_${symbol}`, data);
-            await TradeController.broadcastOrderBook(data);
+            await TradeController.broadcastOrderBook(data, symbol);
             break;
 
         case "cancel_result":

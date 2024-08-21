@@ -3,7 +3,7 @@ import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 import WebSocket from "ws";
-import { wss } from "../app.js";
+// import { wss } from "../app.js";
 
 
 
@@ -175,6 +175,7 @@ class TradeController {
         try {
             const message = JSON.stringify({
                 type: "orderBook",
+                symbol: symbol,
                 data: processedData
             })
 

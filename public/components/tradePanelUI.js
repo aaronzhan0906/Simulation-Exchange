@@ -68,7 +68,7 @@ async function initAvailableBalance () {
         
     if (response.ok){
         const data = await response.json();
-        const globalAvailablePrice = new Decimal(data.available);
+        const globalAvailablePrice = new Decimal(data.available || 0); // if no balance, return 0
         availablePrice.textContent = `${globalAvailablePrice.toFixed(2)} USDT`;
     }
 }
@@ -85,7 +85,7 @@ async function initAvailableAsset(){
     
     if (response.ok){
         const data = await response.json();
-        const availableAmount = new Decimal(data.amount.available_quantity || 0);
+        const availableAmount = new Decimal(data.amount.available_quantity || 0); // if no asset, return 0
         availableAsset.textContent = `${availableAmount.toFixed(5)} ${baseAsset.toUpperCase()}`;
     }
 
@@ -468,7 +468,7 @@ function quickSelectButtonAndInputHandler() {
 
     // restrict input to positive numbers with specified decimal places
     function restrictPositiveNum(value, decimalPlaces) {
-        const reg = new RegExp(`^\\d*(\\.\\d{0,${decimalPlaces}})?$`);
+        const reg = new RegExp(`^\\d*(\\.\\d{0,${decimalPlaces}})?$`); // 限制輸入小數點位數  
         
         return reg.test(value) ? value : value.slice(0, -1);
     }
@@ -481,9 +481,9 @@ function quickSelectButtonAndInputHandler() {
         if (price.isZero()) return; // avoid division by zero
 
         if (changedInput === "price" || changedInput === "quantity") {
-            totalInput.value = price.times(quantity).toFixed(5);
+            totalInput.value = price.times(quantity).toFixed(2); // 待調整，小數點問題
         } else if (changedInput === "total") {
-            quantityInput.value = total.dividedBy(price).toFixed(5);
+            quantityInput.value = total.dividedBy(price).toFixed(2); // 待調整，小數點問題
         }
     }
 
@@ -509,7 +509,7 @@ function quickSelectButtonAndInputHandler() {
                 const quantity = availableAsset.times(dataValue);
                 const totalAmount = quantity.times(currentPrice);
                 quantityInput.value = quantity.toFixed(5);
-                totalInput.value = totalAmount.toFixed(3);
+                totalInput.value = totalAmount.toFixed(2);
             }
         });
     });

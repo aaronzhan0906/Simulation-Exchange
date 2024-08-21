@@ -1,11 +1,12 @@
 import express from "express";
-import { wss } from "../app.js";
 import WebSocket from "ws";
 import config from "../config/config.js";
+import WebSocketService from "../services/websocketService.js";
+
 
 const router = express.Router();
 
-const wsBaseUrl = process.env.WEBSOCKET_URL;
+const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = config.supportedSymbols;
 const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);   
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join('/');
@@ -17,11 +18,7 @@ let latestTickerData = {};
 
 // broadcast function by condition
 function broadcastMessage(type, data) {
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type, data }));
-        }
-    });
+    WebSocketService.broadcastToAllSubscribers({ type, data })
 }
 
 // get ticker from binance wss

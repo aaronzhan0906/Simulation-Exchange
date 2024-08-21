@@ -19,11 +19,16 @@ class HomeWebSocket {
     }
 
     onOpen() {
-        console.log("WS connection established");
+        this.ws.send(JSON.stringify({ action: "subscribe", symbol: "ALL" }));
+        console.log("WS connection opened");
     }
 
     onMessage(event) {
+        console.log("WS message:", event.data);
         const message = JSON.parse(event.data);
+        if (message.type.startsWith("ticker")) {
+        }
+
         switch (message.type) {
             case "welcome":
                 break;

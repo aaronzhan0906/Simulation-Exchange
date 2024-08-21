@@ -3,13 +3,13 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import chalk from "chalk";
 import path from "path";
-import { parse } from "url";
 import { createServer } from "http";
 import { fileURLToPath } from "url";
-import { WebSocketServer } from "ws";
-// import helmet from "helmet";
 import kafkaProducer from "./services/kafkaProducer.js";
 import kafkaConsumer from "./services/kafkaConsumer.js";
+import WebSocketService from "./services/websocketService.js";
+
+// import helmet from "helmet";
 
 // path
 const __filename = fileURLToPath(import.meta.url);
@@ -18,26 +18,20 @@ const __dirname = path.dirname(__filename);
 // app, server, wss
 const app = express();
 const server = createServer(app);
-const wss = new WebSocketServer({ server });
+
 
 // middleware 
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-// kafka
+// kafka init
 kafkaProducer.init();
 kafkaConsumer.init();
-process.on("SIGINT", async () => {
-    try {
-        await kafkaProducer.disconnect();
-        console.log("Server gracefully shut down");
-        process.exit(0);
-    } catch (error) {
-        console.error("Error during shutdown:", error);
-        process.exit(1);
-    }
-});
+
+// websocket init
+WebSocketService.init(server);
+
 
 // static
 app.use(express.static(path.join(__dirname, "..", "..", "public")));
@@ -70,7 +64,6 @@ app.get("/trade/:pair", (req, res) => {
     console.log("Trading pair:", pair);  // 記錄交易對以進行調試
     res.sendFile(path.join(__dirname, "..", "..", "public", "trade.html"));
 });
-
 
 // route
 import homeRoute from "./routes/homeRoute.js";
@@ -118,34 +111,43 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 
-    wss.on("connection",(ws, req) => {
-        console.log(`New WebSocket connection from ${req.socket.remoteAddress}`);
+    // wss.on("connection",(ws, req) => {
+    //     console.log(`New WebSocket connection from ${req.socket.remoteAddress}`);
 
-        ws.on("message", (message) => {
-            console.log("Received", message.toString());
-        })
+    //     ws.on("message", (message) => {
+    //         console.log("Received", message.toString());
+    //     })
 
-        ws.on("message", (message) => {
-            try {
-                const data = JSON.parse(message);
-                if (data.action === "subscribe") {
-                    ws.tradePair = data.pair;
-                    console.log(`Subscribed to ${data.pair}`);
-                } else if (data.action === "unsubscribe") {
-                    ws.tradePair = null;
-                    console.log(`Unsubscribed from ${data.pair}`);
-                }
-            } catch (error) {
-                console.error("Error processing message:", error);
-            }
-        });
+    //     ws.on("message", (message) => {
+    //         try {
+    //             const data = JSON.parse(message);
+    //             if (data.action === "subscribe") {
+    //                 ws.tradePair = data.pair;
+    //                 console.log(`Subscribed to ${data.pair}`);
+    //             } else if (data.action === "unsubscribe") {
+    //                 ws.tradePair = null;
+    //                 console.log(`Unsubscribed from ${data.pair}`);
+    //             }
+    //         } catch (error) {
+    //             console.error("Error processing message:", error);
+    //         }
+    //     });
 
-        ws.send(JSON.stringify({type:"welcome", message: "Welcome to the WebSocket server!"}));
-    })
+    //     ws.send(JSON.stringify({type:"welcome", message: "Welcome to the WebSocket server!"}));
+    // })
 
-    wss.on("error", (error) => {
-        console.error("WebSocket server error:", error)
-    })
+    // wss.on("error", (error) => {
+    //     console.error("WebSocket server error:", error)
+    // })
+});
+
+// close server gracefully
+process.on("SIGINT", () => {
+    WebSocketService.close();
+    server.close(() => {
+        console.log("Server closed");
+        process.exit(0);
+    });
 });
 
 // morgan 
@@ -189,4 +191,4 @@ app.use(morgan((tokens, req, res) => {
 }));
 
 
-export { server, wss };
+export { app, server };
