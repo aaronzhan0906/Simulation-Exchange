@@ -8,7 +8,7 @@ class WalletModel {
             const [[balance]] = await connection.query(
             "SELECT balance FROM accounts WHERE user_id = ?",
             [userId]);
-
+            
             return balance;
         } finally {
         connection.release();

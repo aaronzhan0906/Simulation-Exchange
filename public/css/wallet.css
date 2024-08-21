@@ -126,7 +126,6 @@ hr {
 
 
 /* hero section */
-
 .hero {
     height: 300px;
     background-color: #081d3b;
@@ -212,11 +211,12 @@ hr {
 }
 
 .balance-row__total {
-    margin: 0 100px 0 5px;
+    margin: 0 85px 0 5px;
 }
 
 .balance-row__available {
-    margin: 0 100px 0 0 ;
+    margin: 0 85px 0 0 ;
+    font-size: 14px;
 }
 
 .balance-label__total {
@@ -292,22 +292,25 @@ hr {
     color: #8c8c8c;
 }
 
+.asset-item {
+    font-size: 14px;;
+}
 
 .asset-item:hover {
     background-color: rgba(255, 255, 255, 0.05); 
 }
 
-.asset-item__name ,.asset-item__price, .asset-item__change {
+.asset-item__name--fixed, .asset-item__name ,.asset-item__price, .asset-item__change {
     font-size: 14px;
 }
 
 
-.asset-item__name {
+.asset-item__name--fixed, .asset-item__name {
     display: flex;
     align-items: center;
 }
 
-.asset-item__name img {
+.asset-item__name--fixed img, .asset-item__name img {
     width: 24px;
     max-width: 24px;
     height: 24px;

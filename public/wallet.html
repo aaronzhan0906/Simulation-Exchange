@@ -34,7 +34,7 @@
             <div class="balance-details">
               <div class="balance-row__total">
                 <span class="balance-label__total">Total assets ≈</span>
-                <span class="balance-value__total">10000.00 USD</span>
+                <span class="balance-value__total" id="balance-value__total">10000.00 USDT</span>
               </div>
               <div class="balance-row__total">
                 <span class="balance-label__total">Profit / Loss</span>
@@ -42,11 +42,11 @@
               </div>
               <div class="balance-row__available">
                 <span class="balance-label__available">Available ≈</span>
-                <span class="balance-value__available">10000.00 USD</span>
+                <span class="balance-value__available" id="balance-value__available">10000.00 USDT</span>
               </div>
               <div class="balance-row__locked">
                 <span class="balance-label__locked">Locked ≈</span>
-                <span class="balance-value__locked">0.00 USD</span>
+                <span class="balance-value__locked" id="balance-value__locked">0.00 USDT</span>
               </div>
             </div>
           </div>
@@ -63,23 +63,21 @@
                     <span>Actions</span>
                 </div>
                 <div class="asset-item">
-                    <div class="asset-item__name">
-                        <img src="./images/usdt.png" alt="BTC icon" >
+                    <div class="asset-item__name--fixed">
+                        <img src="https://dqnrdfgdkhgah.cloudfront.net/simu-coin-logo/usdt.png" alt="BTC icon" >
                         <span>USDT</span>
                     </div>
-                    <div class="asset-item__amount">
-                        <span>10000</span>
-                        <span>$10000 USD</span>
+                    <div class="asset-item__amount--fixed" id="asset-item__amount--fixed">10000 USDT
                     </div>
-                    <div class="asset-item__average-cost">
-                        <span class="asset-item__average-cost">$1</span>
+                    <div class="asset-item__average-cost--fixed">
+                        <span class="asset-item__average-cost">--</span>
                     </div>
-                    <div class="asset-item__price">
-                        <span class="asset-item__price">$1</span>
+                    <div class="asset-item__price--fixed">
+                        <span class="asset-item__price">--</span>
                     </div>
-                    <div class="asset-item__change positive">0.11%</div>
+                    <div class="asset-item__change--fixed">--</div>
                     <div class="asset-item__actions">
-                        <a class="asset-item__link">Spot trade</a>
+
                     </div>
                 </div>
                 <!-- 其他加密貨幣項目-->
@@ -88,10 +86,7 @@
                         <img src="./images/temp.png" alt="BTC icon">
                         <span>temp</span>
                     </div>
-                    <div class="asset-item__amount">
-                        <span>0.5</span>
-                        <span>$30,406 USD</span>
-                    </div>
+                    <div class="asset-item__amount">0.5</div>
                     <div class="asset-item__average-cost">
                         <span class="asset-item__average-cost">$58,000</span>
                     </div>
@@ -99,26 +94,6 @@
                         <span class="asset-item__price">$60,812</span>
                     </div>
                     <div class="asset-item__change positive">4.85%</div>
-                    <div class="asset-item__actions">
-                        <a class="asset-item__link">Spot trade</a>
-                    </div>
-                </div>
-                <div class="asset-item">
-                    <div class="asset-item__name">
-                        <img src="./images/temp.png" alt="BTC icon">
-                        <span>temp</span>
-                    </div>
-                    <div class="asset-item__amount">
-                        <span>111.5</span>
-                        <span>$406 USD</span>
-                    </div>
-                    <div class="asset-item__average-cost">
-                        <span class="asset-item__average-cost">$70,0</span>
-                    </div>
-                    <div class="asset-item__price">
-                        <span class="asset-item__price">$68,2</span>
-                    </div>
-                    <div class="asset-item__change negative">-1.85%</div>
                     <div class="asset-item__actions">
                         <a class="asset-item__link">Spot trade</a>
                     </div>

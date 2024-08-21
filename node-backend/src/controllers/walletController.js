@@ -1,12 +1,16 @@
 import WalletModel from "../models/walletModel.js";
+import Decimal from "decimal.js";
+
 
 
 class WalletController {
     // router.get("/balance", AccountController.getBalance)
-    async getBalance(req, res, next) {
+    async getBalance(req, res) {
         try {
-            const balance = await WalletModel.getBalanceById(req.user.userId);
-            res.status(200).json({ "ok": true, "balance": balance });
+            const { balance } = await WalletModel.getBalanceById(req.user.userId);
+            const deBalance = new Decimal(balance).toFixed(2);
+            console.log("deBalance:", deBalance);
+            res.status(200).json({ "ok": true, "balance": deBalance });
         } catch(error) {
             console.error("Failed to get balance:", error);
         }

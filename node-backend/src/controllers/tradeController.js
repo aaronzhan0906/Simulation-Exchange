@@ -74,10 +74,12 @@ class TradeController {
                 quantity,
                 "open"
             );
+            const topicSymbol = symbol.replace("_usdt","")
+            const topic = `new-order-${topicSymbol}`
 
      
-            // send order to kafka
-            await kafkaProducer.sendMessage("new-orders",{
+            // send order to kafka 
+            await kafkaProducer.sendMessage(topic, {
                 orderId: order.order_id,
                 userId: order.user_id,
                 symbol: order.symbol,
@@ -236,7 +238,11 @@ class TradeController {
     
                 pendingCancelResults.set(orderId, { resolve, reject, timeoutId, timestamp: new Date() });
             });
-            await kafkaProducer.sendMessage("cancel-orders", { orderId, userId, symbol });
+
+            const topicSymbol = symbol.replace("_usdt","")
+            const topic = `cancel-order-${topicSymbol}`
+
+            await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
             const cancelResult = await cancelResultPromise;
             
             if (cancelResult.status === "filled") {
