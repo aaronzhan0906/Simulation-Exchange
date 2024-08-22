@@ -2,8 +2,6 @@ import express from "express";
 import WebSocket from "ws";
 import config from "../config/config.js";
 import WebSocketService from "../services/websocketService.js";
-
-
 const router = express.Router();
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
@@ -50,8 +48,9 @@ binanceWs.on("error", (error) => {
 });
 
 // router to get the latest ticker data
-router.get("latest-ticker", (req, res) => {
-    res.json(latestTickerData);
+
+router.get("/ticker", (req, res) => {
+    res.status(200).json({ ok: true, latestTickerData: latestTickerData });
 });
 
 export default router;

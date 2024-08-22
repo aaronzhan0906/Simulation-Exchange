@@ -31,23 +31,43 @@
     <main class="main">
         <!-- Order-History -->
         <div class="order-history">
-            <h1 class="order-history__title">History</h1>
+            <div class="order-history__title">History</div>
             <div class="order-history__tabs">
-              <a href="#" class="order-history__tab active">Trade history</a>
+              <a href="#" class="order-history__tab active">Open Orders</a>
+              <a href="#" class="order-history__tab">Trade history</a>
               <a href="#" class="order-history__tab">Order history</a>
             </div>
             <hr>
             <div class="order-history__filters">
-              <select class="filter-select">
-                <option>All Time</option>
-              </select>
-              <select class="filter-select">
-                <option>All order types</option>
-              </select>
-              <select class="filter-select">
-                <option>All pairs</option>
-              </select>
-              <label class="filter-checkbox">
+              <div class="custom-select">
+                <select class="filter-select">
+                  <option>Today</option>
+                  <option>7 days</option>
+                  <option>1 Month</option>
+                  <option>All Time</option>
+                </select>
+              </div>
+              <div class="custom-select">
+                <select class="filter-select">
+                  <option>Pair</option>
+                  <option>All</option>
+                  <option>BTC/USDT</option>
+                </select>
+              </div>
+              <div class="custom-select">
+                <select class="filter-select">
+                  <option>Side</option>
+                  <option>Buy</option>
+                  <option>Sell</option>
+                </select>
+              </div>
+              <div class="custom-select">
+                <select class="filter-select">
+                  <option>Status</option>
+                  <option>Filled</option>
+                  <option>Cancel</option>
+                </select>
+              </div>
             </div>
             <table class="order-history__table">
               <thead>

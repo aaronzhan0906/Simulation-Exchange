@@ -134,19 +134,18 @@ hr {
 
 .order-history {
     color: #ffffff;
-    font-family: Arial, sans-serif;
     width: calc(40% + 550px);
     margin: 0 auto;
 }
   
 .order-history__title {
     font-size: 24px;
-    font-weight: 500;
+    font-weight: 400;
     margin: 35px 0 60px 0 ;
 }
   
 .order-history__tabs {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
   
 .order-history__tab {
@@ -166,25 +165,63 @@ hr {
     margin: 15px 0 10px 0;
     align-items: center;
     font-weight: 300;
+    
+}
+
+
+/* FILTER SELECT */
+.filter-select {
+    background-color: #2c2c2c; 
+    color: #ffffff; 
+    border: none; 
+    padding: 8px 15px; 
+    border-radius: 5px; 
+    font-size: 11px; 
+    margin: 5px 0 5px 0; 
+    width: 100px; 
+    cursor: pointer; /* 添加手型光標 */
+
+    
+    appearance: none; /* Remove default styling in most browsers */
+    -webkit-appearance: none; 
+    -moz-appearance: none; 
+
+    /* Change arrow */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255, 255, 255, 0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat; 
+    background-position: right 10px center; 
+    background-size: 16px; 
+    padding-right: 30px; 
+}
+
+
+/* Remove the default arrow in Firefox */
+.filter-select::-ms-expand {
+    display: none;
+}
+
+
+.filter-select:focus {
+    outline: none;
+}
+
+  
+.filter-select:focus {
+    outline: none;
 }
   
-.filter-select {
+.filter-select option {
     background-color: #2c2c2c;
     color: #ffffff;
-    border: none;
     padding: 8px 15px;
-    border-radius: 30px;
-    font-size: 11px;
-    margin: 5px  0 5px 0;
 }
+
+
+
+
+
   
-  
-.filter-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-  
+/* ORDER HISTORY TABLE */
 .order-history__table {
     display: grid;
     grid-template-columns: 0.8fr 0.8fr 0.9fr 0.9fr 0.9fr 1.2fr 0.8fr;  
