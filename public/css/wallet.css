@@ -16,7 +16,8 @@ body {
 hr {
     border: 0;
     height: 0.2px;
-    background-color: #272727;
+    margin: 10px 0 15px 0;
+    background-color: #2b2b2b;
 }
 
 /* Header */
@@ -273,14 +274,14 @@ hr {
 }
 
 .asset-list__title {
-    margin: 10px 10px 15px 10px;
+    margin: 10px 10px 15px 5px;
     font-size: 27px;
     font-weight: 800px;
 }
 
 .asset-list__header, .asset-item {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 0.7fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 0.7fr;
     gap: 20px;
     align-items: center;
     padding: 15px 0;
@@ -288,29 +289,38 @@ hr {
 
 .asset-list__header {
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 500;
     color: #8c8c8c;
 }
+.asset-list__header span:first-child {
+    padding: 0 0 0 20px;
+}
+
 
 .asset-item {
-    font-size: 14px;;
+    font-size: 12px;
 }
 
 .asset-item:hover {
     background-color: rgba(255, 255, 255, 0.05); 
 }
 
-.asset-item__name--fixed, .asset-item__name ,.asset-item__price, .asset-item__change {
-    font-size: 14px;
+.asset-item, .asset-item__symbol--fixed, .asset-item__symbol ,.asset-item__price, .asset-item__change {
+    font-size: 12px;
+}
+
+.asset-item__average-cost--fixed, .asset-item__price--fixed, .asset-item__change--fixed, .asset-item__action--fixed {
+    color: #8c8c8c;
 }
 
 
-.asset-item__name--fixed, .asset-item__name {
+.asset-item__symbol--fixed, .asset-item__symbol {
     display: flex;
     align-items: center;
+    padding: 0 0 0 20px;
 }
 
-.asset-item__name--fixed img, .asset-item__name img {
+.asset-item__symbol--fixed img, .asset-item__symbol img {
     width: 24px;
     max-width: 24px;
     height: 24px;
@@ -322,24 +332,6 @@ hr {
     flex-direction: column;
 }
 
-.asset-item__amount span:last-child{
-    font-size: 0.8em;
-    color: #8c8c8c;
-}
-
-.asset-list__header span:first-child{
-    margin-left: 12px;
-}
-
-.asset-list__header span:last-child{
-    margin-right: 25px;
-    justify-self: end;
-}
-
-.asset-item__actions {
-    margin-right: 10px;
-    justify-self: end;
-}
 
 .asset-item__change.positive {
     color: green;
@@ -349,16 +341,18 @@ hr {
     color: #ff4d4f;
 }
 
-.asset-item__actions {
-    justify-self: end;
+.asset-item__action {
+    transform: translateX(-5px);
+    justify-self: start;
 }
 
 .asset-item__link {
     color: #1890ff;
     text-decoration: none;
-    font-size: 0.9em;
     transition: color 0.3s ease;
+    cursor: pointer;
 }
+
 
 .asset-item__link:hover {
     color: #40a9ff;

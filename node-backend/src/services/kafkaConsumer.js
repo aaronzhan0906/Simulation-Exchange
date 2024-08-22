@@ -37,7 +37,6 @@ const handleMessage = async ({ topic, message }) => {
     const data = JSON.parse(message.value.toString());
     const topicParts = topic.split("-");
     const topicType = topicParts.slice(0, -1).join("-"); // XXX-YYY-ZZZ -> XXX-YYY
-    console.log("topicType:", topicType);
     const symbol = topicParts[topicParts.length - 1];
 
     switch (topicType) {

@@ -7,10 +7,10 @@ const router = express.Router();
 router.use(authenticateToken)
 
 
-router.get("/balance", WalletController.getBalance)
+// router.get("/balance", WalletController.getBalance)
 router.get("/available", WalletController.getAvailable)
-router.get("/assets", WalletController.getAssets)
-
+router.get("/balanceOverview", WalletController.getBalanceOverView)
+router.get("/assetsAndSymbols", WalletController.getAssetsAndSymbols)
 router.get("/asset/:symbol", WalletController.getAvailableAmount)
 
 export default router

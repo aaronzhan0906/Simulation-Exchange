@@ -555,7 +555,6 @@ th  {
     text-align: left;
     border-bottom: 1px solid #333;
     font-weight: 700;
-    border-bottom: 1px solid #333;
 }
 
 td {
@@ -650,30 +649,6 @@ td {
 .recent-trade__item.sell .trade-price {
     color: #db3a32;
 }
-
-
-/* my-trades */
-/* .my-trades {
-    background-color: #1a1a1a;
-    color: #ffffff;
-    padding: 15px;
-    border-radius: 5px;
-}
-
-.my-trades__title {
-    font-size: 16px;
-    font-weight: normal;
-    margin-bottom: 15px;
-}
-
-.my-trades__header {
-    display: flex;
-    justify-content: space-between;
-    color: #999;
-    font-size: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #333;
-} */
 
 
  /* hide scrollbar */

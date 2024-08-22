@@ -237,7 +237,6 @@ function addOrderToUI(orderData) {
 async function handleOrderUpdate(event) {
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
-    // 記得在後端處理房間問題，不然會一直有不必要的開銷
     const cells = orderRow.getElementsByTagName("td");
 
     const symbol = cells[1].textContent.split("/")[0];

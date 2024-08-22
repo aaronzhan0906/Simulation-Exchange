@@ -42,62 +42,47 @@
               </div>
               <div class="balance-row__available">
                 <span class="balance-label__available">Available ≈</span>
-                <span class="balance-value__available" id="balance-value__available">10000.00 USDT</span>
+                <span class="balance-value__available" id="balance-value__available"></span>
               </div>
               <div class="balance-row__locked">
                 <span class="balance-label__locked">Locked ≈</span>
-                <span class="balance-value__locked" id="balance-value__locked">0.00 USDT</span>
+                <span class="balance-value__locked" id="balance-value__locked"></span>
               </div>
             </div>
           </div>
         <!-- Asset list -->
         <section class="asset-list">
-            <div class="asset-list__container">
+            <div class="asset-list__container" id="asset-list__container">
                 <div class="asset-list__title">My Assets</div>
                 <div class="asset-list__header">
-                    <span>Name</span>
+                    <span>Symbol</span>
                     <span>Amount</span>
+                    <span>Available</span>
                     <span>Average Cost Price</span>
                     <span>Coin Price</span>
                     <span>24h Change</span>
-                    <span>Actions</span>
+                    <span>Action</span>
                 </div>
                 <div class="asset-item">
-                    <div class="asset-item__name--fixed">
+                    <div class="asset-item__symbol--fixed">
                         <img src="https://dqnrdfgdkhgah.cloudfront.net/simu-coin-logo/usdt.png" alt="BTC icon" >
                         <span>USDT</span>
                     </div>
-                    <div class="asset-item__amount--fixed" id="asset-item__amount--fixed">10000 USDT
+                    <div class="asset-item__amount--fixed fixed" id="asset-item__amount--fixed">
+                    </div>
+                    <div class="asset-item__available--fixed" id="asset-item__available--fixed">
                     </div>
                     <div class="asset-item__average-cost--fixed">
-                        <span class="asset-item__average-cost">--</span>
+                        <span">--</span>
                     </div>
                     <div class="asset-item__price--fixed">
-                        <span class="asset-item__price">--</span>
+                        <span>--</span>
                     </div>
                     <div class="asset-item__change--fixed">--</div>
-                    <div class="asset-item__actions">
-
-                    </div>
+                    <div class="asset-item__action--fixed">--</div>
                 </div>
-                <!-- 其他加密貨幣項目-->
-                <div class="asset-item">
-                    <div class="asset-item__name">
-                        <img src="./images/temp.png" alt="BTC icon">
-                        <span>temp</span>
-                    </div>
-                    <div class="asset-item__amount">0.5</div>
-                    <div class="asset-item__average-cost">
-                        <span class="asset-item__average-cost">$58,000</span>
-                    </div>
-                    <div class="asset-item__price">
-                        <span class="asset-item__price">$60,812</span>
-                    </div>
-                    <div class="asset-item__change positive">4.85%</div>
-                    <div class="asset-item__actions">
-                        <a class="asset-item__link">Spot trade</a>
-                    </div>
-                </div>
+                <hr>
+                <!-- 其他 symbol 項目-->
             </div>
         </section>
     </main>
