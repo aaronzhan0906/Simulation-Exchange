@@ -7,7 +7,6 @@ class WalletModel {
             const [[balance]] = await connection.query(
             "SELECT balance FROM accounts WHERE user_id = ?",
             [userId]);
-            console.log("balance:", balance);
             return balance;
         } catch (error) {
             console.error("Error in getBalanceById:", error);

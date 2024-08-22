@@ -73,7 +73,6 @@ class WalletController {
     async getAssetsAndSymbols(req, res) {
         try {
             const assets = await WalletModel.getAssetsAndSymbols(req.user.userId);
-            console.log(assets);
             res.status(200).json({ 
                 "ok": true, 
                 "assets": assets.map(asset => ({

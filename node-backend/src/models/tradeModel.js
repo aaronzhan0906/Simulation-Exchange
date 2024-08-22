@@ -341,7 +341,6 @@ class TradeModel {
                 [updateUserId, updateSymbol]
             );
 
-            console.log(existingAsset);
             const currentQuantity = new Decimal(existingAsset.quantity);
             newQuantity = currentQuantity.minus(updateAssetData.executed_quantity);
             
