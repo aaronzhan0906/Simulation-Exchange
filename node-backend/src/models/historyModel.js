@@ -1,7 +1,21 @@
-import db from "../config/database.js";
+import pool from "../config/database.js";
 
 
 class HistoryModel {
+    async getSymbols() {
+        const connection = await pool.getConnection();
+        try {
+            const symbols = await pool.query(
+                `select * from symbols`
+            );
+            
+            // return symbols array
+            return symbols;
+        } finally {
+            connection.release();
+        }
+    }
+
     async getTransactionsById(userId) {
         const [rows] = await db.query(
             `SELECT 

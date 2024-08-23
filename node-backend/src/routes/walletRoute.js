@@ -4,7 +4,7 @@ import authenticateToken from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 
-router.use(authenticateToken)
+router.use(authenticateToken) // jwt token middleware
 
 
 // router.get("/balance", WalletController.getBalance)

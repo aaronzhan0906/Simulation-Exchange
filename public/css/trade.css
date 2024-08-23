@@ -190,14 +190,6 @@ select::-ms-expand {
     border-radius: 2px;
 }
 
-/* .my-trades{
-    grid-column: 3 ;
-    grid-row: 2;
-    background-color: #337850;
-    border-radius: 2px;
-} */
-
-
 /* order-book */
 .order-book {
     background-color: #1a1a1a;
@@ -535,9 +527,6 @@ table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-}
-
-table {
     font-size: 10px;
     width: 100%;
     border-collapse: separate;

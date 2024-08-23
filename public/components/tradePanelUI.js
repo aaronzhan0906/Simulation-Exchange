@@ -91,28 +91,6 @@ async function initAvailableAsset(){
 
 }
 
-// get open orders in OPEN ORDERS
-async function getOpenOrders(){
-    const isLoggedIn = checkLoginStatus();
-    if (!isLoggedIn) return;
-
-    try {
-        const response = await fetch("/api/trade/order")
-        const data = await response.json();
-        if (response.ok){
-            data.orders.forEach(order => {
-                addOrderToUI(order);
-            })
-            if (data.orders.length > 0){
-                startListeningForOrderUpdate();
-            }
-        }
-    } catch (error) {
-        console.error("Fail to get open orders in getOpenOrders():", error);
-        throw error;
-    }
-}
-
 // create order  in TRADE PANEL 
 async function submitOrder(orderType, orderSide, price, quantity) {
     const isLoggedIn = checkLoginStatus();
@@ -175,7 +153,30 @@ async function setupOrder(){
     });
 }
 
-// add order to OPEN ORDERS
+// OPEN ORDERS ///////////////////////////////////////////////////////////////
+// get open orders
+async function getOpenOrders(){
+    const isLoggedIn = checkLoginStatus();
+    if (!isLoggedIn) return;
+
+    try {
+        const response = await fetch("/api/trade/order")
+        const data = await response.json();
+        if (response.ok){
+            data.orders.forEach(order => {
+                addOrderToUI(order);
+            })
+            if (data.orders.length > 0){
+                startListeningForOrderUpdate();
+            }
+        }
+    } catch (error) {
+        console.error("Fail to get open orders in getOpenOrders():", error);
+        throw error;
+    }
+}
+
+// OPEN ORDERS // add order to UI
 function addOrderToUI(orderData) {
     const tbody = document.getElementById("open-orders__tbody");
     const newRow = document.createElement("tr");
@@ -233,7 +234,7 @@ function addOrderToUI(orderData) {
 
 
 
-// handle orders in OPEN ORDERS update status
+// OPEN ORDERS // update status
 async function handleOrderUpdate(event) {
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
@@ -257,7 +258,7 @@ async function handleOrderUpdate(event) {
 
 }
 
-// handle cancel order in OPEN ORDERS
+// OPEN ORDERS // handle cancel order 
 async function cancelOrder(orderId) {
     const orderRow = document.querySelector(`[order-id="${orderId}"]`);
     const symbol = orderRow.children[1].textContent.split("/")[0];
@@ -294,14 +295,14 @@ async function cancelOrder(orderId) {
     }
 }
 
-// update open orders count in OPEN ORDERS
+// OPEN ORDERS // update open orders count 
 function updateOpenOrdersCount() {
     const openOrdersCount = document.getElementById("open-orders-count");
     const cancelButtons = document.querySelectorAll(".cancel-btn");
     openOrdersCount.textContent = `Open orders(${cancelButtons.length})`;
 }
 
-// ORDER BOOK
+// ORDER BOOK /////////////////////////////////////////////////
 function handleOrderBookUpdate(event){
     const orderBook = event.detail;
     const asksSide = document.getElementById("order-book__asks");
@@ -311,7 +312,7 @@ function handleOrderBookUpdate(event){
     updateOrderBookContent(bidsSide, orderBook.bids, false);  
 }
 
-// ORDER BOOK
+// ORDER BOOK //
 function updateOrderBookContent(element, orders, isAsk = false) {
     // Clear all child nodes
     while (element.firstChild) {
@@ -336,37 +337,6 @@ function updateOrderBookContent(element, orders, isAsk = false) {
     });
 }
 
-// handle RECENT TRADE
-function handleRecentTrade(event) {
-    const recentTradeData = event.detail;
-    const tradesList = document.querySelector(".recent-trades__list");
-    const tradeItem = document.createElement("div");
-    tradeItem.className = `recent-trade__item ${recentTradeData.side}`;
-
-    // Order Book spread
-    
-
-    // recent trade
-    const tradeDetails = [
-        { classList: "trade-price", content: Decimal(recentTradeData.price).toFixed(2) },
-        { classList: "trade-time", content: formatLocalTimeOnly(recentTradeData.timestamp) }
-    ];
-    
-    tradeDetails.forEach(detail => {
-        const recentTradeDiv = document.createElement("div");
-        recentTradeDiv.className = detail.class;
-        recentTradeDiv.textContent = detail.content;
-        tradeItem.appendChild(recentTradeDiv);
-    });
-    
-    tradesList.insertBefore(tradeItem, tradesList.firstChild);
-
-
-    const maxTrades = 25;
-    while (tradesList.children.length > maxTrades) {
-        tradesList.removeChild(tradesList.lastChild);
-    }
-}
 
 // update  ORDER BOOK PRICE 
 function handlePriceUpdate(event) {
@@ -410,7 +380,8 @@ function handlePriceUpdate(event) {
     }
 }
 
-// buy and sell mode status TRADE PANEL
+// TRADE PANEL /////////////////////////////////////////////////
+// buy and sell mode status
 function initTabsAndSubmit() {
     const buyButton = document.getElementById("trade-panel__tab--buy");
     const sellButton = document.getElementById("trade-panel__tab--sell");
@@ -541,6 +512,35 @@ function quickSelectButtonAndInputHandler() {
             calculateAndUpdate(inputType);
         });
     });
+}
+
+// RECENT TRADE /////////////////////////////////////////////////
+function handleRecentTrade(event) {
+    const recentTradeData = event.detail;
+    const tradesList = document.querySelector(".recent-trades__list");
+    const tradeItem = document.createElement("div");
+    tradeItem.className = `recent-trade__item ${recentTradeData.side}`;
+
+    // recent trade
+    const tradeDetails = [
+        { classList: "trade-price", content: Decimal(recentTradeData.price).toFixed(2) },
+        { classList: "trade-time", content: formatLocalTimeOnly(recentTradeData.timestamp) }
+    ];
+    
+    tradeDetails.forEach(detail => {
+        const recentTradeDiv = document.createElement("div");
+        recentTradeDiv.className = detail.class;
+        recentTradeDiv.textContent = detail.content;
+        tradeItem.appendChild(recentTradeDiv);
+    });
+    
+    tradesList.insertBefore(tradeItem, tradesList.firstChild);
+
+
+    const maxTrades = 25;
+    while (tradesList.children.length > maxTrades) {
+        tradesList.removeChild(tradesList.lastChild);
+    }
 }
 
 

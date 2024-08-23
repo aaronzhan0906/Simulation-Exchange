@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+TC:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js" integrity="sha512-WWzCZDQZ23GuPVKPowBGCF6MhoA1az8iJk/Gjh2a5S3jeeNEvKJHgGPMyDofeUtcOeHeI3AbsPFUILWHfoRP8w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+TC:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
     <title>Wallet</title>
     <link rel="stylesheet" href="./css/history.css">
     <script type="module" src="./pages/history.js"></script>
@@ -30,16 +30,15 @@
     <!-- main -->
     <main class="main">
         <!-- Order-History -->
-        <div class="order-history">
-            <div class="order-history__title">History</div>
-            <div class="order-history__tabs">
-              <a href="#" class="order-history__tab active">Open Orders</a>
-              <a href="#" class="order-history__tab">Trade history</a>
-              <a href="#" class="order-history__tab">Order history</a>
+        <div class="history">
+            <div class="history-tab__title">History</div>
+            <div id="history-tab__tabs" class="history-tab__tabs">
+              <a id="openOrdersTab" class="history-tab__tab active">Open Orders</a>
+              <a id="orderHistoryTab" class="history-tab__tab">Order History</a>
             </div>
             <hr>
-            <div class="order-history__filters">
-              <div class="custom-select">
+            <div id="order-history__container" class="order-history__container">
+              <!-- <div class="custom-select">
                 <select class="filter-select">
                   <option>Today</option>
                   <option>7 days</option>
@@ -67,33 +66,13 @@
                   <option>Filled</option>
                   <option>Cancel</option>
                 </select>
-              </div>
+              </div> -->
             </div>
-            <table class="order-history__table">
-              <thead>
-                  <tr>
-                      <th>Pair</th>
-                      <th>Type</th>
-                      <th>Price</th>
-                      <th>Amount</th>
-                      <th>Total</th>
-                      <th>Order Time</th>
-                      <th>Status</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  <tr class="order-history__tr">
-                      <td>BTC/USDT</td>
-                      <td>Buy</td>
-                      <td>$60,000.00</td>
-                      <td>0.25 BTC</td>
-                      <td>$15,000.00</td>
-                      <td>2023-08-04 14:30:25</td>
-                      <td>Completed</td>
-                  </tr>
+            <table id="history__table" class="order-history__table">
+              
                   <!-- 可以添加更多的 <tr> 元素 -->
-              </tbody>
-          </table>
+    
+            </table>
            
             
             <!-- <div class="order-history__no-data">

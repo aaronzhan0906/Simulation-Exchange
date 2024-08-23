@@ -1,6 +1,6 @@
 import { initializeHeader } from "../components/headerUI.js";
 import { checkLoginStatus } from "../utils/auth.js";
-import homeWebSocket from "../utils/homeWebsocket.js";
+import homeWebSocket from "../services/homeWS.js";
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -71,7 +71,6 @@ async function fetchSymbols(){
     try {
         const response = await fetch("api/home/symbols")
         const data = await response.json();
-
         if (response.ok) {
             generateAssetList(data.data);
             listenForRecentDetail(data.data);

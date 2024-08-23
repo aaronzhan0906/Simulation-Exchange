@@ -4,12 +4,12 @@ import authenticateToken from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 
-router.use(authenticateToken)
+router.use(authenticateToken) // jwt token middleware
 
 
 
-// router.get("/transactions", HistoryController.getOrderHistory);
-router.get("/transactions", HistoryController.getTransactionHistory );
+router.get("/orders", HistoryController.getOrderHistory);
+router.get("/symbols", HistoryController.getSymbols); 
 
 
 

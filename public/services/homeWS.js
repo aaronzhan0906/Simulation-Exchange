@@ -24,7 +24,6 @@ class HomeWebSocket {
     }
 
     onMessage(event) {
-        console.log("WS message:", event.data);
         const message = JSON.parse(event.data);
         if (message.type.startsWith("ticker")) {
         }
