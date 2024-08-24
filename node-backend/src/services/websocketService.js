@@ -1,10 +1,14 @@
 import { WebSocketServer } from "ws";
+import jwt from "jsonwebtoken";
+import config from "../config/config.js";
+import { parse } from "cookie";
 
 class WebSocketService {
     constructor(){
         this.wss = null;
         this.rooms = new Map(); // Map<symbol, Set<ws>>
         this.globalSubscribers = new Set(); 
+        this.userSockets = new Map(); // Map<userId, Set<ws>>
     }
 
     init(server) {
@@ -15,7 +19,8 @@ class WebSocketService {
 
             ws.isAlive = true;
             ws.rooms = new Set();
-
+            ws.cookieHeader = req.headers.cookie; // for authentication
+            
             ws.on("message", (message) => {
                 try {
                     console.log("Received", message.toString());
@@ -70,6 +75,14 @@ class WebSocketService {
                         this.unsubscribeFromRoom(ws, data.symbol);
                     }
                     break;
+
+                case "getPersonalData":
+                    this.handleAuthenticatedAction(ws, () => {
+                        console.log("Handling getPersonalData for user:", ws.userId);
+                    });
+                    break;
+
+
                 default:
                     console.log("Unknown action:", data.action);
             }
@@ -78,6 +91,45 @@ class WebSocketService {
         }
     }
 
+    handleAuthenticatedAction(ws, action) {
+        if (!ws.isAuthenticated) {
+            this.authenticateConnection(ws);
+        }
+        
+        if (ws.isAuthenticated) {
+            action();
+        } else {
+            ws.send(JSON.stringify({type: "error", message: "Authentication required"}));
+        }
+    }
+
+
+    authenticateConnection(ws, req) {
+
+        const cookieHeader = ws.cookieHeader;
+        const cookies = cookieHeader ? parse(cookieHeader) : {};
+        const accessToken = cookies.accessToken;
+
+        if (accessToken) {
+            try {
+                const { userId } = jwt.verify(accessToken, config.jwt.accessTokenSecret);
+                ws.userId = userId;
+                ws.isAuthenticated = true;
+
+                if (!this.userSockets.has(userId)) {
+                    this.userSockets.set(userId, new Set());
+                }
+                this.userSockets.get(userId).add(ws);
+            } catch (error) {
+                console.error("Invalid token:", error);
+                ws.isAuthenticated = false;
+            }
+        } else {
+            ws.isAuthenticated = false;
+        }
+    }
+
+// SUBSCRIBE //////////////////////////////////////////////////////////////
     subscribeToAllSymbols(ws){
         this.globalSubscribers.add(ws);
         console.log("Subscribed to all symbols");
@@ -137,6 +189,19 @@ class WebSocketService {
         })
     }
 
+    sendToUser(userId, message) {
+        const userSockets = this.userSockets.get(userId);
+        if (userSockets) {
+            userSockets.forEach(socket => {
+                if (socket.readyState === 1) {  
+                    socket.send(JSON.stringify(message));
+                }
+            });
+        }
+    }
+    
+
+// CLEANUP //////////////////////////////////////////////////////////////
     cleanupConnection(ws) {
         ws.rooms.forEach(symbol => {
             if (this.rooms.has(symbol)) {
@@ -146,6 +211,13 @@ class WebSocketService {
                 }
             }
         });
+
+        if (ws.userId && this.userSockets.has(ws.userId)) {
+            this.userSockets.get(ws.userId).delete(ws);
+            if (this.userSockets.get(ws.userId).size === 0) {
+                this.userSockets.delete(ws.userId);
+            }
+        }
 
         this.globalSubscribers.delete(ws);
         console.log("Cleaned up disconnected WebSocket");

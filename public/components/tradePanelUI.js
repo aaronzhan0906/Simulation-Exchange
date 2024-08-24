@@ -1,11 +1,15 @@
 import { formatLocalTime, formatLocalTimeOnly } from "../utils/timeUtil.js";
 import { checkLoginStatus } from "../utils/auth.js";
+import tradeWebSocket from "../services/tradeWS.js";
+
 
 let lastPrice = null;
 let isPriceSet = false;
 let isOrderUpdateListening = false;
 const pair = location.pathname.split("/")[2];
 const baseAsset = pair.split("_")[0];
+
+
 
 // get websocket data
 function initTradePanelWebSocket(){
@@ -34,7 +38,7 @@ async function startListeningForOrderUpdate(){
 }
 
 async function listenForRecentTrade(){
-    // order book spread
+    // order book spread in handlePriceUpdate
     document.addEventListener("recentTrade", handlePriceUpdate);
     // recent trade
     document.addEventListener("recentTrade", handleRecentTrade);
@@ -122,6 +126,7 @@ async function submitOrder(orderType, orderSide, price, quantity) {
             initAvailableBalance();
             initAvailableAsset();
             startListeningForOrderUpdate();
+            tradeWebSocket.requestPersonalData();
         } else {
             throw new Error(response.status);
         }
@@ -168,6 +173,7 @@ async function getOpenOrders(){
             })
             if (data.orders.length > 0){
                 startListeningForOrderUpdate();
+                tradeWebSocket.requestPersonalData();
             }
         }
     } catch (error) {

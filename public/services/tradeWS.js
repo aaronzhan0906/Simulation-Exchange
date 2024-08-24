@@ -24,6 +24,16 @@ class TradeWebSocket {
         }
     }
 
+    // if open orders 
+    requestPersonalData(){
+        console.log("requesting personal data");
+        if (this.ws && this.ws.readyState === 1) {
+            this.ws.send(JSON.stringify({ action: "getPersonalData"}));
+        } else {
+            console.error("WebSocket is not open. Unable to request personal data.");
+        }
+    }
+
     onMessage(event) {
         const message = JSON.parse(event.data);
         switch (message.type) {
@@ -46,6 +56,7 @@ class TradeWebSocket {
                 break;
 
             case "orderUpdate":
+                console.log("Order update:", message.data);
                 this.emitOrderUpdate(message.data);
 
                 break;
@@ -53,11 +64,16 @@ class TradeWebSocket {
             case "recentTrade":
                 this.emitRecentTrade(message.data);
                 break;
+
+            case "error":
+                console.error("WS error:", message.message);
+                break;
             
             default:
                 console.log("Unhandled message type:", message.type);
         }
     }
+
 
     emitRecentPrice(price) {
         const event = new CustomEvent("recentPrice", { detail: { price: new Decimal(price) }});

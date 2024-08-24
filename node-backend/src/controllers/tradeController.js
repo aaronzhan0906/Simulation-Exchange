@@ -151,7 +151,7 @@ class TradeController {
             const quantity = new Decimal(resultOrderData.quantity)
             const remainingQuantity = new Decimal(resultOrderData.remaining_quantity)
             const filledQuantity = quantity.minus(remainingQuantity).toString()
-            broadcastOrderUpdate(resultOrderData, filledQuantity);
+            await sendOrderUpdateToUser(resultOrderData, filledQuantity);
             
         } catch (error) {
             console.error("updateOrderData error:", error);
@@ -374,21 +374,19 @@ async function preSellAuth(userId, symbol, quantity) {
     }
 }
 
-async function broadcastOrderUpdate(resultOrderData, filledQuantity) {
-    const message = JSON.stringify({
-        type: "orderUpdate",
-        data: {
-            orderId: resultOrderData.order_id,
-            filledQuantity: filledQuantity,
-            averagePrice: resultOrderData.average_price,
-            status: resultOrderData.status,
-        }
-    })
-
-    // wss.clients.forEach(client => {
-    //     if (client.readyState === WebSocket.OPEN){
-    //         client.send(message)
-    //     }
-    // })
-
+async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
+    try {
+        const message = {
+            type: "orderUpdate",
+            data: {
+                orderId: resultOrderData.order_id,
+                filledQuantity: filledQuantity,
+                averagePrice: resultOrderData.average_price,
+                status: resultOrderData.status,
+            }
+        };
+        WebSocketService.sendToUser(resultOrderData.user_id, message);
+    } catch (error) {
+        console.error("Error sending order update to user:", error);
+    }
 }

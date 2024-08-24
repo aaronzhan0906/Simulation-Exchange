@@ -66,15 +66,12 @@ async function getOpenOrders(){
         }
     } catch (error) {
         console.error("Fail to get open orders or symbols:", error);
-        throw error;
     }
 }
 
 async function fetchOrderHistory() {
     const timeRangeSelect = document.querySelector('.filter-select[data-filter="Time"]');
     const timeRange = timeRangeSelect ? timeRangeSelect.value : "today";
-
-    console.log("timeRange:", timeRange);
 
     try {
         const response = await fetch(`${API_ENDPOINTS.orderHistory}?timeRange=${timeRange}`);
@@ -423,7 +420,6 @@ function renderOrderHistoryTable(orderHistoryData, table) {
 
     const tbody = document.createElement("tbody");
     table.appendChild(tbody);
-    console.log(401);
     orderHistoryData.forEach(order => {
         const row = document.createElement("tr");
         const [base, quoteCurrency] = order.symbol.toUpperCase().split("_");
