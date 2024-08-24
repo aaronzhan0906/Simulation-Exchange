@@ -1,6 +1,9 @@
 import { initializeHeader } from "../components/headerUI.js";
 import { formatLocalTime } from "../utils/timeUtil.js";
 import { checkLoginStatus } from "../utils/auth.js";
+import HistoryWebSocket from "../services/historyWS.js";
+
+
 
 const API_ENDPOINTS = {
     openOrders: "/api/trade/order", // absolute path
@@ -14,9 +17,7 @@ let globalSymbols = [];
 
 // TAB //////////////////////////////////////////////////////////////////////////////////////////
 async function initTabActive(){
-    console.log("initTabActive called");
     const tabsContainer = document.getElementById("history-tab__tabs");
-    console.log("tabsContainer:", tabsContainer);
     tabsContainer.addEventListener("click", async (event) => {
         const target = event.target;
         if(target.classList.contains("history-tab__tab")){
@@ -62,6 +63,7 @@ async function getOpenOrders(){
             renderOpenOrdersTable(orderData, table);
             if (orderData.orders.length > 0) {
                 startListeningForOrderUpdate();
+                HistoryWebSocket.requestPersonalData();
             }
         }
     } catch (error) {
@@ -158,6 +160,43 @@ function createCustomSelect(label, options, defaultValue = "All", displayLabel =
     return customSelect;
 }
 
+
+async function handleOrderUpdate(event) {
+    const orderData = event.detail;
+    const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
+    if (!orderRow) return;
+
+    const cells = orderRow.getElementsByTagName("td");
+    const symbol = cells[1].textContent.split("/")[0];
+    const cancelBtn = orderRow.children[8].querySelector("button");
+    const filledQuantityCell = cells[6];
+    const statusCell = cells[7];
+    console.log("orderData:", orderData);
+    try {
+        if (orderData.status === "CANCELED" || orderData.status === "PARTIALLY_FILLED_CANCELED") {
+            orderRow.remove();
+        } else {
+            if (orderData.filledQuantity !== undefined) {
+                filledQuantityCell.textContent = `${orderData.filledQuantity} ${symbol}`;
+            }
+
+            statusCell.textContent = orderData.status;
+
+            if (orderData.status === "filled") {
+                if (cancelBtn) {
+                    cancelBtn.remove();
+                }
+                orderRow.remove();
+            }
+        }
+    } catch (error) {
+        console.error("Failed to handle order update:", error);
+    }
+}
+
+
+
+// filter table
 function filterTable() {
     const pairFilter = document.querySelector('.filter-select[data-filter="Pair"]').value;
     const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
@@ -184,6 +223,11 @@ function filterTable() {
 
     console.log("可見行數：", visibleRowCount);
 }
+
+
+
+
+
 
 // order history filter
 function generateOrderHistoryFilters() {
@@ -335,36 +379,14 @@ function addOpenOrderRow(orderData) {
     }
 }
 
-// OPEN ORDERS // WS 等等跟 trade 的那頁 一起用
 function startListeningForOrderUpdate() {
     if (!isOrderUpdateListening) {
         document.addEventListener("orderUpdate", handleOrderUpdate);
         isOrderUpdateListening = true;
+        HistoryWebSocket.requestPersonalData();
     }
 }
 
-async function handleOrderUpdate(event){
-    const orderData = event.detail;
-    const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
-    if (!orderRow) return;
-    
-    const cells = orderRow.getElementsByTagName("td");
-
-    const symbol = cells[1].textContent.split("/")[0];
-    const cancelBtn = orderRow.children[8].children[0];
-    const filledQuantityCell = orderRow.children[6];
-    const statusCell = orderRow.children[7];
-    try {
-        filledQuantityCell.textContent = `${orderData.filledQuantity} ${symbol}`;
-        statusCell.textContent = orderData.status;
-        if (orderData.status === "filled") {
-            cancelBtn.remove();
-        }
-    } catch (error) {
-        console.error("Fail to handle order update in handleOrderUpdate():", error);
-        throw error;
-    }
-}
 
 async function cancelOrder(orderId) {
     const orderRow = document.querySelector(`[order-id="${orderId}"]`);
@@ -453,6 +475,7 @@ function renderOrderHistoryTable(orderHistoryData, table) {
 
 document.addEventListener("DOMContentLoaded",async () => {
     initializeHeader();
+    HistoryWebSocket.init();
     await initTabActive();
     await getOpenOrders();
 });

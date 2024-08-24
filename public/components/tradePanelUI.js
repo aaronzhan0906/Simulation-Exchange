@@ -244,24 +244,37 @@ function addOrderToUI(orderData) {
 async function handleOrderUpdate(event) {
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
+    if (!orderRow) return;
+
     const cells = orderRow.getElementsByTagName("td");
-
     const symbol = cells[1].textContent.split("/")[0];
-    const cancelBtn = orderRow.children[8].children[0];
-    const filledQuantityCell = orderRow.children[6];
-    const statusCell = orderRow.children[7];
-    try {
-        filledQuantityCell.textContent = `${orderData.filledQuantity} ${symbol}`;
-        statusCell.textContent = orderData.status;
-        if (orderData.status === "filled") {
-            cancelBtn.remove();
-            updateOpenOrdersCount();
-        }
-    } catch (error) {
-        console.error("Fail to handle order update in handleOrderUpdate():", error);
-        throw error;
-    }
+    const cancelBtn = orderRow.children[8].querySelector("button");
+    const filledQuantityCell = cells[6];
+    const statusCell = cells[7];
 
+    try {
+        if (orderData.status === "CANCELED" || orderData.status === "PARTIALLY_FILLED_CANCELED") {
+            orderRow.remove();
+        } else {
+            if (orderData.filledQuantity !== undefined) {
+                filledQuantityCell.textContent = `${orderData.filledQuantity} ${symbol}`;
+            }
+
+            statusCell.textContent = orderData.status;
+
+            if (orderData.status === "filled") {
+                if (cancelBtn) {
+                    cancelBtn.remove();
+                }
+                orderRow.remove();
+            }
+        }
+
+        updateOpenOrdersCount();
+
+    } catch (error) {
+        console.error("Failed to handle order update:", error);
+    }
 }
 
 // OPEN ORDERS // handle cancel order 

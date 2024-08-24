@@ -1,6 +1,4 @@
-const pair = location.pathname.split("/")[2];
-const baseAsset = pair.split("_")[0];
-class TradeWebSocket {
+class HistoryWebSocket {
     constructor() {
         this.ws = null;
     }
@@ -19,9 +17,6 @@ class TradeWebSocket {
 
     onOpen() {
         console.log("WebSocket connected");
-        if (pair) {
-            this.ws.send(JSON.stringify({ action: "subscribe", symbol: pair })); // subscribe ticker
-        }
     }
 
     // if open orders 
@@ -74,4 +69,4 @@ class TradeWebSocket {
     }
 }
 
-export default new TradeWebSocket();
+export default new HistoryWebSocket();

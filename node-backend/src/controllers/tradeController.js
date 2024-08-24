@@ -254,15 +254,23 @@ class TradeController {
                 });
             }
 
-            
-
+            // 這邊的邏輯要再順一下，難維護
             if (cancelResult.side === "buy") {
                 await TradeModel.releaseLockedBalance(cancelResult);
             } else {
                 await TradeModel.releaseLockedAsset(cancelResult);
             }
 
-            if (cancelResult.status === "CANCELED" || cancelResult.status === "PARTIALLY_FILLED_CANCELED") {
+            if (updateResult.updateStatus === "CANCELED" || updateResult.updateStatus === "PARTIALLY_FILLED_CANCELED") {
+                const cancelMessage = {
+                    type: "orderUpdate",
+                    data: {
+                        orderId: updateResult.updateOrderId,
+                        status: updateResult.updateStatus,
+                    }
+                };
+
+                WebSocketService.sendToUser(userId, cancelMessage);
                 return res.status(200).json({
                     ok: true,
                     message: "Order cancelled successfully",
@@ -383,6 +391,11 @@ async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
                 filledQuantity: filledQuantity,
                 averagePrice: resultOrderData.average_price,
                 status: resultOrderData.status,
+                symbol: resultOrderData.symbol,
+                side: resultOrderData.side,
+                price: resultOrderData.price,
+                quantity: resultOrderData.quantity,
+                createdAt: resultOrderData.created_at
             }
         };
         WebSocketService.sendToUser(resultOrderData.user_id, message);
