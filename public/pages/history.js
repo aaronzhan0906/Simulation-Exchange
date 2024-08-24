@@ -120,14 +120,23 @@ function createCustomSelect(label, options, defaultValue = "All", displayLabel =
     select.className = "filter-select";
     select.setAttribute("data-filter", label);
 
+    // Add a default option for non-Time selectors
     if (label !== "Time") {
-        // 非 Time 選擇器，讓默認選項為 "All"，也顯示在選擇器中
-        const defaultOption = document.createElement("option");
+        // Add a default option that displays the label name but has a value of "all"
+        const defaultOption = document.createElement("option"); 
         defaultOption.textContent = label;
         defaultOption.value = "all";
         defaultOption.selected = true;
+        defaultOption.hidden = true; // Hide the default option
         select.appendChild(defaultOption);
 
+        // Modification: Add an "All" option to the list of options
+        const allOption = document.createElement("option");
+        allOption.textContent = "All";
+        allOption.value = "all";
+        select.appendChild(allOption);
+
+        // Add other options
         options.forEach((option) => {
             if (option.toLowerCase() !== "all") {
                 const optionElement = document.createElement("option");
