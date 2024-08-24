@@ -158,6 +158,22 @@ hr {
     cursor: pointer;
     transition: all ease 0.3s;
 
+    /* Remove default button appearance */
+    background-color: transparent;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1;
+    text-align: center;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.history-tab__tab::-moz-focus-inner {
+    border: 0;
+    padding: 0;
 }
   
 .history-tab__tab.active {
@@ -227,8 +243,6 @@ hr {
 
 
 
-
-  
 /* ORDER HISTORY TABLE
 .order-history__table {
     display: grid;
@@ -306,13 +320,15 @@ td {
     font-weight: 300;
 }
 
-.open-orders__cell--buy {
+.open-orders__cell--buy, .trade-history__cell--buy {
     color: #3a9b45; 
 }
 
-.open-orders__cell--sell {
+.open-orders__cell--sell, .trade-history__cell--sell{
     color: #ef483f; 
 }
+
+
 
 
 

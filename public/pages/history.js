@@ -9,25 +9,26 @@ const API_ENDPOINTS = {
 }
 
 let isOrderUpdateListening = false;
+let globalSymbols = [];
 
 
 // TAB //////////////////////////////////////////////////////////////////////////////////////////
 async function initTabActive(){
+    console.log("initTabActive called");
     const tabsContainer = document.getElementById("history-tab__tabs");
+    console.log("tabsContainer:", tabsContainer);
     tabsContainer.addEventListener("click", async (event) => {
         const target = event.target;
         if(target.classList.contains("history-tab__tab")){
             setActiveTab(target);
             const tabId = target.id;
-            const table = document.getElementById("history__table");
             switch(tabId){
                 case "open-orders":
-                    getOpenOrders();
+                    await getOpenOrders();
                     break;
                 case "order-history":
-                    const orderHistory = await fetch(API_ENDPOINTS.orderHistory);
-                    const orderHistoryJson = await orderHistory.json();
-                    renderOrderHistoryTable(orderHistoryJson, table);
+                    generateOrderHistoryFilters();
+                    await fetchOrderHistory();
                     break;
             }
         }
@@ -54,8 +55,8 @@ async function getOpenOrders(){
         const symbolData = await symbolResponse.json();
 
         if (orderResponse.ok && symbolResponse.ok) {
-            const symbolNames = symbolData.data.map(item => item.symbolName);
-            generatePairOptions(symbolNames);
+            globalSymbols = symbolData.data.map(item => item.symbolName);
+            generatePairOptions(globalSymbols);
 
             const table = document.getElementById("history__table");
             renderOpenOrdersTable(orderData, table);
@@ -69,21 +70,28 @@ async function getOpenOrders(){
     }
 }
 
-// FILTERS //////////////////////////////////////////////////////////////////////////////////////////
-async function fetchSymbols(){
-    try {
-        const response = await fetch(API_ENDPOINTS.symbols)
-        const responseData = await response.json();
+async function fetchOrderHistory() {
+    const timeRangeSelect = document.querySelector('.filter-select[data-filter="Time"]');
+    const timeRange = timeRangeSelect ? timeRangeSelect.value : "today";
 
+    console.log("timeRange:", timeRange);
+
+    try {
+        const response = await fetch(`${API_ENDPOINTS.orderHistory}?timeRange=${timeRange}`);
+        const responseData = await response.json();
         if (response.ok) {
-            const symbolNames = responseData.data.map(item => item.symbolName);
-            generatePairOptions(symbolNames );
+            const table = document.getElementById("history__table");
+            renderOrderHistoryTable(responseData.data, table);
+            filterOrderHistoryTable(); // Apply filters again
+        } else {
+            console.error("Failed to fetch order history:", responseData.message);
         }
     } catch (error) {
-        console.error("Fail to get symbols:", error);
-        throw error;
+        console.error("Error in fetchOrderHistory():", error);
     }
 }
+
+// FILTERS //////////////////////////////////////////////////////////////////////////////////////////
 
 function generatePairOptions(symbols) {
     const filtersContainer = document.getElementById("order-history__container");
@@ -104,7 +112,7 @@ function generatePairOptions(symbols) {
     filterTable();
 }
 
-function createCustomSelect(label, options) {
+function createCustomSelect(label, options, defaultValue = "All", displayLabel = null) {
     const customSelect = document.createElement("div");
     customSelect.className = "custom-select";
 
@@ -112,20 +120,33 @@ function createCustomSelect(label, options) {
     select.className = "filter-select";
     select.setAttribute("data-filter", label);
 
-    // Create default option as "ALL"
-    const defaultOption = document.createElement("option");
-    defaultOption.textContent = label;
-    defaultOption.value = "All";
-    defaultOption.hidden = true;
-    defaultOption.selected = true;
-    select.appendChild(defaultOption);
+    if (label !== "Time") {
+        // 非 Time 選擇器，讓默認選項為 "All"，也顯示在選擇器中
+        const defaultOption = document.createElement("option");
+        defaultOption.textContent = label;
+        defaultOption.value = "all";
+        defaultOption.selected = true;
+        select.appendChild(defaultOption);
 
-    options.forEach((option) => {
-        const optionElement = document.createElement("option");
-        optionElement.textContent = option;
-        optionElement.value = option.toLowerCase();
-        select.appendChild(optionElement);
-    });
+        options.forEach((option) => {
+            if (option.toLowerCase() !== "all") {
+                const optionElement = document.createElement("option");
+                optionElement.textContent = option;
+                optionElement.value = option.toLowerCase();
+                select.appendChild(optionElement);
+            }
+        });
+    } else {
+        options.forEach((option) => {
+            const optionElement = document.createElement("option");
+            optionElement.textContent = option;
+            optionElement.value = option.toLowerCase().replace(/ /g, "_");
+            if (option.toLowerCase() === defaultValue?.toLowerCase()) {
+                optionElement.selected = true;
+            }
+            select.appendChild(optionElement);
+        });
+    }
 
     customSelect.appendChild(select);
     return customSelect;
@@ -135,21 +156,94 @@ function filterTable() {
     const pairFilter = document.querySelector('.filter-select[data-filter="Pair"]').value;
     const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
 
+    console.log("過濾條件：", { pair: pairFilter, side: sideFilter });
+
     const rows = document.querySelectorAll("#open-orders__tbody tr");
+    let visibleRowCount = 0;
+
     rows.forEach(row => {
         const pair = row.children[1].textContent.toLowerCase();
         const side = row.children[3].textContent.toLowerCase();
 
-        const pairMatch = pairFilter === "All" || pair === pairFilter.toLowerCase();
-        const sideMatch = sideFilter === "All" || side === sideFilter.toLowerCase();
+        const pairMatch = pairFilter === "all" || pair === pairFilter;
+        const sideMatch = sideFilter === "all" || side === sideFilter;
 
         if (pairMatch && sideMatch) {
             row.style.display = "";
+            visibleRowCount++;
         } else {
             row.style.display = "none";
         }
     });
 
+    console.log("可見行數：", visibleRowCount);
+}
+
+// order history filter
+function generateOrderHistoryFilters() {
+    const filtersContainer = document.getElementById("order-history__container");
+    filtersContainer.innerHTML = "";
+
+    const timeRanges = ["Today", "Seven Days", "One Month", "All"];
+    const timeRangeSelect = createCustomSelect("Time", timeRanges, "Today", "Today");
+    filtersContainer.appendChild(timeRangeSelect);
+
+    const pairOptions = ["All", ...globalSymbols.map(symbol => `${symbol.toUpperCase()}/USDT`)];
+    const pairSelect = createCustomSelect("Pair", pairOptions);
+    filtersContainer.appendChild(pairSelect);
+
+    const orderSides = ["All", "Buy", "Sell"];
+    const sideSelect = createCustomSelect("Side", orderSides);
+    filtersContainer.appendChild(sideSelect);
+
+    const statusOptions = ["All", "Executed", "Canceled"];
+    const statusSelect = createCustomSelect("Status", statusOptions);
+    filtersContainer.appendChild(statusSelect);
+
+    pairSelect.querySelector("select").addEventListener("change", filterOrderHistoryTable);
+    sideSelect.querySelector("select").addEventListener("change", filterOrderHistoryTable);
+    statusSelect.querySelector("select").addEventListener("change", filterOrderHistoryTable);
+    // fetchOrderHistory() by time range
+    timeRangeSelect.querySelector("select").addEventListener("change", async (event) => {
+        await fetchOrderHistory();
+    });
+}
+
+function filterOrderHistoryTable(event) {
+    if (event && event.target.getAttribute("data-filter") === "Time") {
+        return;
+    }
+
+    const pairFilter = document.querySelector('.filter-select[data-filter="Pair"]').value;
+    const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
+    const statusFilter = document.querySelector('.filter-select[data-filter="Status"]').value;
+
+    console.log("過濾條件：", { pair: pairFilter, side: sideFilter, status: statusFilter });
+
+    const rows = document.querySelectorAll("#history__table tbody tr");
+    let visibleRowCount = 0;
+
+    rows.forEach(row => {
+        const pair = row.children[1].textContent.toLowerCase();
+        const side = row.children[3].textContent.toLowerCase();
+        const status = row.children[8].textContent.toLowerCase();
+
+        const pairMatch = pairFilter === "all" || pair === pairFilter;
+        const sideMatch = sideFilter === "all" || side === sideFilter;
+        const statusMatch = statusFilter === "all" 
+                            || (statusFilter === "executed" 
+                            && (status === "filled" || status === "partially_filled" || status === "partially_filled_canceled")) 
+                            || (statusFilter === "canceled" && status === "canceled");
+
+        if (pairMatch && sideMatch && statusMatch) {
+            row.style.display = "";
+            visibleRowCount++;
+        } else {
+            row.style.display = "none";
+        }
+    });
+
+    console.log("可見行數：", visibleRowCount);
 }
 
 
@@ -298,19 +392,62 @@ async function cancelOrder(orderId) {
     }
 }
 
-// 這裡需要實現 renderTradeHistoryTable 和 renderOrderHistoryTable 函數
-function renderTradeHistoryTable(tradeHistoryJson, table) {
-    // 實現交易歷史表格的渲染邏輯
+// ORDER HISTORY //////////////////////////////////////////////////////////////////////////////////////
+function renderOrderHistoryTable(orderHistoryData, table) {
+    table.innerHTML = "";
+    console.log("orderHistoryData:", orderHistoryData);
+    const isLoggedIn = checkLoginStatus();
+    if(!isLoggedIn){
+        return;
+    }
+
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    const headers = ["Time", "Pair", "Type", "Side", "Price", "Quantity", "Executed", "Avg Price", "Status"];
+    headers.forEach(headerText => {
+        const th = document.createElement("th");
+        th.textContent = headerText;
+        headerRow.appendChild(th);
+    })
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+    console.log(401);
+    orderHistoryData.forEach(order => {
+        const row = document.createElement("tr");
+        const [base, quoteCurrency] = order.symbol.toUpperCase().split("_");
+
+        const cells = [
+            formatLocalTime(order.time),
+            `${base}/${quoteCurrency}`,
+            order.type.charAt(0).toUpperCase() + order.type.slice(1),
+            order.side.charAt(0).toUpperCase() + order.side.slice(1),
+            `${new Decimal(order.price).toFixed(2) || 0} ${quoteCurrency}`,
+            `${new Decimal(order.quantity).toFixed(5) || 0} ${base}`,
+            `${new Decimal(order.filled).toFixed(5) || 0} ${base}`,
+            order.averagePrice ? `${new Decimal(order.averagePrice).toFixed(2) || 0} ${quoteCurrency}` : '-',
+            order.status.charAt(0).toUpperCase() + order.status.slice(1)
+        ];
+
+        cells.forEach((cellData, index) => {
+            const cell = document.createElement("td");
+            cell.textContent = cellData;
+            if (index === 3) { 
+                cell.classList.add(order.side.toLowerCase() === "buy" ? "trade-history__cell--buy" : "trade-history__cell--sell");
+            }
+            row.appendChild(cell);
+        });
+        tbody.appendChild(row);
+    })
+    filterOrderHistoryTable();
 }
 
-function renderOrderHistoryTable(orderHistoryJson, table) {
-    // 實現訂單歷史表格的渲染邏輯
-}
 
 
 document.addEventListener("DOMContentLoaded",async () => {
     initializeHeader();
     await initTabActive();
     await getOpenOrders();
-    await fetchSymbols();
 });

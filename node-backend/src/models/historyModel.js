@@ -16,6 +16,42 @@ class HistoryModel {
         }
     }
 
+    async getOrderHistory(userId, timeRange){
+        const connection = await pool.getConnection();
+        try {
+            let query = `
+            SELECT symbol, side ,type, price , quantity, executed_quantity, average_price, status, created_at
+            FROM orders WHERE user_id = ?`;
+
+            let params = [userId];
+
+            switch (timeRange) {
+                case "today":
+                    query += ` AND created_at >= CURDATE()`;
+                    break;
+
+                case "seven_days": 
+                    query += ` AND created_at >= CURDATE() - INTERVAL 7 DAY`;
+                    break;
+
+                case "one_month":
+                    query += ` AND created_at >= CURDATE() - INTERVAL 1 MONTH`;
+                    break;
+
+                case "all":
+                    break;
+            }   
+
+            query += ` ORDER BY created_at DESC`;
+            console.log(query);
+            const [rows] = await connection.query(query, params);
+            console.log(rows);
+            return rows;            
+        } finally {
+            connection.release();
+        }
+    }
+
     async getTransactionsById(userId) {
         const [rows] = await db.query(
             `SELECT 
