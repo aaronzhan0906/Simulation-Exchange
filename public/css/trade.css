@@ -162,11 +162,15 @@ select::-ms-expand {
     grid-column: 1;
     grid-row: 1 / 2;
     border-radius: 2px;
-    background-image: url('../images/temp-chart.png');
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+    /* background-image: url('../images/temp-chart.png');
     background-size: contain;
     background-position: center;
-    background-repeat: no-repeat;
-}
+    background-repeat: no-repeat; */
+
 
 .order-book {
     grid-column: 2;

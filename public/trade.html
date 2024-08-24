@@ -10,6 +10,10 @@
     <title>Trade</title>
     <link rel="stylesheet" href="/css/trade.css">
     <script type="module" src="/pages/trade.js"></script>
+    <script type="module">
+        import { createChart } from 'https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.mjs';
+        window.createChart = createChart;
+    </script>
 </head>
 <body>
     <header class="header">
@@ -28,7 +32,10 @@
     </header>
     <hr>
     <main class="main">
-        <div class="chart"></div>
+        <!-- chart -->
+        <div class="chart" id="chart">
+
+        </div>
         <!-- order-book -->
         <div class="order-book">
             <div class="order-book__title">

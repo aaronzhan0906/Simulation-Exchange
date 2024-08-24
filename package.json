@@ -28,6 +28,7 @@
     "generic-pool": "^3.9.0",
     "jsonwebtoken": "^9.0.2",
     "kafkajs": "^2.2.4",
+    "lightweight-charts": "^4.2.0",
     "morgan": "^1.10.0",
     "mysql2": "^3.10.3",
     "nodejs-snowflake": "^2.0.1",
