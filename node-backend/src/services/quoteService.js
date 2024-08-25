@@ -23,7 +23,7 @@ redis.on("error", (error) => {
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = config.supportedSymbols;
 const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);
-const streamName = tradingPairs.map(pair => `${pair}@ticker`).join('/');
+const streamName = tradingPairs.map(pair => `${pair}@ticker`).join("/");
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 const binanceWs = new WebSocket(wsUrl);
 let latestTickerData = {}; // for different trading pairs { pair, streamData.c, streamData.P }
@@ -115,25 +115,25 @@ async function storeHourlyData() {
 
 async function cleanupData() {
     const now = Date.now();
-    const dayAgo = now - 86400000;
+    const dayAgo = now - 86400000; 
     const monthAgo = now - 2592000000;
 
     for (const pair of Object.keys(latestTickerData)) {
-        await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, dayAgo);
-        await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, monthAgo);
+        await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, dayAgo); // remove data older than 24 hours
+        await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, monthAgo); // remove data older than 30 days
     }
 }
 
 export async function queryDailyTrend(pair) {
     const now = Date.now();
     const dayAgo = now - 86400000;
-    return await redis.zrangebyscore(`recent_price_data:${pair}`, dayAgo, now, 'WITHSCORES');
+    return await redis.zrangebyscore(`recent_price_data:${pair}`, dayAgo, now, "WITHSCORES");
 }
 
 export async function queryMonthlyTrend(pair) {
     const now = Date.now();
     const monthAgo = now - 2592000000;
-    return await redis.zrangebyscore(`hourly_price_data:${pair}`, monthAgo, now, 'WITHSCORES');
+    return await redis.zrangebyscore(`hourly_price_data:${pair}`, monthAgo, now, "WITHSCORES");
 }
 
 async function get24hHighLow(pair) {
@@ -178,9 +178,9 @@ binanceWs.on("error", (error) => {
 
 
 // schedule jobs  //////////////////////////////////////////
-setInterval(storePrice, 1000);
-schedule.scheduleJob("0 * * * *", storeHourlyData);
-schedule.scheduleJob("0 0 * * *", cleanupData);
+setInterval(storePrice, 1000); // store price every second
+schedule.scheduleJob("0 * * * *", storeHourlyData); // store hourly data every hour
+schedule.scheduleJob("0 0 * * *", cleanupData); // clean up data every day
 
 
 // API routes //////////////////////////////////////////////

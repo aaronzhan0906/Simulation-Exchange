@@ -59,7 +59,7 @@ function initOrderBook () {
 
 
 
-
+// TRADE PANEL /////////////////////////////////////////////////////////////
 // get available balance in TRADE PANEL
 async function initAvailableBalance () {
     const isLoggedIn = checkLoginStatus();
@@ -95,7 +95,7 @@ async function initAvailableAsset(){
 
 }
 
-// create order  in TRADE PANEL 
+// create order by TRADE PANEL 
 async function submitOrder(orderType, orderSide, price, quantity) {
     const isLoggedIn = checkLoginStatus();
 
@@ -114,8 +114,8 @@ async function submitOrder(orderType, orderSide, price, quantity) {
                 symbol: `${baseAsset}_usdt`,
                 side: orderSide,
                 type: orderType,
-                price: price,
-                quantity: quantity,
+                price: new Decimal(price).toFixed(currentPricePrecision),
+                quantity: new Decimal(quantity).toFixed(currentQuantityPrecision),
             }),
         });
 
@@ -155,6 +155,159 @@ async function setupOrder(){
         } catch (error) {
             console.error("Fail to submit order in setupOrder():", error);
         }
+    });
+}
+
+// precision calculation issue
+let currentPricePrecision = 2;
+let currentQuantityPrecision = 0;
+
+function getPricePrecision(price) {
+    const decimalPart = price.toString().split(".")[1];
+    if (!decimalPart) return 0;
+    return decimalPart.length;
+}
+
+// if 1 < price < 10, quantity precision = 1 and so on
+function getQuantityPrecision(price) { 
+    const integerPart = Math.floor(price);
+    if (integerPart === 0) {
+        return 5; // 對於小於1的價格，允許更高的精度
+    }
+    return Math.max(Math.floor(Math.log10(integerPart))+1, 0);
+}
+
+
+// buy and sell mode status
+function initTabsAndSubmit() {
+    const buyButton = document.getElementById("trade-panel__tab--buy");
+    const sellButton = document.getElementById("trade-panel__tab--sell");
+    const submitButton = document.getElementById("trade-panel__submit");
+    const availablePrice = document.getElementById("trade-panel__available-price");
+    const availableAsset = document.getElementById("trade-panel__available-asset");
+
+    function updateDisplayAvailable(isBuyMode){
+        availablePrice.style.display = isBuyMode ? "block" : "none";
+        availableAsset.style.display = isBuyMode ? "none" : "block";
+    } 
+
+    // init
+    buyButton.classList.add("active");
+    sellButton.classList.remove("active");
+    submitButton.classList.add("buy")
+    updateDisplayAvailable(true);
+
+
+    // status change
+    buyButton.addEventListener("click", () => {
+        buyButton.classList.add("active");
+        sellButton.classList.remove("active");
+        submitButton.classList.add("buy");   
+        submitButton.classList.remove("sell");
+        submitButton.textContent = `Buy ${baseAsset.toUpperCase()}`; 
+        updateDisplayAvailable(true);
+    });
+
+    sellButton.addEventListener("click", () => {
+        sellButton.classList.add("active");
+        buyButton.classList.remove("active");
+        submitButton.classList.add("sell");
+        submitButton.classList.remove("buy");
+        submitButton.textContent = `Sell ${baseAsset.toUpperCase()}`; 
+        updateDisplayAvailable(false);
+
+    });
+}
+
+// quick select button and input handler in TRADE PANEL
+function quickSelectButtonAndInputHandler() {
+    const buttons = document.querySelectorAll(".trade-panel__quick-select button");
+    const availablePriceElement = document.getElementById("trade-panel__available-price");
+    const availableAssetElement = document.getElementById("trade-panel__available-asset");
+    const priceInput = document.getElementById("trade-panel__input--price");
+    const quantityInput = document.getElementById("trade-panel__input--quantity");
+    const totalInput = document.getElementById("trade-panel__input--total");
+    const inputs = [priceInput, quantityInput, totalInput];
+    const buyButton = document.getElementById("trade-panel__tab--buy");
+
+    function clearActiveButtons() {
+        buttons.forEach(btn => btn.classList.remove("active"));
+    }
+
+    // restrict input to positive numbers with specified decimal places
+    function restrictPositiveNum(value, decimalPlaces) {
+        const reg = new RegExp(`^\\d*(\\.\\d{0,${decimalPlaces}})?$`);
+        return reg.test(value) ? value : value.slice(0, -1);
+    }
+
+    function calculateAndUpdate(changedInput) {
+        const price = new Decimal(priceInput.value || "0");
+        const quantity = new Decimal(quantityInput.value || "0");
+        const total = new Decimal(totalInput.value || "0");
+
+        if (price.isZero()) return; // avoid division by zero
+
+        if (changedInput === "price" || changedInput === "quantity") {
+            totalInput.value = price.times(quantity).toFixed(2); // 待調整，小數點問題
+        } else if (changedInput === "total") {
+            const calculatedQuantity = total.dividedBy(price);
+            quantityInput.value = calculatedQuantity.toFixed(currentQuantityPrecision);
+        }
+    }
+
+    // Percentage button click handler
+    buttons.forEach(button => {
+        button.addEventListener("click", function() {
+            clearActiveButtons();
+            this.classList.add("active");
+
+            const availablePrice = new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0" );
+            const availableAsset = new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
+            const currentPrice = new Decimal(priceInput.value || "0");
+            const dataValue = new Decimal(this.dataset.value); // 0.25, 0.5, 0.75, 1
+
+            const isBuyMode = buyButton.classList.contains("active");
+
+            if (isBuyMode) {
+                const totalAmount = availablePrice.times(dataValue);
+                const quantity = currentPrice.isZero() ? new Decimal(0) : totalAmount.dividedBy(currentPrice);
+                quantityInput.value = quantity.toFixed(currentQuantityPrecision);
+                totalInput.value = totalAmount.toFixed(2);
+            } else {
+                const quantity = availableAsset.times(dataValue);
+                const totalAmount = quantity.times(currentPrice);
+                quantityInput.value = quantity.toFixed(currentQuantityPrecision);
+                totalInput.value = totalAmount.toFixed(2);
+            }
+        });
+    });
+
+    // Input event handling
+    inputs.forEach(input => {
+        input.addEventListener("focus", clearActiveButtons);
+
+        // Prevent arrow keys from changing input value
+        input.addEventListener("keydown", function(event) {
+            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                event.preventDefault();
+            }
+        });
+
+        input.addEventListener("input", (event) => {
+            const inputId = event.target.id;
+            const inputType = inputId.split("--")[1]; // price, quantity, or total
+            
+            // Apply appropriate restrictions based on input type
+            if (inputType === "price") {
+                event.target.value = restrictPositiveNum(event.target.value, currentPricePrecision);
+            } else if (inputType === "quantity") {
+                event.target.value = restrictPositiveNum(event.target.value, currentQuantityPrecision);
+            } else {
+                event.target.value = restrictPositiveNum(event.target.value, 2);
+            }
+            
+            calculateAndUpdate(inputType);
+        });
     });
 }
 
@@ -358,37 +511,32 @@ function updateOrderBookContent(element, orders, isAsk = false) {
 
 
 // update  ORDER BOOK PRICE and HEADER price
-function handlePriceUpdate(event) {
+function handlePriceUpdate(event) { 
     // my trade(current price) for temp
     const myCurrentPrice = new Decimal(event.detail.price);
 
     const currentPrice = new Decimal(event.detail.price);
+    currentPricePrecision = getPricePrecision(currentPrice);
+    currentQuantityPrecision = getQuantityPrecision(currentPrice); // get quantity precision
+
     const headerPrice = document.getElementById("chart-header__price");
     const priceElement = document.getElementById("order-book__price");
 
+    const quantityInput = document.getElementById("trade-panel__input--quantity");
+    if (quantityInput) {
+        quantityInput.step = `1e-${currentQuantityPrecision}`;
+        quantityInput.setAttribute('data-precision', currentQuantityPrecision);
+    }
+
     if (headerPrice) {
-        headerPrice.textContent = currentPrice.toFixed(2);
-        headerPrice.textContent = myCurrentPrice.toFixed(2);
-        // TOO ANNOYING
-        // if (lastPrice !== null) {
-        //     if (currentPrice.greaterThan(lastPrice)) {
-        //         headerPrice.classList.remove("negative");
-        //         headerPrice.classList.add("positive");
-        //     } else if (currentPrice.lessThan(lastPrice)) {
-        //         headerPrice.classList.remove("positive");
-        //         headerPrice.classList.add("negative");
-        //     } else {
-        //         headerPrice.classList.remove("positive");
-        //         headerPrice.classList.remove("negative");
-        //     }
-        // }
-        // innerLastPrice = currentPrice;
+        headerPrice.textContent = currentPrice.toFixed(currentPricePrecision);
+        headerPrice.textContent = myCurrentPrice.toFixed(currentPricePrecision);
     }
 
     if (priceElement) {
-        priceElement.textContent = currentPrice.toFixed(2);
+        priceElement.textContent = currentPrice.toFixed(currentPricePrecision);
         // my trade(current price)for temp
-        priceElement.textContent = myCurrentPrice.toFixed(2);
+        priceElement.textContent = myCurrentPrice.toFixed(currentPricePrecision);
 
         if (lastPrice !== null) {
             if (currentPrice.greaterThan(lastPrice)) {
@@ -409,157 +557,25 @@ function handlePriceUpdate(event) {
 
     const priceUsdElement = document.getElementById("order-book__price--usd");
     if (priceUsdElement) {
-        priceUsdElement.textContent = `≈${currentPrice.toFixed(2)} USD`;
+        priceUsdElement.textContent = `≈${currentPrice.toFixed(currentPricePrecision)} USD`;
     }
 
     const headerPriceUsdElement = document.getElementById("chart-header__price--usd");
     if (headerPriceUsdElement) {
-        headerPriceUsdElement.textContent = `≈${currentPrice.toFixed(2)} USD`;
+        headerPriceUsdElement.textContent = `≈${currentPrice.toFixed(currentPricePrecision)} USD`;
     }
 
     // set price only once
     if (!isPriceSet){
         const inputPrice = document.getElementById("trade-panel__input--price");
         if (inputPrice) {
-            inputPrice.value = currentPrice.toFixed(2);
+            inputPrice.value = currentPrice.toFixed(currentPricePrecision);
             isPriceSet = true;
         }
     }
 }
 
-// TRADE PANEL /////////////////////////////////////////////////
-// buy and sell mode status
-function initTabsAndSubmit() {
-    const buyButton = document.getElementById("trade-panel__tab--buy");
-    const sellButton = document.getElementById("trade-panel__tab--sell");
-    const submitButton = document.getElementById("trade-panel__submit");
-    const availablePrice = document.getElementById("trade-panel__available-price");
-    const availableAsset = document.getElementById("trade-panel__available-asset");
 
-    function updateDisplayAvailable(isBuyMode){
-        availablePrice.style.display = isBuyMode ? "block" : "none";
-        availableAsset.style.display = isBuyMode ? "none" : "block";
-    } 
-
-    // init
-    buyButton.classList.add("active");
-    sellButton.classList.remove("active");
-    submitButton.classList.add("buy")
-    updateDisplayAvailable(true);
-
-
-    // status change
-    buyButton.addEventListener("click", () => {
-        buyButton.classList.add("active");
-        sellButton.classList.remove("active");
-        submitButton.classList.add("buy");   
-        submitButton.classList.remove("sell");
-        submitButton.textContent = `Buy ${baseAsset.toUpperCase()}`; 
-        updateDisplayAvailable(true);
-    });
-
-    sellButton.addEventListener("click", () => {
-        sellButton.classList.add("active");
-        buyButton.classList.remove("active");
-        submitButton.classList.add("sell");
-        submitButton.classList.remove("buy");
-        submitButton.textContent = `Sell ${baseAsset.toUpperCase()}`; 
-        updateDisplayAvailable(false);
-
-    });
-}
-
-// quick select button and input handler in TRADE PANEL
-function quickSelectButtonAndInputHandler() {
-    const buttons = document.querySelectorAll(".trade-panel__quick-select button");
-    const availablePriceElement = document.getElementById("trade-panel__available-price");
-    const availableAssetElement = document.getElementById("trade-panel__available-asset");
-    const priceInput = document.getElementById("trade-panel__input--price");
-    const quantityInput = document.getElementById("trade-panel__input--quantity");
-    const totalInput = document.getElementById("trade-panel__input--total");
-    const inputs = [priceInput, quantityInput, totalInput];
-    const buyButton = document.getElementById("trade-panel__tab--buy");
-
-    function clearActiveButtons() {
-        buttons.forEach(btn => btn.classList.remove("active"));
-    }
-
-    // restrict input to positive numbers with specified decimal places
-    function restrictPositiveNum(value, decimalPlaces) {
-        const reg = new RegExp(`^\\d*(\\.\\d{0,${decimalPlaces}})?$`); // 限制輸入小數點位數  
-        
-        return reg.test(value) ? value : value.slice(0, -1);
-    }
-
-    function calculateAndUpdate(changedInput) {
-        const price = new Decimal(priceInput.value || "0");
-        const quantity = new Decimal(quantityInput.value || "0");
-        const total = new Decimal(totalInput.value || "0");
-
-        if (price.isZero()) return; // avoid division by zero
-
-        if (changedInput === "price" || changedInput === "quantity") {
-            totalInput.value = price.times(quantity).toFixed(2); // 待調整，小數點問題
-        } else if (changedInput === "total") {
-            quantityInput.value = total.dividedBy(price).toFixed(2); // 待調整，小數點問題
-        }
-    }
-
-    // Percentage button click handler
-    buttons.forEach(button => {
-        button.addEventListener("click", function() {
-            clearActiveButtons();
-            this.classList.add("active");
-
-            const availablePrice = new Decimal(availablePriceElement.textContent.replace(" USDT", ""));
-            const availableAsset = new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, ""));
-            const currentPrice = new Decimal(priceInput.value || "0");
-            const dataValue = new Decimal(this.dataset.value); // 0.25, 0.5, 0.75, 1
-
-            const isBuyMode = buyButton.classList.contains("active");
-
-            if (isBuyMode) {
-                const totalAmount = availablePrice.times(dataValue);
-                const quantity = currentPrice.isZero() ? new Decimal(0) : totalAmount.dividedBy(currentPrice);
-                quantityInput.value = quantity.toFixed(5);
-                totalInput.value = totalAmount.toFixed(2);
-            } else {
-                const quantity = availableAsset.times(dataValue);
-                const totalAmount = quantity.times(currentPrice);
-                quantityInput.value = quantity.toFixed(5);
-                totalInput.value = totalAmount.toFixed(2);
-            }
-        });
-    });
-
-    // Input event handling
-    inputs.forEach(input => {
-        input.addEventListener("focus", clearActiveButtons);
-
-        // Prevent arrow keys from changing input value
-        input.addEventListener("keydown", function(event) {
-            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-                event.preventDefault();
-            }
-        });
-
-        input.addEventListener("input", (event) => {
-            const inputId = event.target.id;
-            const inputType = inputId.split("--")[1]; // price, quantity, or total
-            
-            // Apply appropriate restrictions based on input type
-            if (inputType === "price") {
-                event.target.value = restrictPositiveNum(event.target.value, 2);
-            } else if (inputType === "quantity") {
-                event.target.value = restrictPositiveNum(event.target.value, 5);
-            } else {
-                event.target.value = restrictPositiveNum(event.target.value, 2);
-            }
-            
-            calculateAndUpdate(inputType);
-        });
-    });
-}
 
 // RECENT TRADE /////////////////////////////////////////////////
 function handleRecentTrade(event) {

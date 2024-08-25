@@ -30,7 +30,6 @@ async function initChartHeader() {
     const response = await fetch(`/api/quote/24h-high-low/${pair}`);
     const responseData = await response.json();
 
-    // 獲取並修改第一個子元素（24h High / 24h Low）
     highDiv.firstElementChild.textContent = "24h Highest";
     lowDiv.firstElementChild.textContent = "24h Lowest";
     
