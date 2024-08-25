@@ -1,59 +1,63 @@
-import express from "express";
-import WebSocket from "ws";
-import config from "../config/config.js";
-import WebSocketService from "../services/websocketService.js";
-const router = express.Router();
+// import express from "express";
+// import WebSocket from "ws";
+// import config from "../config/config.js";
+// import WebSocketService from "./websocketService.js";
+// const router = express.Router();
+// import { updatePriceData } from "./quoteService.js";
 
-const wsBaseUrl = process.env.WSS_BINANCE_URL;
-const supportedSymbols = config.supportedSymbols;
-const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);   
-const streamName = tradingPairs.map(pair => `${pair}@ticker`).join('/');
-const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 
-const binanceWs = new WebSocket(wsUrl);
 
-let latestTickerData = {};
+// const wsBaseUrl = process.env.WSS_BINANCE_URL;
+// const supportedSymbols = config.supportedSymbols;
+// const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);   
+// const streamName = tradingPairs.map(pair => `${pair}@ticker`).join('/');
+// const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 
-// broadcast function by condition
-function broadcastMessage(type, data) {
-    WebSocketService.broadcastToAllSubscribers({ type, data })
-}
+// const binanceWs = new WebSocket(wsUrl);
 
-// to room 
-function broadcastToRoom(symbol, data) {
-    // BTCUSDT => btc_usdt
-    const roomSymbol = symbol.slice(0, -4).toLowerCase()+ "_usdt";
-    WebSocketService.broadcastToRoom(roomSymbol, { type: "ticker", ...data });
-}
+// let latestTickerData = {};
 
-// get ticker from binance wss
-binanceWs.on("message", (data) => {
-    const parsedData = JSON.parse(data);
-    const { stream, data: streamData } = parsedData;
+// // broadcast function by condition
+// function broadcastMessage(type, data) {
+//     WebSocketService.broadcastToAllSubscribers({ type, data })
+// }
 
-    // Extract the trading pair from the stream name
-    const pair = stream.split("@")[0].toUpperCase();
+// // to room 
+// function broadcastToRoom(symbol, data) {
+//     // BTCUSDT -> btc_usdt
+//     const roomSymbol = symbol.slice(0, -4).toLowerCase()+ "_usdt";
+//     WebSocketService.broadcastToRoom(roomSymbol, { type: "ticker", ...data });
+// }
 
-    latestTickerData[pair] = {
-        symbol: streamData.s,
-        price: streamData.c,
-        priceChangePercent: streamData.P,
-    }; 
-    broadcastMessage(`ticker${pair.replace("USDT", "")}`, latestTickerData[pair]);
-    broadcastToRoom(pair, latestTickerData[pair]); 
-});
+// // get ticker from binance wss
+// binanceWs.on("message", (data) => {
+//     const parsedData = JSON.parse(data);
+//     const { stream, data: streamData } = parsedData;
 
-binanceWs.on("error", (error) => {
-    console.error("Websocket error:", error);
-});
+//     // Extract the trading pair from the stream name
+//     const pair = stream.split("@")[0].toUpperCase();
 
-// router to get the latest ticker data
+//     latestTickerData[pair] = {
+//         symbol: streamData.s,
+//         price: streamData.c,
+//         priceChangePercent: streamData.P,
+//     }; 
+//     broadcastMessage(`ticker${pair.replace("USDT", "")}`, latestTickerData[pair]); // 都傳到 quoteService.js
+//     broadcastToRoom(pair, latestTickerData[pair]); // 都傳到 quoteService.js
+//     updatePriceData(pair, streamData.c)
+// });
 
-router.get("/ticker", (req, res) => {
-    res.status(200).json({ ok: true, latestTickerData: latestTickerData });
-});
+// binanceWs.on("error", (error) => {
+//     console.error("Websocket error:", error);
+// });
 
-export default router;
+// // router to get the latest ticker data
+
+// router.get("/ticker", (req, res) => {
+//     res.status(200).json({ ok: true, latestTickerData: latestTickerData });
+// });
+
+// export default router;
 
 // let latestDepthData = { bids: {}, asks: {}};
 

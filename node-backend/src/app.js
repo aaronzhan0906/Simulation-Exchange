@@ -57,13 +57,10 @@ app.get("/signup", (req, res) => {
     res.sendFile(path.join(__dirname, "..", "..", "public", "signup.html"));
 });
 
-
-// /trade/:pair 路由
-app.get("/trade/:pair", (req, res) => {
-    const { pair } = req.params;
-    console.log("Trading pair:", pair);  // 記錄交易對以進行調試
-    res.sendFile(path.join(__dirname, "..", "..", "public", "trade.html"));
+app.get("/practice", (req, res) => {
+    res.sendFile(path.join(__dirname, "..", "..", "public", "chartPractice.html"));
 });
+
 
 // route
 import homeRoute from "./routes/homeRoute.js";
@@ -77,10 +74,15 @@ app.use("/api/wallet", walletRoute);
 app.use("/api/trade", tradeRoute);
 app.use("/api/history", historyRoute);
 
+// /trade/:pair 
+app.get("/trade/:pair", (req, res) => {
+    const { pair } = req.params;
+    console.log("Trading pair:", pair);
+    res.sendFile(path.join(__dirname, "..", "..", "public", "trade.html"));
+});
 
-// WS 
-import quoteWS from "./services/quoteWS.js";
-app.use("/api/quote", quoteWS);
+import quoteService from "./services/quoteService.js";
+app.use("/api/quote", quoteService);
 
 
 
@@ -110,35 +112,6 @@ const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-
-    // wss.on("connection",(ws, req) => {
-    //     console.log(`New WebSocket connection from ${req.socket.remoteAddress}`);
-
-    //     ws.on("message", (message) => {
-    //         console.log("Received", message.toString());
-    //     })
-
-    //     ws.on("message", (message) => {
-    //         try {
-    //             const data = JSON.parse(message);
-    //             if (data.action === "subscribe") {
-    //                 ws.tradePair = data.pair;
-    //                 console.log(`Subscribed to ${data.pair}`);
-    //             } else if (data.action === "unsubscribe") {
-    //                 ws.tradePair = null;
-    //                 console.log(`Unsubscribed from ${data.pair}`);
-    //             }
-    //         } catch (error) {
-    //             console.error("Error processing message:", error);
-    //         }
-    //     });
-
-    //     ws.send(JSON.stringify({type:"welcome", message: "Welcome to the WebSocket server!"}));
-    // })
-
-    // wss.on("error", (error) => {
-    //     console.error("WebSocket server error:", error)
-    // })
 });
 
 // close server gracefully

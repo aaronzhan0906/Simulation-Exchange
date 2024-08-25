@@ -3,6 +3,8 @@ import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 import WebSocketService from "../services/websocketService.js";
+import { updatePriceData } from "../services/quoteService.js";
+
 
 
 
@@ -333,7 +335,7 @@ class TradeController {
         try {
             const result = await TradeModel.createTradeHistory(tradeData)
             if (result) console.log("Trade history created.")
-
+            updatePriceData(symbol, executed_price)
         } catch(error) {
             console.error("createTradeHistory error, error:", error);
             throw error;
