@@ -1,5 +1,6 @@
 import { initializeHeader } from "../components/headerUI.js";
 import { initTradePanel } from "../components/tradePanelUI.js";
+import { symbolsData } from "../data/symbolsData.js";
 import tradeWebSocket from "../services/tradeWS.js";
 
 let chart;
@@ -7,8 +8,45 @@ let lineSeries;
 let lastDataPoint = null;
 let lastUpdateHour = -1; // for 30d chart refresh only once per hour
 
+
+// CHART HEADER ////////////////////////////////////////////////////
+const pair = location.pathname.split("/")[2];
+const baseAsset = pair.split("_")[0];
+
+async function initChartHeader() {
+    // symbol and ticker info
+    const symbolInfo = symbolsData.data.find(symbol => symbol.symbolName === baseAsset);
+    const icon = document.getElementById("chart-header__icon");
+    const baseAssetName = document.getElementById("chart-header__base-asset");
+    const quoteAsset = document.getElementById("chart-header__quote-asset");
+        
+    baseAssetName.textContent = symbolInfo.symbolName.toUpperCase();
+    quoteAsset.textContent = `/${pair.split("_")[1].toUpperCase()}`;
+    icon.src = symbolInfo.imageUrl;
+
+    // high and low price
+    const highDiv = document.getElementById("chart-header__high");
+    const lowDiv = document.getElementById("chart-header__low");
+    const response = await fetch(`/api/quote/24h-high-low/${pair}`);
+    const responseData = await response.json();
+
+    // 獲取並修改第一個子元素（24h High / 24h Low）
+    highDiv.firstElementChild.textContent = "24h Highest";
+    lowDiv.firstElementChild.textContent = "24h Lowest";
+    
+    if (response.ok) {
+        const high = parseFloat(responseData.data.high).toFixed(2);
+        const low = parseFloat(responseData.data.low).toFixed(2);
+        highDiv.lastElementChild.textContent = high;
+        lowDiv.lastElementChild.textContent = low;
+    }
+}
+
+
+
 async function fetchHistoricalData() {
-    const response = await fetch("/api/quote/monthly-trend/BTCUSDT");
+    const upperCasePair = pair.toUpperCase().replace("_", "");
+    const response = await fetch(`/api/quote/monthly-trend/${upperCasePair}`);
     const data = await response.json();
     const monthlyTrend = data.monthlyTrend;
     
@@ -22,35 +60,25 @@ async function fetchHistoricalData() {
             value: parseFloat(priceData.open) 
         });
     }
-
     return processedData.sort((a, b) => a.time - b.time);
 }
 
 
 async function initChart() {
-    const chartContainer = document.getElementById("chart");
+    const chartContainer = document.getElementById("chart-container");
     chart = createChart(chartContainer, {
-        width: chartContainer.offsetWidth,
-        height: 400,
         layout: {
-            background: { type: "solid", color: "#000000" },
+            background: { type: "solid", color: "rgba(13, 14, 15)" },
             textColor: "#ffffff",
         },
         grid: {
-            vertLines: { color: "rgba(0, 0, 0, 0.5)" },
-            horzLines: { color: "rgba(0, 0, 0, 0.5)" },
-        },
-        crosshair: {
-            mode: "normal",
+            vertLines: { color: "rgba(13, 14, 15, 0.5)" },
+            horzLines: { color: "rgba(13, 14, 15, 0.5)" },
         },
         rightPriceScale: {
-            borderColor: "rgba(0, 0, 0, 0.8)",
+            borderColor: "rgba(13, 14, 15, 0.5)",
         },
-        timeScale: {
-            borderColor: "rgba(82, 80, 80, 0.8)",
-            timeVisible: true,
-            secondsVisible: false,
-        },
+
     });
 
     lineSeries = chart.addAreaSeries({
@@ -100,6 +128,7 @@ function updateChart(price) {
 
 document.addEventListener("DOMContentLoaded", async () => {
     tradeWebSocket.init();
+    initChartHeader();
     await initChart(); 
     initTradePanel();
     initializeHeader();    

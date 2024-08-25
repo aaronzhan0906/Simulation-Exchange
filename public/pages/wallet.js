@@ -66,8 +66,8 @@ async function initAssets() {
             const ticker = tickerData.latestTickerData[`${asset.symbol.toUpperCase()}USDT`]; // xxx -> XXXUSDT to get ticker data
 
             const amount = new Decimal(asset.amount || 0); // 之後處理，如果賣光應該要不出現
-            const averageCost = new Decimal(asset.averagePrice);
-            const recentPrice = new Decimal(ticker.price);
+            const averageCost = new Decimal(asset.averagePrice || 0);
+            const recentPrice = new Decimal(ticker.price || 0);
 
             const assetValue = amount.times(recentPrice)
             const profitValue = amount.mul(recentPrice).sub(amount.mul(averageCost)).mul(100).div(new Decimal(10000));
@@ -86,10 +86,12 @@ async function initAssets() {
             assetListContainer.appendChild(assetItem);
             assetElements.set(asset.symbol.toLowerCase(), { priceDiv, changeDiv });
 
+            console.log(ticker)
+
             // Update UI with latest ticker data
             if (ticker) {
-                priceDiv.textContent = `${new Decimal(ticker.price).toFixed(2)} USDT`;
-                changeDiv.textContent = `${new Decimal(ticker.priceChangePercent).toFixed(2)}%`;
+                priceDiv.textContent = `${new Decimal(ticker.price).toFixed(2) || 0} USDT`;
+                changeDiv.textContent = `${new Decimal(ticker.priceChangePercent).toFixed(2) || 0}%`;
             }
         });
 
@@ -209,9 +211,9 @@ function updateTotalValue(totalProfit) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     initializeHeader();
     // BALANCE OVERVIEW //
-    initBalanceOverview ()
-    initAssets();
+    await initBalanceOverview ()
+    await initAssets();
 });

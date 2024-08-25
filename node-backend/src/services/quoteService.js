@@ -26,7 +26,7 @@ const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join('/');
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 const binanceWs = new WebSocket(wsUrl);
-let latestTickerData = {}; // for different trading pairs
+let latestTickerData = {}; // for different trading pairs { pair, streamData.c, streamData.P }
 
 
 // WebSocket functions //////////////////////////////////////////
@@ -39,13 +39,14 @@ function broadcastToRoom(symbol, data) {
     WebSocketService.broadcastToRoom(roomSymbol, { type: "ticker", ...data });
 }
 
-export function updatePriceData(pair, price) {
+export function updatePriceData(pair, price, priceChangePercent) {
     const now = new Date();
     const timestamp = now.toISOString();
 
     latestTickerData[pair] = {
         timestamp: timestamp,
         price: price,
+        priceChangePercent: priceChangePercent
     };
 
     WebSocketService.broadcastToRoom(`${pair.toLowerCase()}_usdt`, {
@@ -135,6 +136,23 @@ export async function queryMonthlyTrend(pair) {
     return await redis.zrangebyscore(`hourly_price_data:${pair}`, monthAgo, now, 'WITHSCORES');
 }
 
+async function get24hHighLow(pair) {
+    const newPair = pair.toUpperCase().replace("_", "");
+    const now = Date.now();
+    const dayAgo = now - 86400000;
+    try {
+        const prices = await redis.zrangebyscore(`recent_price_data:${newPair}`, dayAgo, now);
+        const priceValues = prices.map(p => parseFloat(JSON.parse(p).price));
+        return {
+            high: Math.max(...priceValues),
+            low: Math.min(...priceValues)
+        };
+    } catch (error) {
+        console.error("Error fetching 24h high low:", error);
+        return null;
+    }
+}
+
 
 // Binance websocket events  //////////////////////////////////////////
 binanceWs.on("message", (data) => {
@@ -151,7 +169,7 @@ binanceWs.on("message", (data) => {
 
     broadcastMessage(`ticker${pair.replace("USDT", "")}`, latestTickerData[pair]);
     broadcastToRoom(pair, latestTickerData[pair]);
-    updatePriceData(pair, streamData.c);
+    updatePriceData(pair, streamData.c, streamData.P);
 });
 
 binanceWs.on("error", (error) => {
@@ -174,6 +192,17 @@ router.get("/latest-price/:pair", async (req, res) => {
     const { pair } = req.params;
     const latestPrice = await getLatestPriceData(pair);
     res.status(200).json({ ok: true, latestPrice });
+});
+
+router.get("/24h-high-low/:pair", async (req, res) => {
+    const { pair } = req.params;
+    console.log("24h high low:", pair);
+    const highLow = await get24hHighLow(pair);
+    if (highLow) {
+        res.status(200).json({ ok: true, data: highLow });
+    } else {
+        res.status(404).json({ ok: false, error: "Data not found" });
+    }
 });
 
 router.get("/daily-trend/:pair", async (req, res) => {

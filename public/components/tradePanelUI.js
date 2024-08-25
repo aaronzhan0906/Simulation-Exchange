@@ -357,13 +357,34 @@ function updateOrderBookContent(element, orders, isAsk = false) {
 }
 
 
-// update  ORDER BOOK PRICE 
+// update  ORDER BOOK PRICE and HEADER price
 function handlePriceUpdate(event) {
     // my trade(current price) for temp
     const myCurrentPrice = new Decimal(event.detail.price);
 
     const currentPrice = new Decimal(event.detail.price);
+    const headerPrice = document.getElementById("chart-header__price");
     const priceElement = document.getElementById("order-book__price");
+
+    if (headerPrice) {
+        headerPrice.textContent = currentPrice.toFixed(2);
+        headerPrice.textContent = myCurrentPrice.toFixed(2);
+        // TOO ANNOYING
+        // if (lastPrice !== null) {
+        //     if (currentPrice.greaterThan(lastPrice)) {
+        //         headerPrice.classList.remove("negative");
+        //         headerPrice.classList.add("positive");
+        //     } else if (currentPrice.lessThan(lastPrice)) {
+        //         headerPrice.classList.remove("positive");
+        //         headerPrice.classList.add("negative");
+        //     } else {
+        //         headerPrice.classList.remove("positive");
+        //         headerPrice.classList.remove("negative");
+        //     }
+        // }
+        // innerLastPrice = currentPrice;
+    }
+
     if (priceElement) {
         priceElement.textContent = currentPrice.toFixed(2);
         // my trade(current price)for temp
@@ -384,9 +405,16 @@ function handlePriceUpdate(event) {
         lastPrice = currentPrice;
     }
 
+    
+
     const priceUsdElement = document.getElementById("order-book__price--usd");
     if (priceUsdElement) {
         priceUsdElement.textContent = `≈${currentPrice.toFixed(2)} USD`;
+    }
+
+    const headerPriceUsdElement = document.getElementById("chart-header__price--usd");
+    if (headerPriceUsdElement) {
+        headerPriceUsdElement.textContent = `≈${currentPrice.toFixed(2)} USD`;
     }
 
     // set price only once

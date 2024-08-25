@@ -6,6 +6,7 @@
     font-optical-sizing: auto;
     box-sizing: border-box;
     letter-spacing: 1px;
+
 }
 
 body {
@@ -16,8 +17,7 @@ body {
 hr {
     border: 0;
     height: 0.2px;
-    margin: 10px 0 15px 0;
-    background-color: #2b2b2b;
+    background-color: #272727;
 }
 
 /* Header */

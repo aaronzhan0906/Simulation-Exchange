@@ -33,8 +33,27 @@
     <hr>
     <main class="main">
         <!-- chart -->
-        <div class="chart" id="chart">
-
+        <div class="chart">
+            <div id="chart-header" class="chart-header">
+                <img id="chart-header__icon" class="chart-header__icon"></img>
+                <div id="chart-header__symbol" class="chart-header__symbol">
+                    <span id="chart-header__base-asset"></span>
+                    <span id="chart-header__quote-asset"></span>
+                </div>
+                <div id="chart-header__price-container" class="chart-header__price-container">
+                    <span id="chart-header__price" class="chart-header__price"></span>
+                    <span id="chart-header__price--usd" class="chart-header__price--usd"></span>
+                </div>
+                <div id="chart-header__high" class="chart-header__high">
+                    <span></span>
+                    <span></span>
+                </div>
+                <div id="chart-header__low" class="chart-header__low">
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            <div id="chart-container" class="chart-container"></div>
         </div>
         <!-- order-book -->
         <div class="order-book">
