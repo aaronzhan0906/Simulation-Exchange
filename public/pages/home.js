@@ -152,6 +152,7 @@ const generateAssetList = (symbols) => {
 function listenForRecentDetail(symbols) {
     symbols.forEach(symbol => {
         document.addEventListener(`ticker${symbol.symbolName.toUpperCase()}`, updateTickerDetail);
+        console.log(symbol.symbolName)
     });
 }
 

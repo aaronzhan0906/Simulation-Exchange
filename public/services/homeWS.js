@@ -25,35 +25,41 @@ class HomeWebSocket {
 
     onMessage(event) {
         const message = JSON.parse(event.data);
-        if (message.type.startsWith("ticker")) {
-        }
 
         switch (message.type) {
             case "welcome":
                 break;
 
-            case "tickerBTC":
-            case "tickerETH":
-            case "tickerBNB":
-            case "tickerTON":
-            case "tickerAVAX":
-                this.emitRecentDetail(message.type, message.data);
+            case "subscribed":
+                console.log("Subscribed to", message.symbol);
                 break;
             
+            case "ticker":
+                this.emitRecentDetail(message.data);
+                break;
+
             default:
                 console.log("Unhandled message type:", message.type);
         }
     }
 
-    emitRecentDetail(type, data) {
-        const event = new CustomEvent(type, { 
-            detail: { 
-                price: new Decimal(data.price),
-                priceChangePercent: new Decimal(data.priceChangePercent)
-            }
-        });
-        document.dispatchEvent(event);
+    emitRecentDetail(data) {
+        console.log("Emitting ticker data:", data);
+        const symbol = data.symbol.replace("USDT", "");
+
+        try {
+            const event = new CustomEvent(`ticker${symbol}`, { 
+                detail: { 
+                    price: new Decimal(data.price),
+                    priceChangePercent: new Decimal(data.priceChangePercent)
+                }
+            });
+            document.dispatchEvent(event);
+        } catch (error) {
+            console.error(`Error processing ticker data for ${symbol}:`, error);
+        }
     }
+
 
     onError(error) {
         console.log("WS error:", error);

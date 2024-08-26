@@ -165,20 +165,14 @@ class WebSocketService {
     }
 
     broadcastToRoom(symbol, message) {
-        if (this.rooms.has(symbol)){
+        if (this.rooms.has(symbol)) {
             this.rooms.get(symbol).forEach((client) => {
-                if (client.readyState === 1){
+                if (client.readyState === 1) {
                     client.send(JSON.stringify(message));
                 }
-            })
+            });
         }
-        
-        // send to all symbols subscribers
-        this.globalSubscribers.forEach((client) => {
-            if (client.readyState === 1){
-                client.send(JSON.stringify(message));
-            }
-        })
+        // 移除了對全局訂閱者的廣播
     }
 
     broadcastToAllSubscribers(message) {

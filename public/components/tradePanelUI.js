@@ -160,11 +160,11 @@ async function setupOrder(){
 
 // precision calculation issue
 let currentPricePrecision = 2;
-let currentQuantityPrecision = 0;
+let currentQuantityPrecision = 2;
 
 function getPricePrecision(price) {
     const decimalPart = price.toString().split(".")[1];
-    if (!decimalPart) return 0;
+    if (!decimalPart) return 2;
     return decimalPart.length;
 }
 
@@ -512,9 +512,6 @@ function updateOrderBookContent(element, orders, isAsk = false) {
 
 // update  ORDER BOOK PRICE and HEADER price
 function handlePriceUpdate(event) { 
-    // my trade(current price) for temp
-    const myCurrentPrice = new Decimal(event.detail.price);
-
     const currentPrice = new Decimal(event.detail.price);
     currentPricePrecision = getPricePrecision(currentPrice);
     currentQuantityPrecision = getQuantityPrecision(currentPrice); // get quantity precision
@@ -530,13 +527,11 @@ function handlePriceUpdate(event) {
 
     if (headerPrice) {
         headerPrice.textContent = currentPrice.toFixed(currentPricePrecision);
-        headerPrice.textContent = myCurrentPrice.toFixed(currentPricePrecision);
     }
 
     if (priceElement) {
         priceElement.textContent = currentPrice.toFixed(currentPricePrecision);
-        // my trade(current price)for temp
-        priceElement.textContent = myCurrentPrice.toFixed(currentPricePrecision);
+        
 
         if (lastPrice !== null) {
             if (currentPrice.greaterThan(lastPrice)) {

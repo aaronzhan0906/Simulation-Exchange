@@ -335,7 +335,8 @@ class TradeController {
         try {
             const result = await TradeModel.createTradeHistory(tradeData)
             if (result) console.log("Trade history created.")
-            updatePriceData(symbol, executed_price)
+            const formattedSymbol = symbol.toUpperCase().replace("_", "");
+            updatePriceData(formattedSymbol, executed_price);
         } catch(error) {
             console.error("createTradeHistory error, error:", error);
             throw error;

@@ -212,6 +212,7 @@ select::-ms-expand {
 }
 
 .chart-header__price {
+    width: 80px;
     font-size: 13px;
     line-height: 1.5;
     color: #ffffff;

@@ -26,65 +26,91 @@ const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join("/");
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 const binanceWs = new WebSocket(wsUrl);
+
 let latestTickerData = {}; // for different trading pairs { pair, streamData.c, streamData.P }
+// store price at least once every 1s
 
 
 // WebSocket functions //////////////////////////////////////////
-function broadcastMessage(type, data) {
+function broadcastMessageToAll(type, data) {
     WebSocketService.broadcastToAllSubscribers({ type, data });
 }
 
 function broadcastToRoom(symbol, data) {
     const roomSymbol = symbol.slice(0, -4).toLowerCase() + "_usdt";
-    WebSocketService.broadcastToRoom(roomSymbol, { type: "ticker", ...data });
+    WebSocketService.broadcastToRoom(roomSymbol, { type: "ticker", ...data }); 
 }
 
-export function updatePriceData(pair, price, priceChangePercent) {
-    const now = new Date();
-    const timestamp = now.toISOString();
+export async function updatePriceData(pair, price) {
+    const formattedPair = pair.toUpperCase(); // XXXUSDT
+    let priceChangePercent = await calculate24hChangePercent(formattedPair, price);
 
-    latestTickerData[pair] = {
-        timestamp: timestamp,
+    const updatedData = {
+        symbol: formattedPair,
         price: price,
         priceChangePercent: priceChangePercent
     };
 
-    WebSocketService.broadcastToRoom(`${pair.toLowerCase()}_usdt`, {
-        type: "priceUpdate",
-        data: latestTickerData[pair]
-    });
+    latestTickerData[formattedPair] = updatedData;
 
-    redis.set(`latest_price:${pair}`, JSON.stringify(latestTickerData[pair]));
+    broadcastMessageToAll("ticker", updatedData);
+    broadcastToRoom(formattedPair, updatedData); // broadcastToRoom will convert pair to xxx_usdt
+
+    // store every time
+    await storePriceData(formattedPair, updatedData);
 }
 
 
 // Redis functions //////////////////////////////////////////
-async function storePrice() {
+async function storePriceData(pair, data) {
     try {
-        const now = new Date();
-        const timestamp = now.toISOString();
-        const unixTimestamp = now.getTime(); 
+        const now = Date.now(); 
+        const timestamp = new Date(now).toISOString(); 
 
-        for (const [pair, data] of Object.entries(latestTickerData)) {
-            const storedData = {
-                ...data,
-                timestamp: timestamp
-            };
+        const storedData = {
+            ...data,
+            timestamp: timestamp 
+        };
 
-            await redis.zadd(
-                `recent_price_data:${pair}`,
-                unixTimestamp,  
-                JSON.stringify(storedData)
-            );
-        }
+        await redis.zadd(
+            `recent_price_data:${pair}`,
+            now, 
+            JSON.stringify(storedData)
+        );
+
     } catch (error) {
-        console.error("Error storing price:", error);
+        console.error(`Error storing price for ${pair}:`, error);
     }
 }
 
 export async function getLatestPriceData(pair) {
     const latestPrice = await redis.get(`latest_price:${pair}`);
     return latestPrice ? JSON.parse(latestPrice) : null;
+}
+
+async function calculate24hChangePercent(pair, currentPrice) {
+    const now = new Date();
+    now.setUTCMinutes(0, 0, 0); // XX:00:00
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+
+    try {
+        const oldPriceData = await redis.zrevrangebyscore(
+            `hourly_price_data:${pair}`, 
+            '+inf',
+            twentyFourHoursAgo.getTime(),
+            "LIMIT", 0, 1 
+        );
+
+        const oldPriceObj = JSON.parse(oldPriceData[0]);
+        const oldPrice = parseFloat(oldPriceObj.open);
+        const changePercent = ((currentPrice - oldPrice) / oldPrice) * 100;
+
+        return changePercent.toFixed(2);
+
+    } catch (error) {
+        console.error(`Error calculating 24h change percent for ${pair}:`, error);
+        return "0.00";
+    }
 }
 
 async function storeHourlyData() {
@@ -164,12 +190,9 @@ binanceWs.on("message", (data) => {
     latestTickerData[pair] = {
         symbol: streamData.s,
         price: streamData.c,
-        priceChangePercent: streamData.P,
+        // priceChangePercent: streamData.P,
     };
-
-    broadcastMessage(`ticker${pair.replace("USDT", "")}`, latestTickerData[pair]);
-    broadcastToRoom(pair, latestTickerData[pair]);
-    updatePriceData(pair, streamData.c, streamData.P);
+    updatePriceData(pair, streamData.c)
 });
 
 binanceWs.on("error", (error) => {
@@ -178,7 +201,6 @@ binanceWs.on("error", (error) => {
 
 
 // schedule jobs  //////////////////////////////////////////
-setInterval(storePrice, 1000); // store price every second
 schedule.scheduleJob("0 * * * *", storeHourlyData); // store hourly data every hour
 schedule.scheduleJob("0 0 * * *", cleanupData); // clean up data every day
 
