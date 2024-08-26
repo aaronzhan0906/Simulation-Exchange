@@ -1,5 +1,7 @@
 import axios from "axios";
 import Redis from "ioredis";
+import config from "./config.js";
+
 
 // Create Redis client
 const redis = new Redis();
@@ -13,7 +15,11 @@ redis.on("error", (error) => {
     console.error("Redis connection error:", error);
 });
 
-async function getHourlyOpenPrices(symbol = "BTCUSDT", interval = "1h", days = 30) {
+// support symbol
+const supportedSymbols = config.supportedSymbols;
+const symbols = supportedSymbols.map(symbol => `${symbol.toUpperCase()}USDT`);
+
+async function getHourlyOpenPrices(symbol, interval = "1h", days = 30) {
     const baseUrl = "https://api.binance.com/api/v3/klines";
     
     const endTime = Date.now();
@@ -57,11 +63,9 @@ async function storeDataInRedis(symbol, data) {
     const key = `hourly_price_data:${symbol}`;
     const pipeline = redis.pipeline();
 
-    // First, delete the old data
-    pipeline.del(key);
+    pipeline.del(key); // delete the old data
 
-    // Then add the new data
-    for (const item of data) {
+    for (const item of data) { // store the new data
         const score = new Date(item.timestamp).getTime();
         pipeline.zadd(key, score, JSON.stringify(item));
     }
@@ -70,27 +74,34 @@ async function storeDataInRedis(symbol, data) {
     console.log(`Updated ${data.length} records in Redis`);
 }
 
-async function main() {
-    const symbol = "BTCUSDT";
+async function processSymbol(symbol) {
     const interval = "1h";
     const days = 30;
     
     try {
-        // Fetch data
+        console.log(`Processing ${symbol}...`);
         const data = await getHourlyOpenPrices(symbol, interval, days);
-
-        // Store in Redis
         await storeDataInRedis(symbol, data);
-
-        // Retrieve the last 10 records from Redis
-        const redisData = await redis.zrevrange(`price:${symbol}`, 0, 4, "WITHSCORES");
-        console.log("Last 5 records from Redis:");
+        
+        // Retrieve the last 5 records from Redis
+        const redisData = await redis.zrevrange(`hourly_price_data:${symbol}`, 0, 4, "WITHSCORES");
+        console.log(`Last 5 records from Redis for ${symbol}:`);
         for (let i = 0; i < redisData.length; i += 2) {
             const item = JSON.parse(redisData[i]);
             const score = redisData[i+1];
             console.log(`Time: ${item.timestamp}, Open Price: ${item.open}, Score: ${score}`);
         }
+    } catch (error) {
+        console.error(`Error processing ${symbol}:`, error);
+    }
+}
 
+async function main() {
+    try {
+        for (const symbol of symbols) {
+            await processSymbol(symbol);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before processing the next symbol
+        }
     } catch (error) {
         console.error("Error in main function:", error);
     } finally {
