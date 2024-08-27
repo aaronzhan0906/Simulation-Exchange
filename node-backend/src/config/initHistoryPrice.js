@@ -4,16 +4,23 @@ import config from "./config.js";
 
 
 // Create Redis client
-const redis = new Redis();
-
-// Add connection listeners
-redis.on("connect", () => {
+const redis = new Redis({
+    host: process.env.REDIS_HOST || 'host.docker.internal',
+    port: process.env.REDIS_PORT || 6379,
+    retryStrategy: (times) => {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    }
+  });
+  
+  // Add connection listeners
+  redis.on("connect", () => {
     console.log("Successfully connected to Redis");
-});
-
-redis.on("error", (error) => {
+  });
+  
+  redis.on("error", (error) => {
     console.error("Redis connection error:", error);
-});
+  });
 
 // support symbol
 const supportedSymbols = config.supportedSymbols;

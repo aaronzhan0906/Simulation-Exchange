@@ -7,18 +7,24 @@ import schedule from "node-schedule";
 // import pool from "../config/database.js";
 
 const router = express.Router();
+// Create Redis client
 const redis = new Redis({
-    host: config.redis.host || "localhost",
-    port: config.redis.port || 6379,
-});
-
-redis.on("connect", () => {
+    host: process.env.REDIS_HOST || 'host.docker.internal',
+    port: process.env.REDIS_PORT || 6379,
+    retryStrategy: (times) => {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    }
+  });
+  
+  // Add connection listeners
+  redis.on("connect", () => {
     console.log("Successfully connected to Redis");
-});
-
-redis.on("error", (error) => {
+  });
+  
+  redis.on("error", (error) => {
     console.error("Redis connection error:", error);
-});
+  });
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = config.supportedSymbols;
