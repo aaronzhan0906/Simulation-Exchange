@@ -1,5 +1,16 @@
-# requirements.txt
-# SortedDict
-sortedcontainers
-snowflake-id
+asyncio
+
+# Kafka client
 aiokafka==0.11.0
+
+# Sorted containers for efficient data structures
+sortedcontainers
+
+# Snowflake ID generator
+snowflake-id
+
+# Environment variable management
+python-dotenv
+
+# Redis client (assuming you're using Redis based on earlier code)
+redis

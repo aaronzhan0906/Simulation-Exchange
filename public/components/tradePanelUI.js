@@ -13,6 +13,9 @@ const baseAsset = pair.split("_")[0];
 
 // get websocket data
 function initTradePanelWebSocket(){
+    // get recent price by API first
+
+
     document.addEventListener("recentPrice", handlePriceUpdate);
     document.addEventListener("orderBook", handleOrderBookUpdate);
 

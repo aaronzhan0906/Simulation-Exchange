@@ -44,7 +44,6 @@ class HomeWebSocket {
     }
 
     emitRecentDetail(data) {
-        console.log("Emitting ticker data:", data);
         const symbol = data.symbol.replace("USDT", "");
 
         try {

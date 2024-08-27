@@ -1,12 +1,106 @@
+import os
+import redis
+import asyncio
+import pickle
 from sortedcontainers import SortedDict
 from decimal import Decimal
 from collections import deque
 
 class OrderBook:
-    def __init__(self):
-        self.bids = SortedDict()  # SortedDict for efficient price-based ordering of bids and asks
+    def __init__(self, symbol):
+        self.symbol = symbol
+        self.bids = SortedDict()
         self.asks = SortedDict()
-        self.order_index = {} # Add index to quick access to order details by order_id
+        self.order_index = {}
+        
+        # Redis 
+        redis_host = os.environ.get("REDIS_HOST")
+        redis_port = int(os.environ.get("REDIS_PORT"))
+        redis_db = int(os.environ.get("REDIS_DB"))
+        self.redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db)
+        
+        self.load_snapshot() # if null create snapshot in redis
+        
+        self.is_running = True
+
+    async def start_snapshot_timer(self):
+        while self.is_running:
+            await self.save_snapshot()
+            await asyncio.sleep(5)
+
+    def stop_snapshot_timer(self):
+        self.is_running = False
+
+    def take_snapshot(self):
+        self.save_snapshot()
+        self.start_snapshot_timer()
+
+    def load_snapshot(self):
+        serialized_data = self.redis_client.get(f"order_book_snapshot:{self.symbol}")
+        if serialized_data:
+            data = pickle.loads(serialized_data)
+            self.bids = SortedDict()
+            self.asks = SortedDict()
+            self.order_index = {}
+            
+            for price, orders in data["bids"].items():
+                price = Decimal(price)
+                self.bids[price] = deque()
+                for order_id, quantity, original_quantity, user_id in orders:
+                    self.bids[price].append(order_id)
+                    self.order_index[order_id] = ("buy", price, Decimal(quantity), Decimal(original_quantity), user_id)
+            
+            for price, orders in data["asks"].items():
+                price = Decimal(price)
+                self.asks[price] = deque()
+                for order_id, quantity, original_quantity, user_id in orders:
+                    self.asks[price].append(order_id)
+                    self.order_index[order_id] = ("sell", price, Decimal(quantity), Decimal(original_quantity), user_id)
+            
+            print(f"Order book snapshot loaded from Redis（{self.symbol}）")
+        else:
+            print(f"No order book snapshot found（{self.symbol}），initializing am empty order book。")
+
+    async def save_snapshot(self):
+        serialized_data = pickle.dumps({
+            "bids": {str(price): [(order_id, str(self.order_index[order_id][2]), str(self.order_index[order_id][3]), self.order_index[order_id][4])
+                                  for order_id in orders]
+                     for price, orders in self.bids.items()},
+            "asks": {str(price): [(order_id, str(self.order_index[order_id][2]), str(self.order_index[order_id][3]), self.order_index[order_id][4])
+                                  for order_id in orders]
+                     for price, orders in self.asks.items()},
+        })
+        await asyncio.to_thread(self.redis_client.set, f"order_book_snapshot:{self.symbol}", serialized_data)
+        print(f"Order book snapshot saved to Redis ({self.symbol}).")
+
+    def get_order_book(self, levels: int = 10) -> dict:
+        def aggregate_orders(book, reverse=False):
+            items = list(book.items())
+            if reverse:
+                items.reverse()
+            result = []
+            for price, orders in items[:levels]:
+                total_quantity = Decimal("0")
+                for order_id in orders:
+                    if order_id in self.order_index:
+                        total_quantity += self.order_index[order_id][2]
+                    else:
+                        print(f"Warning: Order ID {order_id} not found in order_index")
+                result.append({"price": str(price), "quantity": str(total_quantity)})
+            return result
+        
+        return {
+            "asks": aggregate_orders(self.asks),
+            "bids": aggregate_orders(self.bids, reverse=True)
+        }
+    
+    async def close(self):
+        self.stop_snapshot_timer()
+        print("Save before shutdown")
+        await self.save_snapshot() 
+
+
+## ORDER BOOK MATCHING LOGIC #######################################
 
     def add_order(self, order):
         side = order["side"]
@@ -87,19 +181,4 @@ class OrderBook:
         if input_quantity > 0:   # If no matching and there's any quantity left, add it as a new order
             self.add_order({**order, "quantity": input_quantity})
 
-    def get_order_book(self, levels: int = 10) -> dict:
-        def aggregate_orders(book, reverse=False):  # Aggregate orders at each price level
-            items = list(book.items()) # Convert SortedDict items to a list
-            if reverse: # Reverse the list for bids to get descending order
-                items.reverse()
-            return [{"price": str(price), "quantity": str(sum(self.order_index[order_id][2] for order_id in orders))} 
-                    for price, orders in items][:levels]
-        
-        return {
-            "asks": aggregate_orders(self.asks),
-            "bids": aggregate_orders(self.bids, reverse=True)
-        }
-
-    def __str__(self):
-        return f"Asks: {dict(self.asks)}\nBids: {dict(self.bids)}"
     

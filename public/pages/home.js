@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Hero Section
     generateSignUpForm();
     // Main
-    fetchSymbols();
+    initSymbolListAndTicker();
 });
 
 
@@ -67,21 +67,26 @@ function generateSignUpForm() {
 
 
 // MAIN //
-async function fetchSymbols(){
+async function initSymbolListAndTicker() {
     try {
-        const response = await fetch("api/home/symbols")
-        const data = await response.json();
-        if (response.ok) {
-            generateAssetList(data.data);
-            listenForRecentDetail(data.data);
-        }
+        const symbolsResponse = await fetch("api/home/symbols");
+        const symbolsData = await symbolsResponse.json();
+        
+        const tickerResponse = await fetch("api/quote/ticker");
+        const tickerData = await tickerResponse.json();
+
+        const symbols = symbolsData.data;
+        const latestTickerData = tickerData.latestTickerData;
+
+        generateAssetList(symbols, latestTickerData);
+        listenForRecentDetail(symbols);
+
     } catch (error) {
-        console.error("Fail to get symbols:", error);
-        throw error;
+        console.error("Failed to fetch symbols and prices:", error);
     }
 }
 
-const generateAssetList = (symbols) => {
+const generateAssetList = (symbols, latestTickerData) => {
     const symbolListContainer = document.getElementById("symbol-list__container");
     
     symbols.forEach(symbol => {
@@ -143,6 +148,14 @@ const generateAssetList = (symbols) => {
         symbolListContainer.appendChild(hr);
     }
 
+    // update price and style
+    const ticker = latestTickerData[`${symbol.symbolName.toUpperCase()}USDT`];
+        if (ticker) {
+            usdtSpan.textContent = `${parseFloat(ticker.price).toFixed(2)} USDT`;
+            usdSpan.textContent = `≈${parseFloat(ticker.price).toFixed(2)} USD`;
+            changeDiv.textContent = `${parseFloat(ticker.priceChangePercent).toFixed(2)}%`;
+            updatePriceChangeStyle(changeDiv, ticker.priceChangePercent);
+        }
     })
 }
 
@@ -152,7 +165,6 @@ const generateAssetList = (symbols) => {
 function listenForRecentDetail(symbols) {
     symbols.forEach(symbol => {
         document.addEventListener(`ticker${symbol.symbolName.toUpperCase()}`, updateTickerDetail);
-        console.log(symbol.symbolName)
     });
 }
 
@@ -162,27 +174,31 @@ function updateTickerDetail(event) {
 
     const priceElement = document.getElementById(`symbol-item__price--usdt--${pair}`);
     if (priceElement) {
-        priceElement.textContent = `${price.toFixed(2)} USDT`;
+        priceElement.textContent = `${parseFloat(price).toFixed(2)} USDT`;
     }
 
     const priceUsdElement = document.getElementById(`symbol-item__price--usd--${pair}`);
     if (priceUsdElement) {
-        priceUsdElement.textContent = `≈${price.toFixed(2)} USD`;
+        priceUsdElement.textContent = `≈${parseFloat(price).toFixed(2)} USD`;
     }
 
     const pricePercentElement = document.getElementById(`symbol-item__change--${pair}`);
     if (pricePercentElement) {
-        pricePercentElement.textContent = `${priceChangePercent.toFixed(2)}%`;
+        pricePercentElement.textContent = `${parseFloat(priceChangePercent).toFixed(2)}%`;
+        updatePriceChangeStyle(pricePercentElement, priceChangePercent);
+    }
+}
 
-        if (priceChangePercent > 0) {
-            pricePercentElement.classList.remove("negative");
-            pricePercentElement.classList.add("positive");
-        } else if (priceChangePercent < 0) {
-            pricePercentElement.classList.remove("positive");
-            pricePercentElement.classList.add("negative");
-        } else {
-            pricePercentElement.classList.remove("positive");
-            pricePercentElement.classList.remove("negative");
-        }
+
+function updatePriceChangeStyle(element, priceChangePercent) {
+    if (parseFloat(priceChangePercent) > 0) {
+        element.classList.remove("negative");
+        element.classList.add("positive");
+    } else if (parseFloat(priceChangePercent) < 0) {
+        element.classList.remove("positive");
+        element.classList.add("negative");
+    } else {
+        element.classList.remove("positive");
+        element.classList.remove("negative");
     }
 }

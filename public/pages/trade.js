@@ -27,7 +27,7 @@ async function initChartHeader() {
     // high and low price
     const highDiv = document.getElementById("chart-header__high");
     const lowDiv = document.getElementById("chart-header__low");
-    const response = await fetch(`/api/quote/24h-high-low/${pair}`);
+    const response = await fetch(`/api/quote/24hHighAndLow/${pair}`);
     const responseData = await response.json();
 
     highDiv.firstElementChild.textContent = "24h Highest";
@@ -45,7 +45,7 @@ async function initChartHeader() {
 
 async function fetchHistoricalData() {
     const upperCasePair = pair.toUpperCase().replace("_", "");
-    const response = await fetch(`/api/quote/monthly-trend/${upperCasePair}`);
+    const response = await fetch(`/api/quote/monthlyTrend/${upperCasePair}`);
     const data = await response.json();
     const monthlyTrend = data.monthlyTrend;
     

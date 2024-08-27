@@ -210,13 +210,17 @@ router.get("/ticker", (req, res) => {
     res.status(200).json({ ok: true, latestTickerData: latestTickerData });
 });
 
-router.get("/latest-price/:pair", async (req, res) => {
+router.get("/latestPrice/:pair", async (req, res) => {
     const { pair } = req.params;
-    const latestPrice = await getLatestPriceData(pair);
+    console.log("Latest price:", pair);
+    const formattedPair = pair.toUpperCase().replace("_", "");
+    const latestPrice = latestTickerData[formattedPair];
     res.status(200).json({ ok: true, latestPrice });
 });
 
-router.get("/24h-high-low/:pair", async (req, res) => {
+
+
+router.get("/24hHighAndLow/:pair", async (req, res) => {
     const { pair } = req.params;
     console.log("24h high low:", pair);
     const highLow = await get24hHighLow(pair);
@@ -227,13 +231,13 @@ router.get("/24h-high-low/:pair", async (req, res) => {
     }
 });
 
-router.get("/daily-trend/:pair", async (req, res) => {
+router.get("/dailyTrend/:pair", async (req, res) => {
     const { pair } = req.params;
     const dailyTrend = await queryDailyTrend(pair);
     res.status(200).json({ ok: true, dailyTrend });
 });
 
-router.get("/monthly-trend/:pair", async (req, res) => {
+router.get("/monthlyTrend/:pair", async (req, res) => {
     const { pair } = req.params;
     console.log("Monthly trend:", pair);
     try {
