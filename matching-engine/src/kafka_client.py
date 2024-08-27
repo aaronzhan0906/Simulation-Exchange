@@ -3,8 +3,11 @@ import os
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 import json
 from decimal import Decimal
+from dotenv import load_dotenv
 
-SUPPORTED_SYMBOLS = os.environ.get("SUPPORTED_SYMBOLS", "btc,eth,bnb,ton,avax").split(',')
+
+load_dotenv()
+SUPPORTED_SYMBOLS = os.environ.get("SUPPORTED_SYMBOLS", "btc,eth,bnb,sol,avax").split(',')
 SUPPORTED_SYMBOLS = [symbol.strip() for symbol in SUPPORTED_SYMBOLS]
 
 # Convert decoimal and int objects to strings for JSON serialization
