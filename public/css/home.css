@@ -20,19 +20,17 @@ hr {
     background-color: #272727;
 }
 
-/* Container */
-.header__container {
-    width: calc(40% + 550px);
-    margin: 0 auto;
-}
 
 /* Header */
 .header {
     background-color: #0d0e0f;
+    height: 46px;
     padding: 10px 0;
 }
 
 .header__container {
+    width: calc(40% + 550px);
+    margin: 0 auto;
     display: flex;
     align-items: center;
 }
@@ -192,6 +190,7 @@ hr {
 .main {
     background-color: #0d0e0f;
     color: #ffffff;
+    padding-bottom: 80px;
 }
 
 .symbol-list {
@@ -210,6 +209,9 @@ hr {
     align-items: center;
     padding: 15px 0;
     border-bottom: 1px solid #272727;
+}
+.symbol-item {
+    min-height: 60.5px;
 }
 
 .symbol-list__header {

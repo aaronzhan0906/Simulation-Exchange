@@ -54,7 +54,7 @@ const headerEventListeners = () => {
 
     if (tradeLink) {
         tradeLink.addEventListener("click", () => {
-            location.href = "/trade";
+            location.href = "/trade/btc_usdt";
         });
     }
 

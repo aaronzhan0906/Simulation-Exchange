@@ -20,20 +20,16 @@ hr {
     background-color: #272727;
 }
 
-/* Container */
-.header__container {
-    width: calc(40% + 550px);
-
-    margin: 0 auto;
-}
-
 /* Header */
 .header {
     background-color: #0d0e0f;
+    height: 46px;
     padding: 10px 0;
 }
 
 .header__container {
+    width: calc(40% + 550px);
+    margin: 0 auto;
     display: flex;
     align-items: center;
 }
@@ -45,7 +41,9 @@ hr {
 .header__logo {
     color: rgb(0, 132, 255);
     font-size: 20px;
+    cursor: pointer;
 }
+
 .header__logo--link {
     text-decoration: none;
 
@@ -58,19 +56,6 @@ hr {
 .header__logo--link:active {
     color: rgb(158, 201, 241);
 }
-
-.header__link {
-    color: white;
-    font-size: 12px;
-    padding: 10px;
-    text-decoration: none;
-}
-
-.header__link:hover{
-    color: rgb(169, 191, 212);
-}
-
-
 
 
 /* Main */

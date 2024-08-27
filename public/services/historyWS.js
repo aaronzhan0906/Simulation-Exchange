@@ -1,4 +1,4 @@
-class TradeWebSocket {
+class HistoryWebSocket {
     constructor() {
         this.ws = null;
     }
@@ -16,7 +16,17 @@ class TradeWebSocket {
     }
 
     onOpen() {
-        console.log("WS connection established");
+        console.log("WebSocket connected");
+    }
+
+    // if open orders 
+    requestPersonalData(){
+        console.log("requesting personal data");
+        if (this.ws && this.ws.readyState === 1) {
+            this.ws.send(JSON.stringify({ action: "getPersonalData"}));
+        } else {
+            console.error("WebSocket is not open. Unable to request personal data.");
+        }
     }
 
     onMessage(event) {
@@ -25,21 +35,18 @@ class TradeWebSocket {
             case "welcome":
                 break;
 
-            case "ticker":
-                this.emitRecentPrice(message.data.price);
-                break;
-
-            case "orderBook":
-                this.emitOrderBook(message.data);
+            case "subscribed":
+                console.log(`Successfully subscribed to ${message.symbol}`);
                 break;
 
             case "orderUpdate":
+                console.log("Order update:", message.data);
                 this.emitOrderUpdate(message.data);
 
                 break;
 
-            case "recentTrade":
-                this.emitRecentTrade(message.data);
+            case "error":
+                console.error("WS error:", message.message);
                 break;
             
             default:
@@ -47,23 +54,8 @@ class TradeWebSocket {
         }
     }
 
-    emitRecentPrice(price) {
-        const event = new CustomEvent("recentPrice", { detail: { price: new Decimal(price) }});
-        document.dispatchEvent(event);
-    }
-
-    emitOrderBook(orderBookData) {
-        const event = new CustomEvent("orderBook", { detail: orderBookData });
-        document.dispatchEvent(event);
-    }
-
     emitOrderUpdate(orderUpdateData) {
         const event = new CustomEvent("orderUpdate", { detail: orderUpdateData });
-        document.dispatchEvent(event);
-    }
-
-    emitRecentTrade(recentTradeData){
-        const event = new CustomEvent("recentTrade", {detail: recentTradeData});
         document.dispatchEvent(event);
     }
     
@@ -73,10 +65,8 @@ class TradeWebSocket {
 
     onClose() {
         console.log("WS connection closed");
-        // 添加重連邏輯
         setTimeout(() => this.init(), 5000);
     }
 }
 
-// 創建一個實例並導出
-export default new TradeWebSocket();
+export default new HistoryWebSocket();

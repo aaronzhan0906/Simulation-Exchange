@@ -2,8 +2,9 @@ import Decimal from "decimal.js";
 import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
-import WebSocket from "ws";
-import { wss } from "../app.js";
+import WebSocketService from "../services/websocketService.js";
+import { updatePriceData, logOrderBookSnapshot } from "../services/quoteService.js";
+
 
 
 
@@ -47,12 +48,18 @@ class TradeController {
 
         try { 
             if (side === "buy") {
-                await preBuyAuth(userId, price, quantity);
+                try {
+                    await preBuyAuth(userId, price, quantity);
+                } catch (error) {
+                    return res.status(400).json({ error: true, message: error.message });
+                }
             } else if (side === "sell") {
-                await preSellAuth(userId, symbol, quantity);
-            } else {
-                throw new Error("Invalid side");
-            }
+                try {
+                    await preSellAuth(userId, symbol, quantity);
+                } catch (error) {
+                    return res.status(400).json({ error: true, message: error.message });
+                }
+            } 
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
@@ -68,10 +75,12 @@ class TradeController {
                 quantity,
                 "open"
             );
+            const topicSymbol = symbol.replace("_usdt","")
+            const topic = `new-order-${topicSymbol}`
 
      
-            // send order to kafka
-            await kafkaProducer.sendMessage("new-orders",{
+            // send order to kafka 
+            await kafkaProducer.sendMessage(topic, {
                 orderId: order.order_id,
                 userId: order.user_id,
                 symbol: order.symbol,
@@ -143,7 +152,7 @@ class TradeController {
             const quantity = new Decimal(resultOrderData.quantity)
             const remainingQuantity = new Decimal(resultOrderData.remaining_quantity)
             const filledQuantity = quantity.minus(remainingQuantity).toString()
-            broadcastOrderUpdate(resultOrderData, filledQuantity);
+            await sendOrderUpdateToUser(resultOrderData, filledQuantity);
             
         } catch (error) {
             console.error("updateOrderData error:", error);
@@ -151,8 +160,9 @@ class TradeController {
         }
     }
 
+
     // WS broadcast order book
-    async broadcastOrderBook(orderBookSnapshot) {
+    async broadcastOrderBookToRoom(orderBookSnapshot, symbol) {
         const rawAsks = orderBookSnapshot.asks.map( order => {
             return [Decimal(order.price).toFixed(2), Decimal(order.quantity).toFixed(5)]
         });
@@ -164,47 +174,41 @@ class TradeController {
             asks: askArray,
             bids: bidArray
         }
-        try {
-            const message = JSON.stringify({
-                type: "orderBook",
-                data: processedData
-            })
 
-            wss.clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN){
-                    client.send(message)
-                }
-            })
+        logOrderBookSnapshot(symbol, processedData);
+
+        try {
+            const roomSymbol = `${symbol}_usdt`
+            WebSocketService.broadcastToRoom(roomSymbol, {
+                type: "orderBook",
+                symbol: symbol,
+                data: processedData
+            }); 
         } catch (error) {
-            console.error("broadcastOrderBook error:", error);
+            console.error("broadcastOrderBookToRoom error:", error);
             throw error;
         }
     }
 
     // WS broadcast current trade and time 
-    async broadcastRecentTrade(trade_result) {
+    async broadcastRecentTradeToRoom(trade_result, symbol) {
         const { side, executed_price, timestamp, isTaker } = trade_result;
         if (!isTaker) {
             return;
         }
 
         try {
-            const message = JSON.stringify({
+            
+            const roomSymbol = `${symbol}_usdt`
+            WebSocketService.broadcastToRoom(roomSymbol,{
                 type: "recentTrade",
                 data: {
                     side,
                     price: executed_price,  
                     timestamp
-                }
-            });
-    
-            wss.clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(message);
-                }
-            });
+                }});
         } catch (error) {  
-            console.error("broadcastRecentTrade error:", error);
+            console.error("broadcastRecentTradeToRoom error:", error);
             throw error;
         }
     }
@@ -230,7 +234,11 @@ class TradeController {
     
                 pendingCancelResults.set(orderId, { resolve, reject, timeoutId, timestamp: new Date() });
             });
-            await kafkaProducer.sendMessage("cancel-orders", { orderId, userId, symbol });
+
+            const topicSymbol = symbol.replace("_usdt", "");
+            const topic = `cancel-order-${topicSymbol}`
+            console.log("cancelOrder topic:", topic);
+            await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
             const cancelResult = await cancelResultPromise;
             
             if (cancelResult.status === "filled") {
@@ -250,15 +258,23 @@ class TradeController {
                 });
             }
 
-            
-
+            // 這邊的邏輯要再順一下，難維護
             if (cancelResult.side === "buy") {
                 await TradeModel.releaseLockedBalance(cancelResult);
             } else {
                 await TradeModel.releaseLockedAsset(cancelResult);
             }
 
-            if (cancelResult.status === "CANCELED" || cancelResult.status === "PARTIALLY_FILLED_CANCELED") {
+            if (updateResult.updateStatus === "CANCELED" || updateResult.updateStatus === "PARTIALLY_FILLED_CANCELED") {
+                const cancelMessage = {
+                    type: "orderUpdate",
+                    data: {
+                        orderId: updateResult.updateOrderId,
+                        status: updateResult.updateStatus,
+                    }
+                };
+
+                WebSocketService.sendToUser(userId, cancelMessage);
                 return res.status(200).json({
                     ok: true,
                     message: "Order cancelled successfully",
@@ -321,7 +337,8 @@ class TradeController {
         try {
             const result = await TradeModel.createTradeHistory(tradeData)
             if (result) console.log("Trade history created.")
-
+            const formattedSymbol = symbol.toUpperCase().replace("_", "");
+            updatePriceData(formattedSymbol, executed_price);
         } catch(error) {
             console.error("createTradeHistory error, error:", error);
             throw error;
@@ -346,7 +363,7 @@ async function preBuyAuth(userId, price, quantity) {
         const availableBalance = await TradeModel.getAvailableBalanceById(userId)
         const usableBalance = new Decimal(availableBalance);
         if (usableBalance.lessThan(costAmount)) {
-            return res.status(400).json({ error:true, message:"Insufficient available balance" });
+            throw new Error("Insufficient available balance");
         } 
         await TradeModel.lockBalance(userId, price, quantity)
     } catch (error) {
@@ -361,7 +378,7 @@ async function preSellAuth(userId, symbol, quantity) {
     try {
         const availableQuantity = await TradeModel.getQuantityBySymbolAndUserId(userId, symbol);
         if (new Decimal(availableQuantity).lessThan(sellQuantity)) {
-            return res.status(400).json({ error:true, message:"Insufficient available asset" });
+            throw new Error("Insufficient available asset");
         }
         await TradeModel.lockAsset(userId, symbol, quantity)
     } catch (error) {
@@ -370,21 +387,24 @@ async function preSellAuth(userId, symbol, quantity) {
     }
 }
 
-async function broadcastOrderUpdate(resultOrderData, filledQuantity) {
-    const message = JSON.stringify({
-        type: "orderUpdate",
-        data: {
-            orderId: resultOrderData.order_id,
-            filledQuantity: filledQuantity,
-            averagePrice: resultOrderData.average_price,
-            status: resultOrderData.status,
-        }
-    })
-
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN){
-            client.send(message)
-        }
-    })
-
+async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
+    try {
+        const message = {
+            type: "orderUpdate",
+            data: {
+                orderId: resultOrderData.order_id,
+                filledQuantity: filledQuantity,
+                averagePrice: resultOrderData.average_price,
+                status: resultOrderData.status,
+                symbol: resultOrderData.symbol,
+                side: resultOrderData.side,
+                price: resultOrderData.price,
+                quantity: resultOrderData.quantity,
+                createdAt: resultOrderData.created_at
+            }
+        };
+        WebSocketService.sendToUser(resultOrderData.user_id, message);
+    } catch (error) {
+        console.error("Error sending order update to user:", error);
+    }
 }

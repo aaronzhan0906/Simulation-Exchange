@@ -6,6 +6,7 @@
     font-optical-sizing: auto;
     box-sizing: border-box;
     letter-spacing: 1px;
+
 }
 
 body {
@@ -19,20 +20,16 @@ hr {
     background-color: #272727;
 }
 
-/* Container */
-.header__container {
-    width: calc(40% + 550px);
-
-    margin: 0 auto;
-}
-
 /* Header */
 .header {
     background-color: #0d0e0f;
+    height: 46px;
     padding: 10px 0;
 }
 
 .header__container {
+    width: calc(40% + 550px);
+    margin: 0 auto;
     display: flex;
     align-items: center;
 }
@@ -129,63 +126,6 @@ hr {
 }
 
 
-/* hero section */
-
-.hero {
-    height: 300px;
-    background-color: #081d3b;
-}
-
-.hero__container {
-    width: calc(40% + 550px);
-    margin: 0 auto;
-}
-
-.hero__title{
-    padding: 50px 0 0 0 ;
-    font-size: 40px;
-    font-weight: 600;
-}
-
-.hero__text{
-    padding: 30px 0 0 0 ;
-    font-weight: 300;
-}
-
-.hero__register {
-    margin: 30px 0 0 0;
-}
-
-.hero__register--input {
-    width: 300px;
-    padding: 12px 15px;
-    border: 1px solid #333;
-    margin: 10px 1px 0 0;
-    border-radius: 5px;
-    color: #fff;
-    font-size: 16px;
-    background-color: #081d3b;
-}
-
-.hero__register--input::placeholder {
-    color: #666;
-}
-
-.hero__register--button {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #4a90e2;
-    color: #fff;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.5s ease;
-}
-
-.hero__register--button:hover {
-    background-color: #357abd;
-}
-
 
 /* Main */
 .main {
@@ -216,31 +156,41 @@ hr {
 }
 
 .balance-row__total {
-    margin: 0 100px 0 5px;
+    margin: 0 85px 0 5px;
 }
 
 .balance-row__available {
-    margin: 0 100px 0 0 ;
+    margin: 0 85px 0 0 ;
+    font-size: 14px;
 }
 
-.balance-label__total {
+.balance-label__total, .balance-label__profit {
     color: #8c8c8c;
-    font-size: 18px;
+    font-size: 16px;
     margin-bottom: 10px;
 }
 
-.balance-value__total {
-    font-size: 32px;
+.balance-value__total, .balance-value__profit {
+    font-size: 27px;
+}
+
+.balance-value__profit.positive {
+    color: green;
+}
+
+
+.balance-value__profit.negative {
+    color: #ff4d4f;
 }
   
 .balance-label__available, .balance-label__locked {
     color: #8c8c8c;
-    font-size: 14px;
+    font-size: 12px;
     margin-bottom: 10px;
 }
 
 .balance-value__available, .balance-value__locked {
-    font-size: 16px;
+    font-size: 14px;
 }
   
 
@@ -277,14 +227,14 @@ hr {
 }
 
 .asset-list__title {
-    margin: 10px 10px 15px 10px;
-    font-size: 27px;
+    margin: 10px 10px 15px 5px;
+    font-size: 24px;
     font-weight: 800px;
 }
 
 .asset-list__header, .asset-item {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 0.7fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 0.7fr;
     gap: 20px;
     align-items: center;
     padding: 15px 0;
@@ -292,26 +242,38 @@ hr {
 
 .asset-list__header {
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 500;
     color: #8c8c8c;
 }
+.asset-list__header span:first-child {
+    padding: 0 0 0 20px;
+}
 
+
+.asset-item {
+    font-size: 12px;
+}
 
 .asset-item:hover {
     background-color: rgba(255, 255, 255, 0.05); 
 }
 
-.asset-item__name ,.asset-item__price, .asset-item__change {
-    font-size: 14px;
+.asset-item, .asset-item__symbol--fixed, .asset-item__symbol ,.asset-item__price, .asset-item__change {
+    font-size: 12px;
+}
+
+.asset-item__average-cost--fixed, .asset-item__price--fixed, .asset-item__change--fixed, .asset-item__action--fixed {
+    color: #8c8c8c;
 }
 
 
-.asset-item__name {
+.asset-item__symbol--fixed, .asset-item__symbol {
     display: flex;
     align-items: center;
+    padding: 0 0 0 20px;
 }
 
-.asset-item__name img {
+.asset-item__symbol--fixed img, .asset-item__symbol img {
     width: 24px;
     max-width: 24px;
     height: 24px;
@@ -323,24 +285,6 @@ hr {
     flex-direction: column;
 }
 
-.asset-item__amount span:last-child{
-    font-size: 0.8em;
-    color: #8c8c8c;
-}
-
-.asset-list__header span:first-child{
-    margin-left: 12px;
-}
-
-.asset-list__header span:last-child{
-    margin-right: 25px;
-    justify-self: end;
-}
-
-.asset-item__actions {
-    margin-right: 10px;
-    justify-self: end;
-}
 
 .asset-item__change.positive {
     color: green;
@@ -350,16 +294,18 @@ hr {
     color: #ff4d4f;
 }
 
-.asset-item__actions {
-    justify-self: end;
+.asset-item__action {
+    transform: translateX(-5px);
+    justify-self: start;
 }
 
 .asset-item__link {
     color: #1890ff;
     text-decoration: none;
-    font-size: 0.9em;
     transition: color 0.3s ease;
+    cursor: pointer;
 }
+
 
 .asset-item__link:hover {
     color: #40a9ff;

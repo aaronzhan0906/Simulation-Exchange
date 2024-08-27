@@ -5,79 +5,84 @@ import chalk from "chalk";
 import path from "path";
 import { createServer } from "http";
 import { fileURLToPath } from "url";
-import { WebSocketServer } from 'ws';
-// import helmet from "helmet";
 import kafkaProducer from "./services/kafkaProducer.js";
 import kafkaConsumer from "./services/kafkaConsumer.js";
+import WebSocketService from "./services/websocketService.js";
 
+// import helmet from "helmet";
 
 // path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
 // app, server, wss
 const app = express();
 const server = createServer(app);
-const wss = new WebSocketServer({ server });
 
-// health 
-app.get("/health", (req, res) => {
-    res.status(200).json({ status: "OK" });
-  });
 
 // middleware 
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-// kafka
+// kafka init
 kafkaProducer.init();
 kafkaConsumer.init();
-process.on('SIGINT', async () => {
-    try {
-        await kafkaProducer.disconnect();
-        console.log('Server gracefully shut down');
-        process.exit(0);
-    } catch (error) {
-        console.error('Error during shutdown:', error);
-        process.exit(1);
-    }
-});
+
+// websocket init
+WebSocketService.init(server);
+
 
 // static
-app.use(express.static(path.join(__dirname,"..", "..", "public")))
-// html 
+app.use(express.static(path.join(__dirname, "..", "..", "public")));
+
+// html routes
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","home.html"))
-})
-app.get("/trade", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","trade.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "home.html"));
+});
+
 app.get("/wallet", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","wallet.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "wallet.html"));
+});
+
 app.get("/history", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","history.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "history.html"));
+});
+
 app.get("/login", (req, res) => {
-    res.sendFile(path.join(__dirname,"..",".." ,"public","login.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "login.html"));
+});
+
 app.get("/signup", (req, res) => {
-    res.sendFile(path.join(__dirname,"..", ".." ,"public","signup.html"))
-})
+    res.sendFile(path.join(__dirname, "..", "..", "public", "signup.html"));
+});
+
+app.get("/practice", (req, res) => {
+    res.sendFile(path.join(__dirname, "..", "..", "public", "chartPractice.html"));
+});
+
 
 // route
+import homeRoute from "./routes/homeRoute.js";
 import userRoute from "./routes/userRoute.js";
-import quoteRoute from "./routes/quoteRoute.js";
 import walletRoute from "./routes/walletRoute.js";
 import tradeRoute from "./routes/tradeRoute.js";
 import historyRoute from "./routes/historyRoute.js";
+app.use("/api/home", homeRoute);
 app.use("/api/user", userRoute);
-app.use("/api/quote", quoteRoute);
 app.use("/api/wallet", walletRoute);
 app.use("/api/trade", tradeRoute);
 app.use("/api/history", historyRoute);
+
+// /trade/:pair 
+app.get("/trade/:pair", (req, res) => {
+    const { pair } = req.params;
+    console.log("Trading pair:", pair);
+    res.sendFile(path.join(__dirname, "..", "..", "public", "trade.html"));
+});
+
+import quoteService from "./services/quoteService.js";
+app.use("/api/quote", quoteService);
 
 
 
@@ -107,24 +112,15 @@ const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+});
 
-    wss.on("connection",(ws, req) => {
-        console.log(`New WebSocket connection from ${req.socket.remoteAddress}`);
-
-        ws.on("message", (message) => {
-            console.log("Received", message.toString());
-        })
-
-        ws.on("close", (code, reason) => {
-            console.log(`WebSocket disconnected: ${code}- ${reason}`)
-        });
-
-        ws.send(JSON.stringify({type:"welcome", message: "Welcome to the WebSocket server!"}));
-    })
-
-    wss.on("error", (error) => {
-        console.error("WebSocket server error:", error)
-    })
+// close server gracefully
+process.on("SIGINT", () => {
+    WebSocketService.close();
+    server.close(() => {
+        console.log("Server closed");
+        process.exit(0);
+    });
 });
 
 // morgan 
@@ -168,4 +164,4 @@ app.use(morgan((tokens, req, res) => {
 }));
 
 
-export { server, wss };
+export { app, server };

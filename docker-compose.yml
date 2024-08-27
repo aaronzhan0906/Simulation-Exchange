@@ -36,9 +36,12 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - KAFKA_BROKERS=kafka:9092
-      - WEBSOCKET_URL=wss://stream.binance.us:9443/stream
+      - WSS_BINANCE_URL=wss://stream.binance.us:9443/stream
+      - BINANCE_API_KEY=https://api.binance.us/api/v3/klines
+      - REDIS_HOST=172.31.23.16
 
-    command: /bin/sh -c "npm run init-kafka && npm run start:dev"
+
+    command: /bin/sh -c "npm run init-kafka && npm run init-history-price && npm run start:dev"
     depends_on:
       kafka:
         condition: service_healthy
@@ -51,7 +54,8 @@ services:
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
     environment:
-      - kafka:9092
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_HOST=172.31.23.16
     command: python /usr/src/app/matching-engine/src/main.py
     depends_on:
       kafka:

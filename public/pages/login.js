@@ -2,6 +2,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("login__form");
     const emailInput = document.getElementById("login__form--email");
     const passwordInput = document.getElementById("login__form--password");
+    const homeLink = document.getElementById("header__logo--link");
+
+
+    homeLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        location.href = "/";
+    });
 
     loginForm.addEventListener("submit", async (event) => {
         event.preventDefault(); 

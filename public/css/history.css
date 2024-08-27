@@ -20,19 +20,16 @@ hr {
     background-color: #272727;
 }
 
-/* Container */
-.header__container {
-    width: calc(40% + 550px);
-    margin: 0 auto;
-}
-
 /* Header */
 .header {
     background-color: #0d0e0f;
+    height: 46px;
     padding: 10px 0;
 }
 
 .header__container {
+    width: calc(40% + 550px);
+    margin: 0 auto;
     display: flex;
     align-items: center;
 }
@@ -135,59 +132,118 @@ hr {
     color: #ffffff;
 }
 
-.order-history {
+.history {
     color: #ffffff;
-    font-family: Arial, sans-serif;
     width: calc(40% + 550px);
     margin: 0 auto;
 }
   
-.order-history__title {
+.history-tab__title {
     font-size: 24px;
-    font-weight: 500;
+    font-weight: 400;
     margin: 35px 0 60px 0 ;
 }
-  
-.order-history__tabs {
-    margin-bottom: 15px;
+
+
+/* Tab */
+.history-tab__tabs {
+    margin-bottom: 20px;
 }
   
-.order-history__tab {
+.history-tab__tab {
     color: #ffffff;
     text-decoration: none;
     padding: 15px 15px;
     margin-right: 10px;
+    cursor: pointer;
+    transition: all ease 0.3s;
+
+    /* Remove default button appearance */
+    background-color: transparent;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1;
+    text-align: center;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.history-tab__tab::-moz-focus-inner {
+    border: 0;
+    padding: 0;
 }
   
-.order-history__tab.active {
+.history-tab__tab.active {
     border-bottom: 2px solid #1890ff;
 }
+
+.history-tab__tab:hover {
+    color: #1890ff; /* Change text color on hover */
+}
   
-.order-history__filters {
+.order-history__container {
     display: flex;
     gap: 15px;
     margin: 15px 0 10px 0;
     align-items: center;
     font-weight: 300;
+    
+}
+
+
+/* FILTER SELECT */
+.filter-select {
+    background-color: #2c2c2c; 
+    color: #e1e1e1; 
+    border: none; 
+    padding: 8px 15px; 
+    border-radius: 5px; 
+    font-size: 11px; 
+    margin: 5px 0 5px 0; 
+    width: 100px; 
+    cursor: pointer;
+    /* Remove default styling in most browsers */
+    appearance: none; 
+    -webkit-appearance: none; 
+    -moz-appearance: none; 
+    /* Change arrow */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255, 255, 255, 0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat; 
+    background-position: right 10px center; 
+    background-size: 16px; 
+    padding-right: 30px; 
+}
+
+
+
+/* Remove the default arrow in Firefox */
+.filter-select::-ms-expand {
+    display: none;
+}
+
+
+.filter-select:focus {
+    outline: none;
+}
+
+  
+.filter-select:focus {
+    outline: none;
 }
   
-.filter-select {
+.filter-select option {
     background-color: #2c2c2c;
     color: #ffffff;
-    border: none;
     padding: 8px 15px;
-    border-radius: 30px;
-    font-size: 11px;
-    margin: 5px  0 5px 0;
 }
-  
-  
-.filter-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-  
+
+
+
+
+/* ORDER HISTORY TABLE
 .order-history__table {
     display: grid;
     grid-template-columns: 0.8fr 0.8fr 0.9fr 0.9fr 0.9fr 1.2fr 0.8fr;  
@@ -229,6 +285,75 @@ hr {
 }
   
 .order-history__no-data img {
+    width: 100px;
+    margin-bottom: 20px;
+} */
+
+/* TABLE */
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 11px;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    display: grid;
+    grid-template-columns: 1.3fr 0.8fr 0.6fr 0.6fr 1fr 1fr 0.8fr 0.8fr 0.4fr;
+}
+
+thead, tbody, tr {
+    display: contents;
+}
+
+th  {
+    padding: 12px 5px 12px 5px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+    font-weight: 700;
+}
+
+td {
+    padding: 15px 5px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+    font-weight: 300;
+}
+
+.open-orders__cell--buy, .trade-history__cell--buy {
+    color: #3a9b45; 
+}
+
+.open-orders__cell--sell, .trade-history__cell--sell{
+    color: #ef483f; 
+}
+
+
+
+
+
+.cancel-btn {
+    background-color: transparent;
+    color: #777777;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 10px;
+}
+
+.cancel-btn:hover {
+    color: #dedede;
+}
+
+.open-orders__no-data {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 50px 0;
+    color: #666;
+}
+.open-orders__no-data img {
     width: 100px;
     margin-bottom: 20px;
 }

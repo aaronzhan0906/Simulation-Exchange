@@ -4,14 +4,13 @@ import authenticateToken from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 
-router.use(authenticateToken)
+router.use(authenticateToken) // jwt token middleware
 
 
-router.get("/balance", WalletController.getBalance)
+// router.get("/balance", WalletController.getBalance)
 router.get("/available", WalletController.getAvailable)
-router.get("/assets", WalletController.getAssets)
-
-// 之後改多種資產
-router.get("/assetbtc", WalletController.getAvailableAmount)
+router.get("/balanceOverview", WalletController.getBalanceOverView)
+router.get("/assetsAndSymbols", WalletController.getAssetsAndSymbols)
+router.get("/asset/:symbol", WalletController.getAvailableAmount)
 
 export default router

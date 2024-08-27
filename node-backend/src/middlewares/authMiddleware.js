@@ -8,7 +8,7 @@ async function authenticateToken(req, res, next) {
         const { accessToken } = req.cookies
         if ( accessToken ) {
             const { userId, email } = jwt.verify(accessToken, config.jwt.accessTokenSecret);
-            req.user = { userId, email}
+            req.user = { userId, email }
             return next();
         } 
         

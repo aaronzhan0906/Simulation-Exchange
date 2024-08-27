@@ -1,5 +1,8 @@
 /.vscode
 /node_modules
 .env
-/__pycache__
+__pycache__/
 /localcompose
+.DS_Store
+
+public/.DS_Store

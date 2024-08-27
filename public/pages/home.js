@@ -1,106 +1,204 @@
 import { initializeHeader } from "../components/headerUI.js";
+import { checkLoginStatus } from "../utils/auth.js";
+import homeWebSocket from "../services/homeWS.js";
+
 
 document.addEventListener("DOMContentLoaded", () => {
+    // WS
+    homeWebSocket.init()
+    // Header
     initializeHeader();
-    linkToTradePage();
-    initializeWebSocket();
-    signUpButton();
+    // Hero Section
+    generateSignUpForm();
+    // Main
+    initSymbolListAndTicker();
 });
 
-function initializeWebSocket() {
-    const wsUrl = `wss://${location.host}/ws`; // 假設您的後端 WebSocket 端點是 /ws
-    let ws;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
 
-    function connect() {
-        ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => {
-            console.log("WebSocket connection established");
-            reconnectAttempts = 0;
-        };
 
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                if (message.type === "ticker") {
-                    updatePrice(message.data);
-                    console.log(message.data);
-                }
-            } catch (error) {
-                console.error("Error parsing WebSocket message:", error);
-            }
-        };
+// HERO SECTION //
+function generateSignUpForm() {
+    const isLoggedIn = checkLoginStatus();
 
-        ws.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-
-        ws.onclose = (event) => {
-            console.log("WebSocket connection closed", event.reason);
-            if (reconnectAttempts < maxReconnectAttempts) {
-                const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                setTimeout(() => {
-                    reconnectAttempts++;
-                    connect();
-                }, timeout);
-            } else {
-                console.error("Max reconnect attempts reached. Please refresh the page.");
-            }
-        };
+    // If user is logged in, don't generate the form
+    if (isLoggedIn) {
+        return null;
     }
 
-    connect();
-}
+    const form = document.createElement("form");
+    form.className = "hero__register";
+    form.id = "hero__register--form";
 
-function signUpButton() {
-    const signUpButton = document.getElementById("hero__register--button");
-    const form = document.getElementById("hero__register--form");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "hero__register--input";
+    input.id = "hero__register--input";
+    input.placeholder = "Email";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "hero__register--button";
+    button.id = "hero__register--button";
+    button.textContent = "Sign Up";
+
+    form.appendChild(input);
+    form.appendChild(button);
 
     form.addEventListener("submit", (event) => {
-        event.preventDefault(); 
+        event.preventDefault();
     });
 
-    signUpButton.addEventListener("click", (event) => {
-        event.preventDefault(); 
-        const inputEmail = document.getElementById("hero__register--input");
-        if (inputEmail.value) {
-            localStorage.setItem("email", inputEmail.value);
+    button.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (input.value) {
+            localStorage.setItem("email", input.value);
         }
         window.location.href = "/signup";
     });
+
+    const heroContainer = document.querySelector(".hero__container");
+    if (heroContainer) {
+        heroContainer.appendChild(form);
+    } else {
+        console.error("Could not find .hero__container element");
+    }
 }
 
-function linkToTradePage() {
-    const btcTradeButton = document.getElementById("symbol-item__btc");
-    btcTradeButton.addEventListener("click", () => {
-        location.href = "/trade";
+
+// MAIN //
+async function initSymbolListAndTicker() {
+    try {
+        const symbolsResponse = await fetch("api/home/symbols");
+        const symbolsData = await symbolsResponse.json();
+        
+        const tickerResponse = await fetch("api/quote/ticker");
+        const tickerData = await tickerResponse.json();
+
+        const symbols = symbolsData.data;
+        const latestTickerData = tickerData.latestTickerData;
+
+        generateAssetList(symbols, latestTickerData);
+        listenForRecentDetail(symbols);
+
+    } catch (error) {
+        console.error("Failed to fetch symbols and prices:", error);
+    }
+}
+
+const generateAssetList = (symbols, latestTickerData) => {
+    const symbolListContainer = document.getElementById("symbol-list__container");
+    
+    symbols.forEach(symbol => {
+        const item = document.createElement("div");
+        item.className = `symbol-item symbol-item--${symbol.symbolName}`;
+        item.id = `symbol-item__${symbol.symbolName}`;
+    
+    // name
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "symbol-item__name";
+    const img = document.createElement("img");
+    img.src = symbol.imageUrl;
+    img.alt = symbol.symbolName;
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = `${symbol.symbolName.toUpperCase()}/USDT`;
+    nameDiv.appendChild(img);
+    nameDiv.appendChild(nameSpan);
+
+    // price
+    const priceDiv = document.createElement("div");
+    priceDiv.className = "symbol-item__price";
+    const usdtSpan = document.createElement("span");
+    usdtSpan.className = "symbol-item__price--usdt";
+    usdtSpan.id = `symbol-item__price--usdt--${symbol.symbolName}`;
+    const usdSpan = document.createElement("span");
+    usdSpan.className = "symbol-item__price--usd";
+    usdSpan.id = `symbol-item__price--usd--${symbol.symbolName}`;
+    priceDiv.appendChild(usdtSpan);
+    priceDiv.appendChild(usdSpan);
+
+    // change percent
+    const changeDiv = document.createElement("div");
+    changeDiv.className = "symbol-item__change";
+    changeDiv.id = `symbol-item__change--${symbol.symbolName}`;
+
+    // action
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "symbol-item__actions";
+    const linkSpan = document.createElement("span");
+    linkSpan.className = "symbol-item__link";
+    linkSpan.textContent = "Spot Trade";
+    actionsDiv.appendChild(linkSpan);
+
+    // append to item
+    item.appendChild(nameDiv);
+    item.appendChild(priceDiv);
+    item.appendChild(changeDiv);
+    item.appendChild(actionsDiv);
+    symbolListContainer.appendChild(item);
+
+    // link to trade page
+    item.addEventListener("click", () => {
+        location.href = `/trade/${symbol.symbolName}_usdt`;
+    })
+
+    // hr
+    if (symbol !== symbols[symbols.length - 1]){
+        const hr = document.createElement("hr");
+        symbolListContainer.appendChild(hr);
+    }
+
+    // update price and style
+    const ticker = latestTickerData[`${symbol.symbolName.toUpperCase()}USDT`];
+        if (ticker) {
+            usdtSpan.textContent = `${parseFloat(ticker.price).toFixed(2)} USDT`;
+            usdSpan.textContent = `≈${parseFloat(ticker.price).toFixed(2)} USD`;
+            changeDiv.textContent = `${parseFloat(ticker.priceChangePercent).toFixed(2)}%`;
+            updatePriceChangeStyle(changeDiv, ticker.priceChangePercent);
+        }
+    })
+}
+
+
+
+
+function listenForRecentDetail(symbols) {
+    symbols.forEach(symbol => {
+        document.addEventListener(`ticker${symbol.symbolName.toUpperCase()}`, updateTickerDetail);
     });
 }
 
-function updatePrice(tickerData) {
-    const priceElement = document.querySelector(".symbol-item__price--usdt");
+function updateTickerDetail(event) {
+    const pair = event.type.replace("ticker", "").toLowerCase();
+    const { price, priceChangePercent } = event.detail;
+
+    const priceElement = document.getElementById(`symbol-item__price--usdt--${pair}`);
     if (priceElement) {
-        priceElement.textContent = parseFloat(tickerData.price).toFixed(2);
+        priceElement.textContent = `${parseFloat(price).toFixed(2)} USDT`;
     }
 
-    const priceUsdElement = document.querySelector(".symbol-item__price--usd");
+    const priceUsdElement = document.getElementById(`symbol-item__price--usd--${pair}`);
     if (priceUsdElement) {
-        priceUsdElement.textContent = `≈${parseFloat(tickerData.price).toFixed(2)} USD`;
+        priceUsdElement.textContent = `≈${parseFloat(price).toFixed(2)} USD`;
     }
 
-    const pricePercentElement = document.querySelector(".symbol-item__change");
+    const pricePercentElement = document.getElementById(`symbol-item__change--${pair}`);
     if (pricePercentElement) {
-        const priceChangePercent = parseFloat(tickerData.priceChangePercent);
-        pricePercentElement.textContent = `${priceChangePercent.toFixed(2)}%`;
+        pricePercentElement.textContent = `${parseFloat(priceChangePercent).toFixed(2)}%`;
+        updatePriceChangeStyle(pricePercentElement, priceChangePercent);
+    }
+}
 
-        if (priceChangePercent >= 0) {
-            pricePercentElement.classList.remove("negative");
-            pricePercentElement.classList.add("positive");
-        } else {
-            pricePercentElement.classList.remove("positive");
-            pricePercentElement.classList.add("negative");
-        }
+
+function updatePriceChangeStyle(element, priceChangePercent) {
+    if (parseFloat(priceChangePercent) > 0) {
+        element.classList.remove("negative");
+        element.classList.add("positive");
+    } else if (parseFloat(priceChangePercent) < 0) {
+        element.classList.remove("positive");
+        element.classList.add("negative");
+    } else {
+        element.classList.remove("positive");
+        element.classList.remove("negative");
     }
 }
