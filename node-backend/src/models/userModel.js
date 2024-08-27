@@ -13,12 +13,11 @@ class UserModel {
                 "SELECT email FROM users WHERE email = ?",
                 email
             );
-            console.log(result.length);
             if (result.length === 1) {
                 return true;
             }
         } catch(error) {
-            await connection.rollback();
+            console.error("Error in checkEmailExist: ", error);
             throw error
         } finally {
             connection.release();
@@ -28,7 +27,7 @@ class UserModel {
 
     async createUserWithInitialFunds(userData) {
         const { email, password } = userData;
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             await connection.beginTransaction();
@@ -39,20 +38,16 @@ class UserModel {
             )
             const userId = userResult.insertId;
             
-            await connection.query(
+            await connection.query( // 10000 is the initial balance
                 "INSERT INTO accounts (user_id, balance) VALUES (?, ?)",
                 [userId, 10000] 
-            );
-
-            await connection.query(
-                `INSERT INTO assets (user_id, symbol, quantity) VALUES (?, ?, ?)`,
-                [userId, "btc", 0.17]
             );
 
             await connection.commit();
             return { user_id: userId };
         } catch(error) {
             await connection.rollback();
+            console.error("Error in createUserWithInitialFunds: ", error);
             throw error
         } finally {
             connection.release();

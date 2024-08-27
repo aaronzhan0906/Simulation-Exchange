@@ -5,12 +5,15 @@ class HistoryModel {
     async getSymbols() {
         const connection = await pool.getConnection();
         try {
-            const symbols = await pool.query(
-                `select * from symbols`
+            const [symbols] = await connection.query(
+                `SELECT * FROM symbols`
             );
             
             // return symbols array
             return symbols;
+        } catch (error) {
+            console.error("Error in getSymbols:", error);
+            throw error;
         } finally {
             connection.release();
         }
@@ -47,27 +50,38 @@ class HistoryModel {
             const [rows] = await connection.query(query, params);
             console.log(rows);
             return rows;            
+        } catch (error) {
+            console.error("Error in getOrderHistory:", error);
+            throw error;
         } finally {
             connection.release();
         }
     }
 
     async getTransactionsById(userId) {
-        const [rows] = await db.query(
-            `SELECT 
-                symbol, 
-                side,
-                type,
-                price, 
-                quantity, 
-                amount, 
-                executed_at 
-            FROM transactions 
-            WHERE user_id = ?
-            ORDER BY executed_at DESC`,
-            [userId]
-        );
-        return rows;
+        const connection = await pool.getConnection();
+        try {
+            const [rows] = await connection.query(
+                `SELECT 
+                    symbol,
+                    side,
+                    type,
+                    price, 
+                    quantity, 
+                    amount, 
+                    executed_at
+                FROM transactions
+                WHERE user_id = ?
+                ORDER BY executed_at DESC`,
+                [userId]
+            );
+            return rows;
+        } catch (error) {
+            console.error("Error in getTransactionsById:", error);
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 }
 

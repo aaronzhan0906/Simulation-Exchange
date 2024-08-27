@@ -12,10 +12,12 @@ class HomeModel {
             
             // return symbols array
             return symbols;
+        } catch (error) {
+            console.error("Error in getSymbols:", error);
+            throw error;
         } finally {
             connection.release();
         }
-         
     }
 }
 

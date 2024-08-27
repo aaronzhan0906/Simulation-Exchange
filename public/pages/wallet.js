@@ -198,7 +198,8 @@ function updateTotalAsset(totalAsset) {
 
 function updateTotalValue(totalProfit) {
     const balanceValueProfit = document.getElementById("balance-value__profit");
-    balanceValueProfit.textContent = `${totalProfit.toFixed(2)} %`;
+    const roundedProfit = Math.ceil(totalProfit * 100) / 100; // round to 2 decimal places
+    balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
     if (totalProfit.greaterThan(0)) {
         balanceValueProfit.classList.add("positive");
         balanceValueProfit.classList.remove("negative");
