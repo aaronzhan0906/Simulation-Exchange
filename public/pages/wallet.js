@@ -59,7 +59,7 @@ async function initAssets() {
         const assetListContainer = document.getElementById("asset-list__container");
         const assetElements = new Map(); // { symbol: { priceDiv, changeDiv } } to subscribe room
 
-        let totalAsset = new Decimal(0);
+        let totalAsset = new Decimal(usdtBalance);
         let totalProfit = new Decimal(0);
 
         assetsData.assets.forEach(asset => {
@@ -73,7 +73,7 @@ async function initAssets() {
             const profitValue = amount.mul(recentPrice).sub(amount.mul(averageCost)).mul(100).div(new Decimal(10000));
 
 
-            totalAsset = assetValue.plus(totalAsset).plus(usdtBalance);
+            totalAsset = assetValue.plus(totalAsset);
             totalProfit = profitValue.plus(totalProfit);
         
             const combinedData = {
@@ -97,7 +97,8 @@ async function initAssets() {
 
         // Update total asset and profit/less
         updateTotalAsset(totalAsset);
-        updateTotalValue(totalProfit);
+        console.log(totalAsset)
+        updateTotalProfit(totalProfit);
 
         // Initialize WebSocket connection
         walletWebSocket.init(assetsData.assets.map(asset => asset.symbol));
@@ -196,7 +197,7 @@ function updateTotalAsset(totalAsset) {
     balanceValueTotal.textContent = `${totalAsset.toFixed(2)} USDT`;
 }
 
-function updateTotalValue(totalProfit) {
+function updateTotalProfit(totalProfit) {
     const balanceValueProfit = document.getElementById("balance-value__profit");
     const roundedProfit = Math.ceil(totalProfit * 100) / 100; // round to 2 decimal places
     balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;

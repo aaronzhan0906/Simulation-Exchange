@@ -35,6 +35,7 @@ class HomeWebSocket {
                 break;
             
             case "ticker":
+                console.log("Ticker data:", message.data);
                 this.emitRecentDetail(message.data);
                 break;
 

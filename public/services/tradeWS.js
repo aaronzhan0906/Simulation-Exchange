@@ -56,7 +56,6 @@ class TradeWebSocket {
                 break;
 
             case "orderUpdate":
-                console.log("Order update:", message.data);
                 this.emitOrderUpdate(message.data);
 
                 break;

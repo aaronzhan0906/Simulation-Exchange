@@ -19,8 +19,8 @@ export const symbolsData = {
       },
       {
         "symbolId": 4,
-        "symbolName": "ton",
-        "imageUrl": "https://dqnrdfgdkhgah.cloudfront.net/simu-coin-logo/Toncoin Logo.svg"
+        "symbolName": "sol",
+        "imageUrl": "https://dqnrdfgdkhgah.cloudfront.net/simu-coin-logo/Sol icon.svg"
       },
       {
         "symbolId": 5,

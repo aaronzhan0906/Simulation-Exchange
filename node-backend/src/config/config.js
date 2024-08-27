@@ -5,6 +5,10 @@ const config = {
     env: process.env.NODE_ENV,
     port: process.env.PORT,
 
+    binance: {
+        apiKey: process.env.BINANCE_API_KEY,
+    },
+
     database: {
         host: process.env.MYSQL_HOST,      
         port: process.env.MYSQL_PORT,      

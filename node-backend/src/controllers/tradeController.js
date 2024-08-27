@@ -160,14 +160,6 @@ class TradeController {
         }
     }
 
-    async getLatestOrderBookSnapshot(symbol) {
-        try {
-            return latestOrderBookSnapshot[symbol];
-        } catch (error) {
-            console.error("getLatestOrderBookSnapshot error:", error);
-            throw error;
-        }
-    } 
 
     // WS broadcast order book
     async broadcastOrderBookToRoom(orderBookSnapshot, symbol) {

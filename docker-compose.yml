@@ -3,12 +3,14 @@ services:
     image: bitnami/kafka:latest
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker 
+      - KAFKA_CFG_LISTENERS=INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093  #不同的地方
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL #不同的地方
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - ALLOW_PLAINTEXT_LISTENER=yes
@@ -19,46 +21,3 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-
-  node-backend:
-    build: 
-      context: .
-      dockerfile: node-backend/Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./node-backend:/usr/src/app/node-backend
-      - ./public:/usr/src/app/public
-      - ./package.json:/usr/src/app/package.json
-      - ./package-lock.json:/usr/src/app/package-lock.json
-      - /usr/src/app/node_modules
-    env_file: .env
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - MYSQL_HOST=host.docker.internal
-      - KAFKA_BROKERS=kafka:9092
-      - WSS_BINANCE_URL=wss://stream.binance.us:9443/stream
-      - REDIS_HOST=172.31.23.16
-      - REDIS_PORT=6379
-
-
-    command: /bin/sh -c "npm run init-kafka && npm run init-history-price && npm run start:dev"
-    depends_on:
-      kafka:
-        condition: service_healthy
-    
-
-  matching-engine:
-    build:
-      context: .
-      dockerfile: matching-engine/Dockerfile
-    volumes:
-      - ./matching-engine:/usr/src/app/matching-engine
-    environment:
-      - KAFKA_BROKERS=kafka:9092
-      - REDIS_HOST=172.31.23.16
-      - REDIS_PORT=6379
-    command: python /usr/src/app/matching-engine/src/main.py
-    depends_on:
-      kafka:
-        condition: service_healthy

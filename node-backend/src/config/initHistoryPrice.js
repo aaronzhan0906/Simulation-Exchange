@@ -27,7 +27,7 @@ const supportedSymbols = config.supportedSymbols;
 const symbols = supportedSymbols.map(symbol => `${symbol.toUpperCase()}USDT`);
 
 async function getHourlyOpenPrices(symbol, interval = "1h", days = 30) {
-    const baseUrl = "https://api.binance.com/api/v3/klines";
+    const baseUrl = `${config.binance.apiKey}`;
     
     const endTime = Date.now();
     let startTime = endTime - days * 24 * 60 * 60 * 1000;
