@@ -38,7 +38,7 @@ services:
       - MYSQL_HOST=host.docker.internal
       - KAFKA_BROKERS=kafka:9092
       - WSS_BINANCE_URL=wss://stream.binance.us:9443/stream
-      - REDIS_HOST=host.docker.internal
+      - REDIS_HOST=172.31.23.16
       - REDIS_PORT=6379
 
 
@@ -56,7 +56,7 @@ services:
       - ./matching-engine:/usr/src/app/matching-engine
     environment:
       - KAFKA_BROKERS=kafka:9092
-      - REDIS_HOST=host.docker.internal
+      - REDIS_HOST=172.31.23.16
       - REDIS_PORT=6379
     command: python /usr/src/app/matching-engine/src/main.py
     depends_on:

@@ -5,7 +5,7 @@ import config from "./config.js";
 
 // Create Redis client
 const redis = new Redis({
-    host: process.env.REDIS_HOST || 'host.docker.internal',
+    host: process.env.REDIS_HOST || "172.31.23.16",
     port: process.env.REDIS_PORT || 6379,
     retryStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);
