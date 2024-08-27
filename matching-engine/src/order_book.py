@@ -71,7 +71,7 @@ class OrderBook:
                      for price, orders in self.asks.items()},
         })
         await asyncio.to_thread(self.redis_client.set, f"order_book_snapshot:{self.symbol}", serialized_data)
-        print(f"Order book snapshot saved to Redis ({self.symbol}).")
+        # print(f"Order book snapshot saved to Redis ({self.symbol}).")
 
     def get_order_book(self, levels: int = 10) -> dict:
         def aggregate_orders(book, reverse=False):

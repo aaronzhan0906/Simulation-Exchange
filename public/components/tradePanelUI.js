@@ -12,9 +12,21 @@ const baseAsset = pair.split("_")[0];
 
 
 // get websocket data
-function initTradePanelWebSocket(){
+async function initTradePanelWebSocket(){
     // get recent price by API first
+    const response = await fetch(`/api/quote/ticker/${pair}`);
+    const responseData = await response.json();
+    if (response.ok){
+        handlePriceUpdate({ detail: responseData.data });
+    }
 
+    // get order book by API first
+    const orderBookResponse = await fetch(`/api/quote/orderBook/${pair}`);
+    const responseOrderBookData = await orderBookResponse.json();
+    const orderBookData = responseOrderBookData.data;
+    if (orderBookResponse.ok){
+        handleOrderBookUpdate({ detail: orderBookData });
+    }
 
     document.addEventListener("recentPrice", handlePriceUpdate);
     document.addEventListener("orderBook", handleOrderBookUpdate);
@@ -480,6 +492,7 @@ function updateOpenOrdersCount() {
 // ORDER BOOK /////////////////////////////////////////////////
 function handleOrderBookUpdate(event){
     const orderBook = event.detail;
+    console.log(orderBook)
     const asksSide = document.getElementById("order-book__asks");
     updateOrderBookContent(asksSide, orderBook.asks, true);  
 

@@ -3,8 +3,7 @@ import TradeModel from "../models/tradeModel.js";
 import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 import WebSocketService from "../services/websocketService.js";
-import { updatePriceData } from "../services/quoteService.js";
-
+import { updatePriceData, logOrderBookSnapshot } from "../services/quoteService.js";
 
 
 
@@ -161,6 +160,15 @@ class TradeController {
         }
     }
 
+    async getLatestOrderBookSnapshot(symbol) {
+        try {
+            return latestOrderBookSnapshot[symbol];
+        } catch (error) {
+            console.error("getLatestOrderBookSnapshot error:", error);
+            throw error;
+        }
+    } 
+
     // WS broadcast order book
     async broadcastOrderBookToRoom(orderBookSnapshot, symbol) {
         const rawAsks = orderBookSnapshot.asks.map( order => {
@@ -174,6 +182,8 @@ class TradeController {
             asks: askArray,
             bids: bidArray
         }
+
+        logOrderBookSnapshot(symbol, processedData);
 
         try {
             const roomSymbol = `${symbol}_usdt`

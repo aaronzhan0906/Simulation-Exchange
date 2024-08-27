@@ -27,7 +27,7 @@ const streamName = tradingPairs.map(pair => `${pair}@ticker`).join("/");
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 const binanceWs = new WebSocket(wsUrl);
 
-let latestTickerData = {}; // for different trading pairs { pair, streamData.c, streamData.P }
+let latestTickerData = {}; // for different trading pairs { BNBUSDT: {symbol: 'BNBUSDT' price: '551.10000000',priceChangePercent: '-1.73' }
 // store price at least once every 1s
 
 
@@ -210,25 +210,41 @@ router.get("/ticker", (req, res) => {
     res.status(200).json({ ok: true, latestTickerData: latestTickerData });
 });
 
-router.get("/latestPrice/:pair", async (req, res) => {
+router.get("/ticker/:pair", async (req, res) => {
     const { pair } = req.params;
     console.log("Latest price:", pair);
     const formattedPair = pair.toUpperCase().replace("_", "");
     const latestPrice = latestTickerData[formattedPair];
-    res.status(200).json({ ok: true, latestPrice });
+    res.status(200).json({ ok: true, data: latestPrice });
 });
 
+// order book
+let latestOrderBookSnapshot = {};
+
+export async function logOrderBookSnapshot(symbol, processedData) {
+    latestOrderBookSnapshot[symbol] = processedData;
+    return latestOrderBookSnapshot[symbol];
+}
+
+router.get("/orderBook/:pair", async (req, res) => {
+    const { pair } = req.params;
+    console.log("Latest order book snapshot:", pair);
+    const symbol = pair.split("_")[0]; // xxx_usdt -> xxx
+    const orderBookSnapshot = latestOrderBookSnapshot[symbol];
+    
+    if (!orderBookSnapshot) {
+        return res.status(401).json({ ok: false, error: "No Data" });
+    }
+    
+    res.status(200).json({ ok: true, data: orderBookSnapshot });
+});
 
 
 router.get("/24hHighAndLow/:pair", async (req, res) => {
     const { pair } = req.params;
     console.log("24h high low:", pair);
     const highLow = await get24hHighLow(pair);
-    if (highLow) {
-        res.status(200).json({ ok: true, data: highLow });
-    } else {
-        res.status(404).json({ ok: false, error: "Data not found" });
-    }
+    res.status(200).json({ ok: true, data: highLow });
 });
 
 router.get("/dailyTrend/:pair", async (req, res) => {
@@ -245,7 +261,6 @@ router.get("/monthlyTrend/:pair", async (req, res) => {
         res.status(200).json({ ok: true, monthlyTrend });
     } catch (error) {
         console.error("Error fetching monthly trend:", error);
-        res.status(500).json({ ok: false, error: "Internal server error" });
     }
 });
 
