@@ -115,44 +115,37 @@ class TradeController {
     }
 
     // WS broadcast order update
-    async updateOrderData(trade_result){
+    async updateOrderData(trade_result) {
         const {
             order_id,
             timestamp,
             executed_quantity,
             executed_price,
             status
-        } = trade_result
-
+        } = trade_result;
+    
         const updateOrderData = {
             order_id,
             executed_quantity: new Decimal(executed_quantity).toString(),
             executed_price: new Decimal(executed_price).toString(),
             status,
             updated_at: timestamp
-        }
-        
-        try {  
+        };
+    
+        try {
             const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
+    
             if (!resultOrderData) {
-                throw new Error("Order not found or update failed"); 
+                throw new Error("Order not found or update failed");
             }
-
-            if (resultOrderData.side == "buy") {
-                await TradeModel.increaseAsset(resultOrderData)
-                await TradeModel.decreaseBalance(resultOrderData)
-                await TradeModel.unlockBalance(resultOrderData)
-            } else {
-                await TradeModel.decreaseAsset(resultOrderData)
-                await TradeModel.increaseBalance(resultOrderData)
-                await TradeModel.unlockAsset(resultOrderData)
-            }
-            // websocket broadcast
-            const quantity = new Decimal(resultOrderData.quantity)
-            const remainingQuantity = new Decimal(resultOrderData.remaining_quantity)
-            const filledQuantity = quantity.minus(remainingQuantity).toString()
+    
+            // WebSocket 
+            const quantity = new Decimal(resultOrderData.quantity);
+            const remainingQuantity = new Decimal(resultOrderData.remaining_quantity);
+            const filledQuantity = quantity.minus(remainingQuantity).toString();
             await sendOrderUpdateToUser(resultOrderData, filledQuantity);
-            
+    
+            return resultOrderData; 
         } catch (error) {
             console.error("updateOrderData error:", error);
             throw error;
