@@ -46,20 +46,19 @@ class TradeController {
                 return res.status(400).json({ error:true, message:"Missing required fields!" })
             }
 
-        try { 
+        try {
+            let authResult;
             if (side === "buy") {
-                try {
-                    await preBuyAuth(userId, price, quantity);
-                } catch (error) {
-                    return res.status(400).json({ error: true, message: error.message });
-                }
+                authResult = await preBuyAuth(userId, price, quantity);
             } else if (side === "sell") {
-                try {
-                    await preSellAuth(userId, symbol, quantity);
-                } catch (error) {
-                    return res.status(400).json({ error: true, message: error.message });
-                }
-            } 
+                authResult = await preSellAuth(userId, symbol, quantity);
+            } else {
+                return res.status(400).json({ error: true, message: "Invalid order side" });
+            }
+
+            if (!authResult.success) {
+                return res.status(403).json({ error: true, message: authResult.message });
+            }
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
@@ -110,7 +109,7 @@ class TradeController {
             })
 
         } catch(error) {
-            console.error(error);
+            console.error("Error in createOrder:", error);
             throw error;
         }
     }
@@ -355,37 +354,56 @@ export default new TradeController();
 export const pendingCancelResults = new Map()
 
 async function preBuyAuth(userId, price, quantity) {
-    const dPrice = new Decimal(price)
-    const dQuantity = new Decimal(quantity)
-    const costAmount = dPrice.times(dQuantity)  
+    const dPrice = new Decimal(price);
+    const dQuantity = new Decimal(quantity);
+    const costAmount = dPrice.times(dQuantity);  
 
     try {
-        const availableBalance = await TradeModel.getAvailableBalanceById(userId)
+        const availableBalance = await TradeModel.getAvailableBalanceById(userId);
         const usableBalance = new Decimal(availableBalance);
         if (usableBalance.lessThan(costAmount)) {
-            throw new Error("Insufficient available balance");
+            return {
+                success: false,
+                message: "Insufficient balance"
+            };
         } 
-        await TradeModel.lockBalance(userId, price, quantity)
+        await TradeModel.lockBalance(userId, price, quantity);
+        return { success: true };
     } catch (error) {
         console.error("preBuyAuth error:", error);
-        throw error;
+        return {
+            success: false,
+            message: "An error occurred while processing the buy order"
+        };
     } 
 }
 
 
 async function preSellAuth(userId, symbol, quantity) {
-    const sellQuantity = new Decimal(quantity)
+    const sellQuantity = new Decimal(quantity);
     try {
         const availableQuantity = await TradeModel.getQuantityBySymbolAndUserId(userId, symbol);
-        if (new Decimal(availableQuantity).lessThan(sellQuantity)) {
-            throw new Error("Insufficient available asset");
+        const dAvailableQuantity = new Decimal(availableQuantity);
+        console.log("availableQuantity:", dAvailableQuantity.toString());
+        console.log("sellQuantity:", sellQuantity.toString());
+        if (dAvailableQuantity.lessThan(sellQuantity)) {
+            return {
+                success: false,
+                message: "Insufficient available asset"
+            };
         }
-        await TradeModel.lockAsset(userId, symbol, quantity)
+        await TradeModel.lockAsset(userId, symbol, quantity);
+        return { success: true };
     } catch (error) {
         console.error("preSellAuth error:", error);
-        throw error;
+        return {
+            success: false,
+            message: "An error occurred while processing the sell order"
+        };
     }
 }
+
+
 
 async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
     try {
