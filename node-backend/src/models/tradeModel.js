@@ -93,8 +93,7 @@ class TradeModel {
         const userId = cancelResult.user_id;
         const updateSymbol = cancelResult.symbol.replace("_usdt","");
         const updateQuantity = new Decimal(cancelResult.canceled_quantity);
-        console.log(updateSymbol);
-        console.log(updateQuantity.toString());
+
         try {
             const result = await db.query(
                 `UPDATE assets
@@ -250,7 +249,7 @@ class TradeModel {
             );
       
             const executedQty = updateOrderData.executed_quantity;
-            // 問題在這邊 買入時用 resultOrderData 來看的話 會是整訂單的執行數量，不是單筆訂單的執行數量
+
             if (resultOrderData.side === "buy") {
                 await this.increaseAsset(connection, resultOrderData, executedQty);
                 await this.decreaseBalance(connection, resultOrderData, executedQty);
@@ -280,13 +279,34 @@ class TradeModel {
         const executedPrice = new Decimal(updateAccountData.average_price);
         const decreaseAmount = executedQuantity.times(executedPrice);
     
-        await connection.query(
-            `UPDATE accounts 
-            SET balance = balance - ? 
-            WHERE user_id = ?`,
-            [decreaseAmount.toString(), updateUserId]
-        );
-        console.log(`Decreased balance for user ${updateUserId} by ${decreaseAmount}`);
+        console.log(`[decreaseBalance] Start: User ${updateUserId}, ExecutedQty: ${executedQuantity}, ExecutedPrice: ${executedPrice}, DecreaseAmount: ${decreaseAmount}`);
+    
+        try {
+            const [[beforeBalance]] = await connection.query(
+                'SELECT balance, locked_balance FROM accounts WHERE user_id = ? FOR UPDATE',
+                [updateUserId]
+            );
+            console.log(`[decreaseBalance] Before update - Balance: ${beforeBalance.balance}, LockedBalance: ${beforeBalance.locked_balance}`);
+    
+            const [result] = await connection.query(
+                `UPDATE accounts 
+                SET balance = balance - ? 
+                WHERE user_id = ?`,
+                [decreaseAmount.toString(), updateUserId]
+            );
+    
+            const [[afterBalance]] = await connection.query(
+                'SELECT balance, locked_balance FROM accounts WHERE user_id = ?',
+                [updateUserId]
+            );
+            console.log(`[decreaseBalance] After update - Balance: ${afterBalance.balance}, LockedBalance: ${afterBalance.locked_balance}`);
+    
+            console.log(`[decreaseBalance] Result: AffectedRows: ${result.affectedRows}, ChangedRows: ${result.changedRows}`);
+            console.log(`[decreaseBalance] Completed: Decreased balance for user ${updateUserId} by ${decreaseAmount}`);
+        } catch (error) {
+            console.error(`[decreaseBalance] Error: ${error.message}`);
+            throw error;
+        }
     }
     
     async increaseBalance(connection, updateAccountData, executedQty) {
@@ -308,56 +328,113 @@ class TradeModel {
         const executedPrice = new Decimal(updateAccountData.average_price);
         const unlockAmount = executedQuantity.times(executedPrice);
     
-        await connection.query(
-            `UPDATE accounts
-            SET locked_balance = locked_balance - ?
-            WHERE user_id = ?`,
-            [unlockAmount.toString(), updateUserId]
-        );
-        console.log(`Unlocked balance for user ${updateUserId}: ${unlockAmount}`);
+        console.log(`[unlockBalance] Start: User ${updateUserId}, ExecutedQty: ${executedQuantity}, ExecutedPrice: ${executedPrice}, UnlockAmount: ${unlockAmount}`);
+    
+        try {
+            const [[beforeBalance]] = await connection.query(
+                'SELECT balance, locked_balance FROM accounts WHERE user_id = ? FOR UPDATE',
+                [updateUserId]
+            );
+            console.log(`[unlockBalance] Before update - Balance: ${beforeBalance.balance}, LockedBalance: ${beforeBalance.locked_balance}`);
+    
+            const [result] = await connection.query(
+                `UPDATE accounts
+                SET locked_balance = locked_balance - ?
+                WHERE user_id = ?`,
+                [unlockAmount.toString(), updateUserId]
+            );
+    
+            const [[afterBalance]] = await connection.query(
+                'SELECT balance, locked_balance FROM accounts WHERE user_id = ?',
+                [updateUserId]
+            );
+            console.log(`[unlockBalance] After update - Balance: ${afterBalance.balance}, LockedBalance: ${afterBalance.locked_balance}`);
+    
+            console.log(`[unlockBalance] Result: AffectedRows: ${result.affectedRows}, ChangedRows: ${result.changedRows}`);
+            console.log(`[unlockBalance] Completed: Unlocked balance for user ${updateUserId}: ${unlockAmount}`);
+        } catch (error) {
+            console.error(`[unlockBalance] Error: ${error.message}`);
+            throw error;
+        }
     }
     
     async increaseAsset(connection, updateAssetData, executedQty) {
         const updateUserId = updateAssetData.user_id;
         const updateSymbol = updateAssetData.symbol.replace("_usdt","");
         const executedQuantity = new Decimal(executedQty);
+        const executedPrice = new Decimal(updateAssetData.average_price);
 
-        const [[existingAsset]] = await connection.query(
-            `SELECT quantity, average_price
-            FROM assets
-            WHERE user_id = ? AND symbol = ? FOR UPDATE`,
-            [updateUserId, updateSymbol]
-        );
-    
-        let newQuantity, newAveragePrice;
-    
-        if (existingAsset) {
-            const currentQuantity = new Decimal(existingAsset.quantity);
-            const currentAveragePrice = new Decimal(existingAsset.average_price);
-            const executedPrice = new Decimal(executedQuantity);
-    
-            newQuantity = currentQuantity.plus(executedQuantity);
-            const totalValue = currentQuantity.times(currentAveragePrice).plus(executedQuantity.times(executedPrice));
-            newAveragePrice = totalValue.dividedBy(updateAssetData.average_price);
-    
-            await connection.query(
-                `UPDATE assets
-                SET quantity = ?, average_price = ?
+        console.log(`Starting increaseAsset for user ${updateUserId}, symbol ${updateSymbol}, quantity ${executedQuantity}, price ${executedPrice}`);
+
+        try {
+            const [[existingAsset]] = await connection.query(
+                `SELECT quantity, average_price, locked_quantity
+                FROM assets
+                WHERE user_id = ? AND symbol = ? FOR UPDATE`,
+                [updateUserId, updateSymbol]
+            );
+
+            console.log(`Existing asset data:`, existingAsset);
+
+            let newQuantity, newAveragePrice;
+
+            if (existingAsset) {
+                const currentQuantity = new Decimal(existingAsset.quantity);
+                const currentAveragePrice = new Decimal(existingAsset.average_price);
+                const currentLockedQuantity = new Decimal(existingAsset.locked_quantity);
+
+                console.log(`Current quantity: ${currentQuantity}, average price: ${currentAveragePrice}, locked quantity: ${currentLockedQuantity}`);
+
+                newQuantity = currentQuantity.plus(executedQuantity);
+                const totalValue = currentQuantity.times(currentAveragePrice).plus(executedQuantity.times(executedPrice));
+                newAveragePrice = totalValue.dividedBy(newQuantity);
+
+                console.log(`New quantity: ${newQuantity}, new average price: ${newAveragePrice}`);
+
+                if (newQuantity.isNegative() || newAveragePrice.isNegative()) {
+                    throw new Error(`Invalid calculation result: newQuantity=${newQuantity}, newAveragePrice=${newAveragePrice}`);
+                }
+
+                await connection.query(
+                    `UPDATE assets
+                    SET quantity = ?, average_price = ?
+                    WHERE user_id = ? AND symbol = ?`,
+                    [newQuantity.toString(), newAveragePrice.toString(), updateUserId, updateSymbol]
+                );
+            } else {
+                console.log(`No existing asset found, creating new entry`);
+                newQuantity = executedQuantity;
+                newAveragePrice = executedPrice;
+
+                await connection.query(
+                    `INSERT INTO assets (user_id, symbol, quantity, average_price)
+                    VALUES (?, ?, ?, ?)`,
+                    [updateUserId, updateSymbol, newQuantity.toString(), newAveragePrice.toString()]
+                );
+            }
+
+            console.log(`Asset increase completed. New quantity: ${newQuantity}, new average price: ${newAveragePrice}`);
+
+            // 驗證更新後的資產數據
+            const [[updatedAsset]] = await connection.query(
+                `SELECT quantity, average_price, locked_quantity
+                FROM assets
                 WHERE user_id = ? AND symbol = ?`,
-                [newQuantity.toString(), newAveragePrice.toString(), updateUserId, updateSymbol]
+                [updateUserId, updateSymbol]
             );
-        } else {
-            newQuantity = executedQuantity;
-            newAveragePrice = new Decimal(updateAssetData.average_price);
-    
-            await connection.query(
-                `INSERT INTO assets (user_id, symbol, quantity, average_price)
-                VALUES (?, ?, ?, ?)`,
-                [updateUserId, updateSymbol, newQuantity.toString(), newAveragePrice.toString()]
-            );
+
+            console.log(`Updated asset data:`, updatedAsset);
+
+            if (!updatedAsset || 
+                new Decimal(updatedAsset.quantity).minus(newQuantity).abs().greaterThan(0.00000001) || 
+                new Decimal(updatedAsset.average_price).minus(newAveragePrice).abs().greaterThan(0.00000001)) {
+                throw new Error(`Asset update verification failed. Expected: quantity=${newQuantity}, average_price=${newAveragePrice}. Actual: ${JSON.stringify(updatedAsset)}`);
+            }
+
+        } catch (error) {
+            console.error(`Error in increaseAsset for user ${updateUserId}, symbol ${updateSymbol}:`, error);
+            throw error;
         }
-    
-        console.log(`Increased asset for user ${updateUserId}: ${updateSymbol} by ${executedQuantity}`);
     }
     
     async decreaseAsset(connection, updateAssetData, executedQty) {

@@ -229,7 +229,6 @@ class TradeController {
 
             const topicSymbol = symbol.replace("_usdt", "");
             const topic = `cancel-order-${topicSymbol}`
-            console.log("cancelOrder topic:", topic);
             await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
             const cancelResult = await cancelResultPromise;
             
@@ -250,7 +249,6 @@ class TradeController {
                 });
             }
 
-            // 這邊的邏輯要再順一下，難維護
             if (cancelResult.side === "buy") {
                 await TradeModel.releaseLockedBalance(cancelResult);
             } else {
