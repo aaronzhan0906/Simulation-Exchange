@@ -91,8 +91,10 @@ class TradeModel {
 
     async releaseLockedAsset (cancelResult){
         const userId = cancelResult.user_id;
-        const updateSymbol = cancelResult.symbol.replace("_USDT","");
+        const updateSymbol = cancelResult.symbol.replace("_usdt","");
         const updateQuantity = new Decimal(cancelResult.canceled_quantity);
+        console.log(updateSymbol);
+        console.log(updateQuantity.toString());
         try {
             const result = await db.query(
                 `UPDATE assets
@@ -107,7 +109,7 @@ class TradeModel {
             console.error("Error in releaseLockedAsset:", error);
             throw error;
         }
-     }
+    }
 
 
 ////////////////////////// trade history //////////////////////////
