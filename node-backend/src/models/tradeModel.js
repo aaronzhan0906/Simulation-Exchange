@@ -194,7 +194,7 @@ class TradeModel {
 
             // 使用 FOR UPDATE 鎖定訂單記錄
             const [[oldData]] = await connection.query(
-                `SELECT quantity, executed_quantity, remaining_quantity, average_price
+                `SELECT quantity, executed_quantity, remaining_quantity, average_price, price
                 FROM orders
                 WHERE order_id = ? FOR UPDATE`,
                 [updateOrderData.order_id]
@@ -209,7 +209,8 @@ class TradeModel {
                 quantity: new Decimal(oldData.quantity || 0),
                 executed_quantity: new Decimal(oldData.executed_quantity || 0),
                 remaining_quantity: new Decimal(oldData.remaining_quantity || 0),
-                average_price: new Decimal(oldData.average_price || 0)
+                average_price: new Decimal(oldData.average_price || 0),
+                price: new Decimal(oldData.price || 0)
             };
 
             const newExecutedQuantity = old.executed_quantity.plus(updateOrderData.executed_quantity);
@@ -249,14 +250,14 @@ class TradeModel {
             );
       
             const executedQty = updateOrderData.executed_quantity;
-
+            const executedPrice = updateOrderData.executed_price;
             if (resultOrderData.side === "buy") {
                 await this.increaseAsset(connection, resultOrderData, executedQty);
-                await this.decreaseBalance(connection, resultOrderData, executedQty);
-                await this.unlockBalance(connection, resultOrderData, executedQty);
+                await this.decreaseBalance(connection, resultOrderData, executedQty, executedPrice);
+                await this.unlockBalance(connection, resultOrderData, executedQty, old.price);
             } else {
                 await this.decreaseAsset(connection, resultOrderData, executedQty);
-                await this.increaseBalance(connection, resultOrderData, executedQty);
+                await this.increaseBalance(connection, resultOrderData, executedQty, executedPrice);
                 await this.unlockAsset(connection, resultOrderData, executedQty);
             }
 
@@ -273,13 +274,14 @@ class TradeModel {
         }
     }
 
-    async decreaseBalance(connection, updateAccountData, executedQty) {
+    async decreaseBalance(connection, updateAccountData, executedQty, executedPrice) {
         const updateUserId = updateAccountData.user_id;
         const executedQuantity = new Decimal(executedQty);
-        const executedPrice = new Decimal(updateAccountData.average_price);
         const decreaseAmount = executedQuantity.times(executedPrice);
     
-        console.log(`[decreaseBalance] Start: User ${updateUserId}, ExecutedQty: ${executedQuantity}, ExecutedPrice: ${executedPrice}, DecreaseAmount: ${decreaseAmount}`);
+        console.log(`[decreaseBalance] Start: User ${updateUserId}, ExecutedQty: ${executedQuantity}, executedPrice: ${executedPrice}, DecreaseAmount: ${decreaseAmount}`);
+
+    // ... 其餘邏輯保持不變
     
         try {
             const [[beforeBalance]] = await connection.query(
@@ -309,10 +311,9 @@ class TradeModel {
         }
     }
     
-    async increaseBalance(connection, updateAccountData, executedQty) {
+    async increaseBalance(connection, updateAccountData, executedQty, executedPrice) {
         const updateUserId = updateAccountData.user_id;
         const executedQuantity = new Decimal(executedQty);
-        const executedPrice = new Decimal(updateAccountData.average_price);
         const increaseAmount = executedQuantity.times(executedPrice);
     
         await connection.query(
@@ -322,13 +323,12 @@ class TradeModel {
         console.log(`Increased balance for user ${updateUserId} by ${increaseAmount}`);
     }
     
-    async unlockBalance(connection, updateAccountData, executedQty) {
+    async unlockBalance(connection, updateAccountData, executedQty, originalPrice) {
         const updateUserId = updateAccountData.user_id;
         const executedQuantity = new Decimal(executedQty);
-        const executedPrice = new Decimal(updateAccountData.average_price);
-        const unlockAmount = executedQuantity.times(executedPrice);
+        const unlockAmount = executedQuantity.times(originalPrice);
     
-        console.log(`[unlockBalance] Start: User ${updateUserId}, ExecutedQty: ${executedQuantity}, ExecutedPrice: ${executedPrice}, UnlockAmount: ${unlockAmount}`);
+        console.log(`[unlockBalance] Start: User ${updateUserId}, ExecutedQty: ${executedQuantity}, OriginalPrice: ${originalPrice}, UnlockAmount: ${unlockAmount}`);
     
         try {
             const [[beforeBalance]] = await connection.query(

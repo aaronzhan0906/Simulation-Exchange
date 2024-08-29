@@ -134,26 +134,29 @@ class OrderBook:
         
         if side == "buy":
             opposite_book = self.asks 
-            iterate_book = iter # Iterate from lowest to highest prcie
             price_condition = lambda op, ip: op <= ip
+            sorted_prices = sorted(opposite_book.keys())  # Sort from lowest to highest price
         else:  
             opposite_book = self.bids
-            iterate_book = reversed # Iterate from hightest to lowest price
             price_condition = lambda op, ip: op >= ip
+            sorted_prices = sorted(opposite_book.keys(), reverse=True)  # Sort from highest to lowest price
 
-        for opposite_price, order_ids in iterate_book(opposite_book.items()): # Iterate through the oppsite book
-            if not price_condition(opposite_price, input_price):
-                break
+        for opposite_price in sorted_prices:
+            if not price_condition(opposite_price, input_price): 
+                break  
 
-            for matched_order_id in list(order_ids):
+            order_ids = opposite_book[opposite_price]
+            print(f"Checking price level: {opposite_price}, Order IDs: {order_ids}")
+
+            for matched_order_id in list(order_ids): # Use list() to copy order_ids, avoiding modifying the set while iterating
                 matched_side, _, matched_quantity, matched_original_quantity, matched_user_id = self.order_index[matched_order_id]
                 trade_quantity = min(matched_quantity, input_quantity)
 
                 self.order_index[matched_order_id] = (matched_side, opposite_price, matched_quantity - trade_quantity, matched_original_quantity, matched_user_id)
-                
+
                 if matched_quantity == trade_quantity:
                     order_ids.remove(matched_order_id)
-
+               
                 input_quantity -= trade_quantity
 
                 yield {
@@ -180,5 +183,3 @@ class OrderBook:
 
         if input_quantity > 0:   # If no matching and there's any quantity left, add it as a new order
             self.add_order({**order, "quantity": input_quantity})
-
-    
