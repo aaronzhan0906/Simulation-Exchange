@@ -189,7 +189,7 @@ class TradeModel {
         await connection.beginTransaction();
 
         try {
-            // 獲取全局鎖
+            // 獲取全局鎖 這部分可以思考一下是否需要
             await connection.query('SELECT GET_LOCK("trade_lock", 10) as lock_result');
 
             // 使用 FOR UPDATE 鎖定訂單記錄
