@@ -431,7 +431,7 @@ function renderOrderHistoryTable(orderHistoryData, table) {
 
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
-    const headers = ["Time", "Pair", "Type", "Side", "Price", "Quantity", "Executed", "Avg Price", "Status"];
+    const headers = ["Time", "Pair", "Type", "Side", "Price", "Quantity", "Filled", "Avg Price", "Status"];
     headers.forEach(headerText => {
         const th = document.createElement("th");
         th.textContent = headerText;

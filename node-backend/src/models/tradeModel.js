@@ -204,7 +204,7 @@ class TradeModel {
                 throw new Error(`Order not found: ${updateOrderData.order_id}`);
             }
 
-            // 計算新的數據
+            // calculate new order data
             const old = {
                 quantity: new Decimal(oldData.quantity || 0),
                 executed_quantity: new Decimal(oldData.executed_quantity || 0),
@@ -228,7 +228,7 @@ class TradeModel {
                 throw new Error("Invalid average price calculation result");
             }
 
-            // 更新訂單
+            // update order data
             await connection.query(
                 `UPDATE orders
                 SET executed_quantity = ?,
@@ -243,7 +243,7 @@ class TradeModel {
                 updateOrderData.order_id]
             );
 
-            // 獲取更新後的訂單數據
+            // get result order data after update
             const [[resultOrderData]] = await connection.query(
                 `SELECT * FROM orders WHERE order_id = ?`,
                 [updateOrderData.order_id]
@@ -252,7 +252,7 @@ class TradeModel {
             const executedQty = updateOrderData.executed_quantity;
             const executedPrice = updateOrderData.executed_price;
             if (resultOrderData.side === "buy") {
-                await this.increaseAsset(connection, resultOrderData, executedQty);
+                await this.increaseAsset(connection, resultOrderData, executedQty, executedPrice);
                 await this.decreaseBalance(connection, resultOrderData, executedQty, executedPrice);
                 await this.unlockBalance(connection, resultOrderData, executedQty, old.price);
             } else {
@@ -279,32 +279,17 @@ class TradeModel {
         const executedQuantity = new Decimal(executedQty);
         const decreaseAmount = executedQuantity.times(executedPrice);
     
-        console.log(`[decreaseBalance] Start: User ${updateUserId}, ExecutedQty: ${executedQuantity}, executedPrice: ${executedPrice}, DecreaseAmount: ${decreaseAmount}`);
-
-    // ... 其餘邏輯保持不變
-    
         try {
-            const [[beforeBalance]] = await connection.query(
-                'SELECT balance, locked_balance FROM accounts WHERE user_id = ? FOR UPDATE',
-                [updateUserId]
-            );
-            console.log(`[decreaseBalance] Before update - Balance: ${beforeBalance.balance}, LockedBalance: ${beforeBalance.locked_balance}`);
-    
             const [result] = await connection.query(
                 `UPDATE accounts 
                 SET balance = balance - ? 
                 WHERE user_id = ?`,
                 [decreaseAmount.toString(), updateUserId]
             );
-    
-            const [[afterBalance]] = await connection.query(
-                'SELECT balance, locked_balance FROM accounts WHERE user_id = ?',
-                [updateUserId]
-            );
-            console.log(`[decreaseBalance] After update - Balance: ${afterBalance.balance}, LockedBalance: ${afterBalance.locked_balance}`);
-    
-            console.log(`[decreaseBalance] Result: AffectedRows: ${result.affectedRows}, ChangedRows: ${result.changedRows}`);
-            console.log(`[decreaseBalance] Completed: Decreased balance for user ${updateUserId} by ${decreaseAmount}`);
+            if (result.affectedRows === 0) {
+                throw new Error(`Failed to decrease balance for user ${updateUserId}`);
+            }
+        
         } catch (error) {
             console.error(`[decreaseBalance] Error: ${error.message}`);
             throw error;
@@ -315,12 +300,18 @@ class TradeModel {
         const updateUserId = updateAccountData.user_id;
         const executedQuantity = new Decimal(executedQty);
         const increaseAmount = executedQuantity.times(executedPrice);
-    
-        await connection.query(
-            "UPDATE accounts SET balance = balance + ? WHERE user_id = ?",
-            [increaseAmount.toString(), updateUserId]
-        );
-        console.log(`Increased balance for user ${updateUserId} by ${increaseAmount}`);
+        try{
+            const [result] = await connection.query(
+                "UPDATE accounts SET balance = balance + ? WHERE user_id = ?",
+                [increaseAmount.toString(), updateUserId]
+            );
+            if (result.affectedRows === 0) {
+                throw new Error(`Failed to increase balance for user ${updateUserId}`);
+            }
+        } catch (error) {
+            console.error(`[increaseBalance] Error: ${error.message}`);
+            throw error;
+        }
     }
     
     async unlockBalance(connection, updateAccountData, executedQty, originalPrice) {
@@ -328,15 +319,8 @@ class TradeModel {
         const executedQuantity = new Decimal(executedQty);
         const unlockAmount = executedQuantity.times(originalPrice);
     
-        console.log(`[unlockBalance] Start: User ${updateUserId}, ExecutedQty: ${executedQuantity}, OriginalPrice: ${originalPrice}, UnlockAmount: ${unlockAmount}`);
     
         try {
-            const [[beforeBalance]] = await connection.query(
-                'SELECT balance, locked_balance FROM accounts WHERE user_id = ? FOR UPDATE',
-                [updateUserId]
-            );
-            console.log(`[unlockBalance] Before update - Balance: ${beforeBalance.balance}, LockedBalance: ${beforeBalance.locked_balance}`);
-    
             const [result] = await connection.query(
                 `UPDATE accounts
                 SET locked_balance = locked_balance - ?
@@ -344,27 +328,21 @@ class TradeModel {
                 [unlockAmount.toString(), updateUserId]
             );
     
-            const [[afterBalance]] = await connection.query(
-                'SELECT balance, locked_balance FROM accounts WHERE user_id = ?',
-                [updateUserId]
-            );
-            console.log(`[unlockBalance] After update - Balance: ${afterBalance.balance}, LockedBalance: ${afterBalance.locked_balance}`);
-    
-            console.log(`[unlockBalance] Result: AffectedRows: ${result.affectedRows}, ChangedRows: ${result.changedRows}`);
-            console.log(`[unlockBalance] Completed: Unlocked balance for user ${updateUserId}: ${unlockAmount}`);
+            if (result.affectedRows === 0) {    
+                throw new Error(`Failed to unlock balance for user ${updateUserId}`);
+            }
         } catch (error) {
             console.error(`[unlockBalance] Error: ${error.message}`);
             throw error;
         }
     }
     
-    async increaseAsset(connection, updateAssetData, executedQty) {
+    async increaseAsset(connection, updateAssetData, executedQty, executedP) {
         const updateUserId = updateAssetData.user_id;
         const updateSymbol = updateAssetData.symbol.replace("_usdt","");
         const executedQuantity = new Decimal(executedQty);
-        const executedPrice = new Decimal(updateAssetData.average_price);
+        const executedPrice = new Decimal(executedP);
 
-        console.log(`Starting increaseAsset for user ${updateUserId}, symbol ${updateSymbol}, quantity ${executedQuantity}, price ${executedPrice}`);
 
         try {
             const [[existingAsset]] = await connection.query(
@@ -374,22 +352,16 @@ class TradeModel {
                 [updateUserId, updateSymbol]
             );
 
-            console.log(`Existing asset data:`, existingAsset);
-
-            let newQuantity, newAveragePrice;
 
             if (existingAsset) {
                 const currentQuantity = new Decimal(existingAsset.quantity);
                 const currentAveragePrice = new Decimal(existingAsset.average_price);
-                const currentLockedQuantity = new Decimal(existingAsset.locked_quantity);
 
-                console.log(`Current quantity: ${currentQuantity}, average price: ${currentAveragePrice}, locked quantity: ${currentLockedQuantity}`);
-
-                newQuantity = currentQuantity.plus(executedQuantity);
-                const totalValue = currentQuantity.times(currentAveragePrice).plus(executedQuantity.times(executedPrice));
-                newAveragePrice = totalValue.dividedBy(newQuantity);
-
-                console.log(`New quantity: ${newQuantity}, new average price: ${newAveragePrice}`);
+                const newQuantity = currentQuantity.plus(executedQuantity);
+                const currentTotalValue = currentQuantity.times(currentAveragePrice);
+                const newValue = executedQuantity.times(executedPrice);
+                const totalValue = currentTotalValue.plus(newValue);
+                const newAveragePrice = totalValue.dividedBy(newQuantity);
 
                 if (newQuantity.isNegative() || newAveragePrice.isNegative()) {
                     throw new Error(`Invalid calculation result: newQuantity=${newQuantity}, newAveragePrice=${newAveragePrice}`);
@@ -402,35 +374,15 @@ class TradeModel {
                     [newQuantity.toString(), newAveragePrice.toString(), updateUserId, updateSymbol]
                 );
             } else {
-                console.log(`No existing asset found, creating new entry`);
-                newQuantity = executedQuantity;
-                newAveragePrice = executedPrice;
+                const initQuantity = executedQuantity;
+                const initAveragePrice = executedPrice;
 
                 await connection.query(
                     `INSERT INTO assets (user_id, symbol, quantity, average_price)
                     VALUES (?, ?, ?, ?)`,
-                    [updateUserId, updateSymbol, newQuantity.toString(), newAveragePrice.toString()]
+                    [updateUserId, updateSymbol, initQuantity.toString(), initAveragePrice.toString()]
                 );
             }
-
-            console.log(`Asset increase completed. New quantity: ${newQuantity}, new average price: ${newAveragePrice}`);
-
-            // 驗證更新後的資產數據
-            const [[updatedAsset]] = await connection.query(
-                `SELECT quantity, average_price, locked_quantity
-                FROM assets
-                WHERE user_id = ? AND symbol = ?`,
-                [updateUserId, updateSymbol]
-            );
-
-            console.log(`Updated asset data:`, updatedAsset);
-
-            if (!updatedAsset || 
-                new Decimal(updatedAsset.quantity).minus(newQuantity).abs().greaterThan(0.00000001) || 
-                new Decimal(updatedAsset.average_price).minus(newAveragePrice).abs().greaterThan(0.00000001)) {
-                throw new Error(`Asset update verification failed. Expected: quantity=${newQuantity}, average_price=${newAveragePrice}. Actual: ${JSON.stringify(updatedAsset)}`);
-            }
-
         } catch (error) {
             console.error(`Error in increaseAsset for user ${updateUserId}, symbol ${updateSymbol}:`, error);
             throw error;
@@ -465,7 +417,6 @@ class TradeModel {
             WHERE user_id = ? AND symbol = ?`,
             [newQuantity.toString(), updateUserId, updateSymbol]
         );
-        console.log(`Decreased asset for user ${updateUserId}: ${updateSymbol} by ${updateAssetData.executed_quantity}`);
     }
     
     async unlockAsset(connection, updateAssetData, executedQty) {
@@ -478,7 +429,6 @@ class TradeModel {
             WHERE user_id = ? AND symbol = ?`,
             [executedQty, updateUserId, updateSymbol]
         );
-        console.log(`Unlocked asset for user ${updateUserId}: ${updateSymbol} by ${updateAssetData.executed_quantity}`);
     }
 
 }

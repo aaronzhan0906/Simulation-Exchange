@@ -172,13 +172,13 @@ class OrderBook:
                     "input_order_id": input_order_id
                 }
                 
-                if input_quantity == 0: # fully matched, stop matching
+                if input_quantity == 0:  # fully matched, stop matching
                     break
 
-            if not order_ids: # If this price level is now empty, remove it from the book
+            if not order_ids:  # If this price level is now empty, remove it from the book
                 del opposite_book[opposite_price]
 
-            if input_quantity == 0: # If the input order is fully matched, stop looking for matches
+            if input_quantity == 0:  # If the input order is fully matched, stop looking for matches
                 break
 
         if input_quantity > 0:   # If no matching and there's any quantity left, add it as a new order
