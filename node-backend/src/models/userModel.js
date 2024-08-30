@@ -108,7 +108,6 @@ class UserModel {
     }
 
     async saveRefreshToken(userId, refreshToken){
-        console.log("saveRefreshToken: ", refreshToken);
         const expiresAt = new Date(Date.now() + 30*24*60*60*1000);
         await db.query(
             "UPDATE users SET refresh_token = ?, refresh_token_expires_at = ? WHERE user_id = ?",

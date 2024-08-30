@@ -31,7 +31,7 @@ const supportedSymbols = config.supportedSymbols;
 const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join("/");
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
-const binanceWs = new WebSocket(wsUrl);
+const binanceWS = new WebSocket(wsUrl);
 
 let latestTickerData = {}; // for different trading pairs { BNBUSDT: {symbol: 'BNBUSDT' price: '551.10000000',priceChangePercent: '-1.73' }
 // store price at least once every 1s
@@ -187,7 +187,7 @@ async function get24hHighLow(pair) {
 
 
 // Binance websocket events  //////////////////////////////////////////
-binanceWs.on("message", (data) => {
+binanceWS.on("message", (data) => {
     const parsedData = JSON.parse(data);
     const { stream, data: streamData } = parsedData;
 
@@ -201,7 +201,7 @@ binanceWs.on("message", (data) => {
     updatePriceData(pair, streamData.c)
 });
 
-binanceWs.on("error", (error) => {
+binanceWS.on("error", (error) => {
     console.error("Websocket error:", error);
 });
 
