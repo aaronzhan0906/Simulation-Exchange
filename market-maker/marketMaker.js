@@ -130,15 +130,14 @@ class MarketMaker {
                 }
 
                 const precision = this.determinePrecision(currentPrice);
-                const spreadPercentage = 0.0001 + (Math.random() * 0.0005);
+                const spreadPercentage = this.determineSpread(precision);
+                console.log(`Precision: ${precision}, Spread: ${spreadPercentage}`);
                 const buyPrice = new Decimal(currentPrice).times(1 - spreadPercentage).toFixed(precision);
                 const sellPrice = new Decimal(currentPrice).times(1 + spreadPercentage).toFixed(precision);
 
                 const min = 1/Math.pow(10, precision);
                 const max = 5/Math.pow(10, precision);
                 const quantity = (Math.random() * (max - min) + min).toFixed(precision);
-
-                console.log(`Adjusting orders for ${formattedSymbol}: Buy at ${buyPrice}, Sell at ${sellPrice}, Quantity: ${quantity}`);
 
                 await this.placeOrUpdateOrder(formattedSymbol, "buy", buyPrice, quantity);
                 await this.placeOrUpdateOrder(formattedSymbol, "sell", sellPrice, quantity);
@@ -147,25 +146,46 @@ class MarketMaker {
             console.error("Error in [adjustMarketMakerOrders]: ", error);
         }
     }
+    determineSpread(precision) {
+        if (precision === 5 ) {
+            return 0.0001 + (Math.random() * 0.001); // 0.0001 ~ 0.0011
+        } else if (precision === 4 || precision === 3 || precision === 2 || precision === 1) { 
+            return 0.001 + (Math.random() * 0.01); // 0.001 ~ 0.005
+        } 
+    }
 
     determinePrecision(currentPrice) {
         const priceNum = parseFloat(currentPrice);
         const integerDigits = Math.floor(Math.log10(priceNum)) + 1;
         const precision = Math.max(integerDigits, 0);
-        console.log(`Price: ${priceNum}, Integer digits: ${integerDigits}, Precision: ${precision}`);
         return precision;
     }
 
     async placeOrUpdateOrder(symbol, side, price, quantity) {
-        console.log(`Placing or updating order: ${symbol} ${side} ${price} ${quantity}`);
         const existingOrder = this.orders[`${symbol}_${side}`];
         if (existingOrder) {
-            const orderStatus = await this.getOrderStatus(existingOrder.orderId);
-            console.log(`Existing order status: ${orderStatus}`);
-            if (orderStatus === "open" && new Decimal(existingOrder.price).minus(price).abs().greaterThan(0.0001)) {
+            const { orderStatus, orderSide, orderPrice } = await this.getOrderDetails(existingOrder.orderId);
+
+            // if price difference is more than 0.0005 , cancel and place new order
+            if (orderStatus === "open" 
+                && orderSide === "buy" 
+                && new Decimal(orderPrice).minus(price).abs().greaterThan(0.01) 
+                &&  new Decimal(orderPrice).greaterThan(price)) {
                 await this.cancelOrder(existingOrder.orderId, symbol);
                 delete this.orders[`${symbol}_${side}`];
-            } else if (orderStatus === "filled" || orderStatus === "partially_filled" || orderStatus === "CANCEL" || orderStatus === "PARTIALLY_FILLED_CANCELED" ) { 
+            } else if (
+                orderStatus === "open" 
+                && orderSide === "sell"
+                && new Decimal(orderPrice).minus(price).abs().greaterThan(0.0005)
+                && new Decimal(orderPrice).lessThan(price)) 
+            {
+                await this.cancelOrder(existingOrder.orderId, symbol);
+                delete this.orders[`${symbol}_${side}`];
+            } else if (
+                orderStatus === "filled" 
+                || orderStatus === "partially_filled" 
+                || orderStatus === "CANCEL" 
+                || orderStatus === "PARTIALLY_FILLED_CANCELED" ) { 
                 delete this.orders[`${symbol}_${side}`];
             } else {
                 console.log(`No update needed for ${symbol} ${side}`);
@@ -176,22 +196,27 @@ class MarketMaker {
         const newOrder = await this.createOrder(symbol, side, "limit", price, quantity);
         if (newOrder && newOrder.order) {
             this.orders[`${symbol}_${side}`] = newOrder.order;
-            console.log(`New ${side} order placed for ${symbol}: ${JSON.stringify(newOrder.order)}`);
         } else {
             console.error(`Failed to place ${side} order for ${symbol}`);
         }
     }
 
-    async getOrderStatus(orderId) {
-        try{
-            console.log(`Checking status for order: ${orderId}`);
+    async getOrderDetails(orderId) {
+        try {
             const orders = await this.getOrders();
             const order = orders.find(order => order.orderId === orderId);
-            const status = order ? order.status : "NOT_FOUND";
-            console.log(`Order status: ${status}`);
-            return status;
+            if (order) {
+                return {
+                    status: order.status,
+                    side: order.side,
+                    price: order.price
+                };
+            } else {
+                return { status: "NOT_FOUND", side: null, price: null };
+            }
         } catch (error) {
             console.error("Error in [getOrderStatus]: ", error);
+            return { status: "ERROR", side: null, price: null };
         }
     }
 
@@ -200,7 +225,7 @@ class MarketMaker {
         setInterval(() => {
             console.log("Triggered adjustMarketMakerOrders");
             this.adjustMarketMakerOrders();
-        }, 5000);
+        }, 3000);
     }
 }
 
