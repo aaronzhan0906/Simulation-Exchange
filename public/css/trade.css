@@ -614,7 +614,9 @@ input:-webkit-autofill:focus {
     font-size: 14px;
 }
 
-table {
+
+/* 發現問題就在這裡，之後調整 */
+/* table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
@@ -642,7 +644,7 @@ td {
     text-align: left;
     border-bottom: 1px solid #333;
     font-weight: 300;
-}
+} */
 
 .open-orders__cell--buy {
     color: #3a9b45; 
