@@ -615,8 +615,7 @@ input:-webkit-autofill:focus {
 }
 
 
-/* 發現問題就在這裡，之後調整 */
-/* table {
+.open-orders__table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
@@ -628,23 +627,24 @@ input:-webkit-autofill:focus {
     grid-template-columns: 1.3fr 0.8fr 0.6fr 0.6fr 1fr 1fr 0.8fr 0.8fr 0.4fr;
 }
 
-thead, tbody, tr {
+.open-orders__thead, .open-orders__tbody, .open-orders__tr {
     display: contents;
 }
 
-th  {
+
+.open-orders__th  {
     padding: 12px 5px 7px 5px;
     text-align: left;
     border-bottom: 1px solid #333;
     font-weight: 700;
 }
 
-td {
+.open-orders__td {
     padding: 12px 5px;
     text-align: left;
     border-bottom: 1px solid #333;
     font-weight: 300;
-} */
+}
 
 .open-orders__cell--buy {
     color: #3a9b45; 
@@ -653,8 +653,6 @@ td {
 .open-orders__cell--sell {
     color: #ef483f; 
 }
-
-
 
 .cancel-btn {
     background-color: transparent;
