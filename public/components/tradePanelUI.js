@@ -353,55 +353,57 @@ async function getOpenOrders(){
 // OPEN ORDERS // add order to UI
 function addOrderToUI(orderData) {
     const tbody = document.getElementById("open-orders__tbody");
-    if (!tbody) {
-        console.error("找不到 tbody 元素!");
-        return;
-    }
-
     const newRow = document.createElement("tr");
     newRow.className = "open-orders__tr";
     newRow.setAttribute("order-id", orderData.orderId);
 
     const [base, quoteCurrency] = orderData.symbol.toUpperCase().split("_");
     
-    const cellsData = [
-        { content: formatLocalTime(orderData.createdAt), class: "" },
-        { content: `${base}/${quoteCurrency}`, class: "" },
-        { content: orderData.type.charAt(0).toUpperCase() + orderData.type.slice(1), class: "" },
-        { content: orderData.side.charAt(0).toUpperCase() + orderData.side.slice(1), 
-          class: orderData.side === "buy" ? "open-orders__cell--buy" : "open-orders__cell--sell" },
-        { content: `${new Decimal(orderData.price).toFixed(2)} ${quoteCurrency}`, class: "" },
-        { content: `${new Decimal(orderData.quantity).toFixed(5)} ${base}`, class: "" },
-        { content: `- ${base}`, class: "" },
-        { content: orderData.status, class: "" },
-        { content: "Cancel", class: "cancel-btn" }
+    const cells = [
+        formatLocalTime(orderData.createdAt),
+        `${base}/${quoteCurrency}`,
+        orderData.type.charAt(0).toUpperCase() + orderData.type.slice(1),
+        orderData.side.charAt(0).toUpperCase() + orderData.side.slice(1),
+        `${new Decimal(orderData.price).toFixed(2)} ${quoteCurrency}`,
+        `${new Decimal(orderData.quantity).toFixed(5)} ${base}`,
+        `- ${base}`,
+        orderData.status,
+        "Cancel"
     ];
 
-    cellsData.forEach((cellData, index) => {
+    cells.forEach((cellData, index) => {
         const td = document.createElement("td");
-        td.className = `open-orders__td ${cellData.class}`;
-
-        if (index === cellsData.length - 1) {
+        td.className = "open-orders__td";
+        if (index === cells.length - 1) {
             const cancelBtn = document.createElement("button");
-            cancelBtn.textContent = cellData.content;
+            cancelBtn.textContent = cellData;
             cancelBtn.className = "cancel-btn";
             cancelBtn.addEventListener("click", async () => {
                 try {
                     await cancelOrder(orderData.orderId);
                 } catch (error) {
-                    console.error("取消訂單失敗:", error);
+                    console.error("Failed to cancel order:", error);
                 }
             });
             td.appendChild(cancelBtn);
         } else {
-            td.textContent = cellData.content;
+            td.textContent = cellData;
+        }
+
+        // buy and sell color
+        if (index === 3) {
+            td.classList.add(orderData.side === "buy" ? "open-orders__cell--buy" : "open-orders__cell--sell");
         }
 
         newRow.appendChild(td);
     });
 
-    tbody.insertBefore(newRow, tbody.firstChild);
-    console.log("新行已添加到表格主體");
+    if (tbody.firstChild) {
+        tbody.insertBefore(newRow, tbody.firstChild);
+    } else {
+        tbody.appendChild(newRow);
+    }
+
 
     updateOpenOrdersCount();
 }
