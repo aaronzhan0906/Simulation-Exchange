@@ -117,12 +117,22 @@ class OrderBook:
 
     def cancel_order(self, order_id):
         if order_id in self.order_index:
-            side, price, _, _, _ = self.order_index[order_id]  # Extract the side and price for the order , ignoring the other values
+            side, price, _, _, _ = self.order_index[order_id]
             book = self.bids if side == "buy" else self.asks
-            book[price].remove(order_id)
-            if not book[price]:
-                del book[price] # Remove price level if it becomes empty 
-            return self.order_index.pop(order_id)
+            
+            if price in book:
+                if order_id in book[price]:
+                    book[price].remove(order_id)
+                    if not book[price]:
+                        del book[price]  # Remove price level if it becomes empty
+                    return self.order_index.pop(order_id)
+                else:
+                    print(f"Order {order_id} not found at price {price}. It may have been executed.")
+                    return None
+                
+            return self.order_index.pop(order_id) # if the order is in the index but not in order book, we should remove it
+    
+        print(f"Order {order_id} not found in order index. It may have been cancelled or executed.")
         return None
 
     def match_order(self, order):

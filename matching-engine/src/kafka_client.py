@@ -62,9 +62,16 @@ class KafkaClient:
         try:
             async for msg in self.consumer:
                 if msg.topic in self.topic_handlers:
-                    await self.topic_handlers[msg.topic](msg.value)
+                    try:
+                        await self.topic_handlers[msg.topic](msg.value)
+                    except Exception as handler_error:
+                        print(f"Error in topic handler for {msg.topic}: {str(handler_error)}")
+                        import traceback
+                        print(traceback.format_exc())
         except Exception as e:
             print(f"Error in consume_messages: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
 
     async def produce_result(self, topic, data):
         try:
