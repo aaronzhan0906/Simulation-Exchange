@@ -117,6 +117,54 @@ class MarketMaker {
         }
     }
 
+    async adjustMarketMakerOrders() {
+        try {
+            console.log("Adjusting market maker orders");
+            for (const symbol of supportedSymbols) {
+                const pair = `${symbol.toUpperCase()}USDT`;
+                const formattedSymbol = `${symbol}_usdt`;
+                const currentPrice = latestTickerData[pair]?.price;
+                if (!currentPrice) {
+                    console.log(`No price data for ${pair}, skipping`);
+                    continue;
+                }
+
+                const precision = this.determinePrecision(currentPrice);
+                const baseSpread = Math.pow(10, -precision-1)
+
+                const existingOrders = await this.getOrders(formattedSymbol);
+                console.log(`Existing orders for ${formattedSymbol}:`, existingOrders);
+
+                const buyOrders = existingOrders.filter(order => order.side === "buy");
+                const sellOrders = existingOrders.filter(order => order.side === "sell");
+
+                console.log("Existing orders: ", existingOrders);
+
+                for (let i = 0; i < 2 ; i++) {
+
+                    const buySpread = baseSpread + (Math.random() * Math.pow(15, -precision));
+                    const sellSpread = baseSpread + (Math.random() * Math.pow(15, -precision));
+
+                    console.log(`Buy spread: ${buySpread}, Sell spread: ${sellSpread}`);
+                
+                    const buyPrice = new Decimal(currentPrice).times(1 - buySpread).toFixed(precision);
+                    const sellPrice = new Decimal(currentPrice).times(1 + sellSpread).toFixed(precision);
+
+                    const min = 1/Math.pow(10, precision);
+                    const max = 20/Math.pow(10, precision);
+                    const buyQuantity = (Math.random() * (max - min) + min).toFixed(precision);
+                    const sellQuantity = (Math.random() * (max - min) + min).toFixed(precision);
+
+                    await this.placeOrUpdateOrder(formattedSymbol, "buy", buyPrice, buyQuantity, buyOrders[i]);
+                    await this.placeOrUpdateOrder(formattedSymbol, "sell", sellPrice, sellQuantity, sellOrders[i]);
+                }
+            }
+        } catch (error) {
+            console.error("Error in [adjustMarketMakerOrders]: ", error);
+        }
+    }
+
+
     determinePrecision(currentPrice) {
         const priceNum = parseFloat(currentPrice);
         const integerDigits = Math.floor(Math.log10(priceNum)) + 1;
@@ -124,114 +172,38 @@ class MarketMaker {
         return precision;
     }
 
-    async adjustMarketMakerOrders() {
-        try {
-            console.log("開始調整做市商訂單");
-            for (const symbol of supportedSymbols) {
-                const pair = `${symbol.toUpperCase()}USDT`;
-                const formattedSymbol = `${symbol}_usdt`;
-                const currentPrice = latestTickerData[pair]?.price;
-                if (!currentPrice) {
-                    console.log(`無法獲取 ${pair} 的價格數據，跳過`);
-                    continue;
-                }
-    
-                // 添加打印語句
-                console.log(`處理 ${pair}，當前價格: ${currentPrice}`);
-    
-                const precision = this.determinePrecision(currentPrice);
-    
-                const baseSpread = Math.pow(10, -precision-1)
-                const buySpread = baseSpread + (Math.random() * Math.pow(15, -precision));
-                const sellSpread = baseSpread + (Math.random() * Math.pow(15, -precision));
-    
-                const buyPrice = new Decimal(currentPrice).times(1 - buySpread).toFixed(2);
-                const sellPrice = new Decimal(currentPrice).times(1 + sellSpread).toFixed(2);
-                console.log(`買入價: ${buyPrice}, 賣出價: ${sellPrice}`);
-    
-                const min = 1/Math.pow(10, precision);
-                const max = 20/Math.pow(10, precision);
-                const buyQuantity = (Math.random() * (max - min) + min).toFixed(precision);
-                const sellQuantity = (Math.random() * (max - min) + min).toFixed(precision);
-    
-                // 添加打印語句
-                console.log(`買入量: ${buyQuantity}, 賣出量: ${sellQuantity}`);
-    
-                await this.placeOrUpdateOrder(formattedSymbol, "buy", buyPrice, buyQuantity);
-                await this.placeOrUpdateOrder(formattedSymbol, "sell", sellPrice, sellQuantity);
-            }
-        } catch (error) {
-            console.error("調整做市商訂單時出錯: ", error);
-        }
-    }
-    
-    determinePrecision(currentPrice) {
-        const priceNum = parseFloat(currentPrice);
-        const integerDigits = Math.floor(Math.log10(priceNum)) + 1;
-        const precision = Math.max(integerDigits, 0);
-        // 添加打印語句
-        console.log(`當前價格: ${currentPrice}, 精度: ${precision}`);
-        return precision;
-    }
-    
-    async placeOrUpdateOrder(symbol, side, price, quantity) {
+    async placeOrUpdateOrder(symbol, side, price, quantity, existingOrder) {
         const pair = `${symbol.toUpperCase()}`.replace("_", "");
-        const existingOrder = this.orders[`${symbol}_${side}`];
         const currentPrice = latestTickerData[pair]?.price;
-        
-        // 添加打印語句
-        console.log(`處理 ${symbol} ${side} 訂單，當前價格: ${currentPrice}`);
-    
+
+        if (!currentPrice) {
+            console.log(`No current price data for ${pair}, skipping order placement/update`);
+            return;
+        }
+
         if (existingOrder) {
-            const { orderStatus, orderSide, orderPrice } = await this.getOrderDetails(existingOrder.orderId);
-    
-            // 添加打印語句
-            console.log(`現有訂單狀態: ${orderStatus}, 方向: ${orderSide}, 價格: ${orderPrice}`);
-    
             const dCurrentPrice = new Decimal(currentPrice);
             const dOrderPrice = new Decimal(existingOrder.price);
             const priceDifference = dOrderPrice.minus(dCurrentPrice);
             const priceDifferenceAbs = priceDifference.abs();
-            const maxDifference = priceDifferenceAbs.times(0.001);
-    
-            // 修改：統一使用 Decimal 進行比較，避免精度問題
-    
-            if (orderStatus === "open" 
-                && orderSide === "buy" 
-                && dOrderPrice.minus(dCurrentPrice).abs().greaterThan(maxDifference) 
-                && priceDifference.greaterThan(0)) {
-                console.log(`取消買入訂單: ${existingOrder.orderId}`);
+            const maxDifference = dCurrentPrice.times(0.0005);
+            
+            if ((side === "buy" && priceDifference.greaterThan(0) && priceDifferenceAbs.greaterThan(maxDifference)) ||
+                (side === "sell" && priceDifference.lessThan(0) && priceDifferenceAbs.greaterThan(maxDifference))) {
+                console.log(`Cancelling ${side} order ${existingOrder.orderId} for ${symbol} due to price difference`);
                 await this.cancelOrder(existingOrder.orderId, symbol);
-                delete this.orders[`${symbol}_${side}`];
-            } else if (
-                orderStatus === "open" 
-                && orderSide === "sell"
-                && dOrderPrice.minus(dCurrentPrice).abs().greaterThan(maxDifference)
-                && priceDifference.lessThan(0)) 
-            {
-                console.log(`取消賣出訂單: ${existingOrder.orderId}`);
-                await this.cancelOrder(existingOrder.orderId, symbol);
-                delete this.orders[`${symbol}_${side}`];
-            } else if (
-                orderStatus === "filled" 
-                || orderStatus === "partially_filled" 
-                || orderStatus === "CANCEL" 
-                || orderStatus === "PARTIALLY_FILLED_CANCELED" ) { 
-                console.log(`訂單 ${existingOrder.orderId} 已完成或取消，移除記錄`);
-                delete this.orders[`${symbol}_${side}`];
             } else {
-                console.log(`${symbol} ${side} 訂單無需更新`);
+                console.log(`No update needed for ${symbol} ${side} order ${existingOrder.orderId}`);
                 return;
             }
         }
-    
-        console.log(`創建新的 ${side} 訂單: ${symbol}, 價格: ${price}, 數量: ${quantity}`);
+
+        console.log(`Placing new ${side} order for ${symbol} at price ${price}`);
         const newOrder = await this.createOrder(symbol, side, "limit", price, quantity);
         if (newOrder && newOrder.order) {
-            this.orders[`${symbol}_${side}`] = newOrder.order;
-            console.log(`新訂單創建成功: ${newOrder.order.orderId}`);
+            console.log(`Successfully placed new ${side} order for ${symbol}`);
         } else {
-            console.error(`創建 ${symbol} ${side} 訂單失敗`);
+            console.error(`Failed to place ${side} order for ${symbol}`);
         }
     }
 
@@ -241,9 +213,9 @@ class MarketMaker {
             const order = orders.find(order => order.orderId === orderId);
             if (order) {
                 return {
-                    orderStatus: order.status,
-                    orderSide: order.side,
-                    orderPrice: order.price
+                    status: order.status,
+                    side: order.side,
+                    price: order.price
                 };
             } else {
                 return { status: "NOT_FOUND", side: null, price: null };
