@@ -86,7 +86,6 @@ async function initAssets() {
             assetListContainer.appendChild(assetItem);
             assetElements.set(asset.symbol.toLowerCase(), { priceDiv, changeDiv });
 
-            console.log(ticker)
 
             // Update UI with latest ticker data
             if (ticker) {
@@ -97,7 +96,6 @@ async function initAssets() {
 
         // Update total asset and profit/less
         updateTotalAsset(totalAsset);
-        console.log(totalAsset)
         updateTotalProfit(totalProfit);
 
         // Initialize WebSocket connection
@@ -122,6 +120,9 @@ function createAssetElement(asset) {
 
     const assetItem = document.createElement("div");
     assetItem.classList.add("asset-item");
+    assetItem.addEventListener("click", () => 
+        {window.location.href = `${window.location.origin}/trade/${asset.symbol.toLowerCase()}_usdt`});
+
 
     // symbol 
     const symbolDiv = document.createElement("div");
@@ -173,7 +174,6 @@ function createAssetElement(asset) {
     const actionLink = document.createElement("a");
     actionLink.textContent = "Spot trade";
     actionLink.classList.add("asset-item__link")
-    actionLink.href = `${window.location.origin}/trade/${asset.symbol.toLowerCase()}_usdt`;
 
     actionDiv.appendChild(actionLink);
     assetItem.appendChild(actionDiv);

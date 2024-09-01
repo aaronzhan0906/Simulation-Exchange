@@ -164,22 +164,24 @@ class MarketMaker {
     async placeOrUpdateOrder(symbol, side, price, quantity, orderIndex) {
         const pair = `${symbol.toUpperCase()}`.replace("_", "");
         const orderKey = `${symbol}_${side}_${orderIndex}`;
-        const existingOrder = this.orders[orderKey];
         const currentPrice = latestTickerData[pair]?.price;
+
+        const allOrders = await this.getOrders();
+
+        let existingOrder = allOrders.find(order => 
+            order.orderId === this.orders[orderKey]?.orderId
+        );
             
         if (existingOrder) {
-            const { orderStatus, orderSide, orderPrice } = await this.getOrderDetails(existingOrder.orderId);
+            const orderStatus = existingOrder.status;
+            const orderSide = existingOrder.side;
+            const orderPrice = existingOrder.price;
         
             const dCurrentPrice = new Decimal(currentPrice);
             const dOrderPrice = new Decimal(orderPrice || 0);
             const priceDifference = dOrderPrice.minus(dCurrentPrice);
             const priceDifferenceAbs = priceDifference.abs();
             const maxDifference = priceDifferenceAbs.times(50);
-            // console.log("====================================");
-            // console.log(priceDifference);
-            // console.log(dOrderPrice.minus(dCurrentPrice).abs())
-            // console.log(priceDifferenceAbs.toString());
-            // console.log(maxDifference.toString());
     
             if ((orderStatus === "open" || orderStatus === "partially_filled")
                 && orderSide === "buy" 

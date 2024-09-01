@@ -94,62 +94,62 @@ const generateAssetList = (symbols, latestTickerData) => {
         item.className = `symbol-item symbol-item--${symbol.symbolName}`;
         item.id = `symbol-item__${symbol.symbolName}`;
     
-    // name
-    const nameDiv = document.createElement("div");
-    nameDiv.className = "symbol-item__name";
-    const img = document.createElement("img");
-    img.src = symbol.imageUrl;
-    img.alt = symbol.symbolName;
-    const nameSpan = document.createElement("span");
-    nameSpan.textContent = `${symbol.symbolName.toUpperCase()}/USDT`;
-    nameDiv.appendChild(img);
-    nameDiv.appendChild(nameSpan);
+        // name
+        const nameDiv = document.createElement("div");
+        nameDiv.className = "symbol-item__name";
+        const img = document.createElement("img");
+        img.src = symbol.imageUrl;
+        img.alt = symbol.symbolName;
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = `${symbol.symbolName.toUpperCase()}/USDT`;
+        nameDiv.appendChild(img);
+        nameDiv.appendChild(nameSpan);
 
-    // price
-    const priceDiv = document.createElement("div");
-    priceDiv.className = "symbol-item__price";
-    const usdtSpan = document.createElement("span");
-    usdtSpan.className = "symbol-item__price--usdt";
-    usdtSpan.id = `symbol-item__price--usdt--${symbol.symbolName}`;
-    const usdSpan = document.createElement("span");
-    usdSpan.className = "symbol-item__price--usd";
-    usdSpan.id = `symbol-item__price--usd--${symbol.symbolName}`;
-    priceDiv.appendChild(usdtSpan);
-    priceDiv.appendChild(usdSpan);
+        // price
+        const priceDiv = document.createElement("div");
+        priceDiv.className = "symbol-item__price";
+        const usdtSpan = document.createElement("span");
+        usdtSpan.className = "symbol-item__price--usdt";
+        usdtSpan.id = `symbol-item__price--usdt--${symbol.symbolName}`;
+        const usdSpan = document.createElement("span");
+        usdSpan.className = "symbol-item__price--usd";
+        usdSpan.id = `symbol-item__price--usd--${symbol.symbolName}`;
+        priceDiv.appendChild(usdtSpan);
+        priceDiv.appendChild(usdSpan);
 
-    // change percent
-    const changeDiv = document.createElement("div");
-    changeDiv.className = "symbol-item__change";
-    changeDiv.id = `symbol-item__change--${symbol.symbolName}`;
+        // change percent
+        const changeDiv = document.createElement("div");
+        changeDiv.className = "symbol-item__change";
+        changeDiv.id = `symbol-item__change--${symbol.symbolName}`;
 
-    // action
-    const actionsDiv = document.createElement("div");
-    actionsDiv.className = "symbol-item__actions";
-    const linkSpan = document.createElement("span");
-    linkSpan.className = "symbol-item__link";
-    linkSpan.textContent = "Spot Trade";
-    actionsDiv.appendChild(linkSpan);
+        // action
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "symbol-item__actions";
+        const linkSpan = document.createElement("span");
+        linkSpan.className = "symbol-item__link";
+        linkSpan.textContent = "Spot Trade";
+        actionsDiv.appendChild(linkSpan);
 
-    // append to item
-    item.appendChild(nameDiv);
-    item.appendChild(priceDiv);
-    item.appendChild(changeDiv);
-    item.appendChild(actionsDiv);
-    symbolListContainer.appendChild(item);
+        // append to item
+        item.appendChild(nameDiv);
+        item.appendChild(priceDiv);
+        item.appendChild(changeDiv);
+        item.appendChild(actionsDiv);
+        symbolListContainer.appendChild(item);
 
-    // link to trade page
-    item.addEventListener("click", () => {
-        location.href = `/trade/${symbol.symbolName}_usdt`;
-    })
+        // link to trade page
+        item.addEventListener("click", () => {
+            location.href = `/trade/${symbol.symbolName}_usdt`;
+        })
 
-    // hr
-    if (symbol !== symbols[symbols.length - 1]){
-        const hr = document.createElement("hr");
-        symbolListContainer.appendChild(hr);
-    }
+        // hr
+        if (symbol !== symbols[symbols.length - 1]){
+            const hr = document.createElement("hr");
+            symbolListContainer.appendChild(hr);
+        }
 
-    // update price and style
-    const ticker = latestTickerData[`${symbol.symbolName.toUpperCase()}USDT`];
+        // update price and style
+        const ticker = latestTickerData[`${symbol.symbolName.toUpperCase()}USDT`];
         if (ticker) {
             usdtSpan.textContent = `${parseFloat(ticker.price).toFixed(2)} USDT`;
             usdSpan.textContent = `≈${parseFloat(ticker.price).toFixed(2)} USD`;

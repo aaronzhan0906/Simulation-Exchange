@@ -328,7 +328,9 @@ td {
     color: #ef483f; 
 }
 
-
+.open-orders__history-btn{
+    cursor: pointer;
+}
 
 
 

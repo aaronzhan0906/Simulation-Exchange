@@ -350,6 +350,15 @@ async function getOpenOrders(){
     }
 }
 
+async function historyBtnHandler(){
+    const historyBtn = document.getElementById("open-orders__history-btn");
+    historyBtn.addEventListener("click", async () => {
+        event.preventDefault();
+        window.location.href = "/history";
+    });
+}
+
+
 // OPEN ORDERS // add order to UI
 function addOrderToUI(orderData) {
     const tbody = document.getElementById("open-orders__tbody");
@@ -633,4 +642,5 @@ export async function initTradePanel() {
 
     // event listener
     setupOrder();
+    historyBtnHandler()
 }
