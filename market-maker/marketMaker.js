@@ -266,7 +266,7 @@ class MarketMaker {
                 }
             }
         } catch (error) {
-            console.error("初始化做市商時出錯: ", error);
+            console.error("Error in [initializeMarketMaker]: ", error);
         }
     }
 
