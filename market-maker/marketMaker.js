@@ -166,7 +166,6 @@ class MarketMaker {
         const orderKey = `${symbol}_${side}_${orderIndex}`;
         const existingOrder = this.orders[orderKey];
         const currentPrice = latestTickerData[pair]?.price;
-        const precision = this.determinePrecision(currentPrice);
             
         if (existingOrder) {
             const { orderStatus, orderSide, orderPrice } = await this.getOrderDetails(existingOrder.orderId);
@@ -175,8 +174,12 @@ class MarketMaker {
             const dOrderPrice = new Decimal(orderPrice || 0);
             const priceDifference = dOrderPrice.minus(dCurrentPrice);
             const priceDifferenceAbs = priceDifference.abs();
-            const maxDifference = priceDifferenceAbs.times(Math.pow(10, -precision) * 6);
-            console.log(maxDifference.toString());
+            const maxDifference = priceDifferenceAbs.times(50);
+            // console.log("====================================");
+            // console.log(priceDifference);
+            // console.log(dOrderPrice.minus(dCurrentPrice).abs())
+            // console.log(priceDifferenceAbs.toString());
+            // console.log(maxDifference.toString());
     
             if ((orderStatus === "open" || orderStatus === "partially_filled")
                 && orderSide === "buy" 
