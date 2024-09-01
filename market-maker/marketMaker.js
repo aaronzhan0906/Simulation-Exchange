@@ -254,10 +254,26 @@ class MarketMaker {
         }
     }
 
-    startMarketMaker(){
+///////////////////////// INITIALIZE MARKET MAKER /////////////////////////
+    async initializeMarketMaker(){
+        try {
+            const existingOrders = await this.getOrders();
+            for (const order of existingOrders) {
+                if (order.status === "open" || order.status === "partially_filled") {
+                    const key = `${order.symbol}_${order.side}`;
+                    this.orders[key] = order;
+                    console.log(`加載現有訂單: ${key}, 訂單ID: ${order.orderId}`);
+                }
+            }
+        } catch (error) {
+            console.error("初始化做市商時出錯: ", error);
+        }
+    }
+
+    async startMarketMaker(){
         console.log("Starting market maker");
+        await this.initializeMarketMaker();
         setInterval(() => {
-            console.log("Triggered adjustMarketMakerOrders");
             this.adjustMarketMakerOrders();
         }, 3000);
     }
