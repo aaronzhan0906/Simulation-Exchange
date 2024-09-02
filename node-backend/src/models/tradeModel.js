@@ -1,11 +1,10 @@
-import db from "../config/database.js";
 import pool from "../config/database.js";
 import Decimal from 'decimal.js';
 
 class TradeModel {
 ///////////////////// GET ORDERS //////////////////////////
     async getOrders(userId) {
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             const [result] = await connection.query(
@@ -34,14 +33,14 @@ class TradeModel {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
     
-        await db.query(insertQuery, [
+        await pool.query(insertQuery, [
             order_id, user_id, symbol, side, type, price, quantity, status
         ]);
         const selectQuery = `
         SELECT * FROM orders WHERE order_id = ?
         `;
     
-        const rows = await db.query(selectQuery, [order_id]);
+        const rows = await pool.query(selectQuery, [order_id]);
         return rows[0];
     }
 
@@ -51,7 +50,7 @@ class TradeModel {
         const updateStatus = status;
         const updateUpdatedAt = updatedAt;
         try {
-            const result = await db.query(
+            const result = await pool.query(
                 `UPDATE orders
                 SET status = ?,
                 updated_at = ?
@@ -72,7 +71,7 @@ class TradeModel {
         const updateQuantity = new Decimal(cancelResult.canceled_quantity);
         const updateAmount = updatePrice.times(updateQuantity);
         try {
-            const result = await db.query(
+            const result = await pool.query(
                 `UPDATE accounts
                 SET locked_balance = locked_balance - ?
                 WHERE user_id = ?`,
@@ -96,7 +95,7 @@ class TradeModel {
         const updateQuantity = new Decimal(cancelResult.canceled_quantity);
 
         try {
-            const result = await db.query(
+            const result = await pool.query(
                 `UPDATE assets
                 SET locked_quantity = locked_quantity - ?
                 WHERE user_id = ? AND symbol = ?`,
@@ -164,7 +163,7 @@ class TradeModel {
         const dQuantity = new Decimal(quantity)
         const constAmount = dPrice.times(dQuantity)
 
-        await db.query(
+        await pool.query(
             `UPDATE accounts
             SET locked_balance = locked_balance + ?
             WHERE user_id = ?
@@ -174,7 +173,7 @@ class TradeModel {
 
     async getQuantityBySymbolAndUserId(userId, symbol){
         const updateSymbol = symbol.replace("_usdt","");
-        const [result] = await db.query(
+        const [result] = await pool.query(
             `SELECT available_quantity 
             FROM assets 
             WHERE user_id = ? AND symbol = ?
@@ -187,7 +186,7 @@ class TradeModel {
 
     async lockAsset(userId, symbol, quantity){
         const updateSymbol = symbol.replace("_usdt","");
-        await db.query(
+        await pool.query(
             `UPDATE assets
             SET locked_quantity = locked_quantity + ?
             WHERE user_id = ? AND symbol = ?
@@ -200,7 +199,7 @@ class TradeModel {
 ///////////////////////// UPDATE ORDER //////////////////////////
 // main logic
     async updateOrderData(updateOrderData) {
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
         await connection.beginTransaction();
 
         try {
