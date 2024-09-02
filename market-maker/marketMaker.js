@@ -36,7 +36,7 @@ binanceWS.on("error", (error) => {
 
 class MarketMaker {
     constructor(){
-        this.url = "https://localhost:9091";
+        this.url = "https://simuexchange.online";
         this.cookies = {};
         this.orders = {};
         this.axiosInstance = axios.create({
@@ -272,7 +272,7 @@ class MarketMaker {
         await this.initializeMarketMaker();
         setInterval(() => {
             this.adjustMarketMakerOrders();
-        }, 5000);
+        }, 7000);
     }
 }
 

@@ -1,9 +1,9 @@
-import db from "../config/database.js";
+import pool from "../config/database.js";
 
 
 class HistoryModel {
     async getSymbols() {
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
         try {
             const [symbols] = await connection.query(
                 `SELECT * FROM symbols`
@@ -20,7 +20,7 @@ class HistoryModel {
     }
 
     async getOrderHistory(userId, timeRange){
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
         try {
             let query = `
             SELECT symbol, side ,type, price , quantity, executed_quantity, average_price, status, created_at
@@ -57,7 +57,7 @@ class HistoryModel {
     }
 
     async getTransactionsById(userId) {
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
         try {
             const [rows] = await connection.query(
                 `SELECT 

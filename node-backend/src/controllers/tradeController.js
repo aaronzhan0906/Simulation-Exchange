@@ -215,6 +215,13 @@ class TradeController {
             return res.status(400).json({ error:true, message:"Missing required fields!" })
         }
 
+        // check if order is already fully executed
+        const localOrderStatus = await TradeModel.checkCancelOrderStatus(orderId);
+        if (localOrderStatus[0].status === "filled") {
+            return res.status(401).json({ error: true, message: "Order has been executed" });
+        }
+
+        // send to matching engine by kafka
         try {
             const cancelResultPromise = new Promise((resolve, reject) => {
                 const timeoutId = setTimeout(() => {
@@ -222,7 +229,7 @@ class TradeController {
                         pendingCancelResults.delete(orderId);
                         reject(new Error("Cancel request timeout"));
                     }
-                }, 30000);
+                }, 15000);
     
                 pendingCancelResults.set(orderId, { resolve, reject, timeoutId, timestamp: new Date() });
             });
@@ -231,16 +238,23 @@ class TradeController {
             const topic = `cancel-order-${topicSymbol}`
             await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
             const cancelResult = await cancelResultPromise;
-            
-            if (cancelResult.status === "filled") {
-                return res.status(401).json({ error:true, message:"Order not found or already fully executed" });
-            } 
+       
+
+            if (cancelResult.status === "NOT FOUND") {
+                const checkStatus = TradeModel.checkCancelOrderStatus(orderId);
+                if (checkStatus[0].status === "filled") {
+                    return res.status(401).json({ error:true, message:"Order has been executed" });
+                }
+                return res.status(403).json({ error:true, message:"Order not found" });
+            }
+
 
             const updateOrderId = cancelResult.order_id;
             const updateStatus = cancelResult.status;
             const updateUpdateAt = cancelResult.timestamp;
             const updateResult = await TradeModel.cancelOrder(updateOrderId, updateStatus, updateUpdateAt);
             
+
             if (!updateResult) {
                 return res.status(400).json({
                     error: true,

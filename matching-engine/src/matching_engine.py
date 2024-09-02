@@ -82,11 +82,10 @@ class MatchingEngine:
         canceled_order = self.order_book.cancel_order(order_id)
 
         if canceled_order is None:
-            # None is simple logic 
             return {
                 "order_id": order_id,
-                "status": "filled",
-                "message": "Order not found or already fully executed"
+                "status": "NOT FOUND",
+                "message": "Order not found."
             }
         
         side, price, current_quantity, original_quantity, order_user_id = canceled_order

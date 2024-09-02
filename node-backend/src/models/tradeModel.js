@@ -1,4 +1,5 @@
 import db from "../config/database.js";
+import pool from "../config/database.js";
 import Decimal from 'decimal.js';
 
 class TradeModel {
@@ -17,7 +18,7 @@ class TradeModel {
             
             return result;
         } catch(error) {
-            console.error("Error in getOrders:", error);
+            console.error("Error in [getOrders]:", error);
             throw error
         } finally {
             connection.release();
@@ -44,7 +45,7 @@ class TradeModel {
         return rows[0];
     }
 
-///////////////////////// cancel order //////////////////////////
+///////////////////////// CANCEL ORDER //////////////////////////
     async cancelOrder(orderId, status, updatedAt) {
         const updateOrderId = orderId;
         const updateStatus = status;
@@ -60,7 +61,7 @@ class TradeModel {
             if (result.affectedRows > 0) {
                 return { updateOrderId, updateStatus, updateUpdatedAt };}
         } catch (error) {
-            console.error("Error in cancelOrder:", error);
+            console.error("Error in [cancelOrder]:", error);
             throw error;
         }
     }
@@ -84,7 +85,7 @@ class TradeModel {
         }
 
     } catch (error) {
-        console.error("Error in releaseLockedBalance:", error);
+        console.error("Error in [releaseLockedBalance]:", error);
         throw error;
         }
     }
@@ -105,7 +106,21 @@ class TradeModel {
                 return true;
             }
         } catch (error) {
-            console.error("Error in releaseLockedAsset:", error);
+            console.error("Error in [releaseLockedAsset]:", error);
+            throw error;
+        }
+    }
+
+    checkCancelOrderStatus(orderId){
+        try {
+            const result = pool.query(
+                `SELECT status FROM orders
+                WHERE order_id = ?`,
+                [orderId]
+            );
+            return result;
+        } catch (error) {
+            console.error("Error in [checkCancelOrder]:", error);
             throw error;
         }
     }
@@ -120,19 +135,19 @@ class TradeModel {
         `;
     
         try {
-            await db.query(insertQuery, [
+            await pool.query(insertQuery, [
                 tradeData.user_id, tradeData.trade_id, tradeData.executed_at, tradeData.symbol, tradeData.side, tradeData.price, tradeData.quantity, 
                 tradeData.buyer_user_id, tradeData.buyer_order_id, tradeData.seller_user_id, tradeData.seller_order_id
             ]);
         } catch (error) {
-            console.error("Error creating trade history:", error);
+            console.error("Error in [createTradeHistory]:", error);
             throw error;
         }
     }
     
 ///////////////////////// PREAUTH //////////////////////////
     async getAvailableBalanceById(userId) {
-        const [result] = await db.query(
+        const [result] = await pool.query(
             `SELECT available_balance 
             FROM accounts 
             WHERE user_id = ?`,

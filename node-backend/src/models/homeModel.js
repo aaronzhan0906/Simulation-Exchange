@@ -6,11 +6,12 @@ class HomeModel {
     async getSymbols() {
         const connection = await pool.getConnection();
         try {
-            const symbols = await pool.query(
+            const [symbols] = await connection.query(
                 `select * from symbols`
             );
             
             // return symbols array
+            console.log("symbols:", symbols);
             return symbols;
         } catch (error) {
             console.error("Error in getSymbols:", error);
