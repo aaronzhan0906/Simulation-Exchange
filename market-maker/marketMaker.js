@@ -138,6 +138,13 @@ class MarketMaker {
     
     
                 const precision = this.determinePrecision(currentPrice);
+
+                // calculate buy and sell quantities
+                // const buyOrdersQty = Object.values(this.orders).filter(order => order.symbol === formattedSymbol && order.side === "buy").length;
+                // const sellOrdersQty = Object.values(this.orders).filter(order => order.symbol === formattedSymbol && order.side === "sell").length;
+
+                // const buyOrdersToCreate = 5 - buyOrdersQty;
+                // const sellOrdersToCreate = 5 - sellOrdersQty;
                 
                 for (let i = 0; i < 5; i++) {
                     const baseSpread = Math.pow(10, -precision-1) * i * 5;
@@ -148,16 +155,18 @@ class MarketMaker {
                     const sellPrice = new Decimal(currentPrice).times(1 + sellSpread).toFixed(2);
         
                     const min = 1/Math.pow(10, precision);
-                    const max = 20/Math.pow(10, precision);
+                    const max = 50/Math.pow(10, precision);
                     const buyQuantity = (Math.random() * (max - min) + min).toFixed(precision);
                     const sellQuantity = (Math.random() * (max - min) + min).toFixed(precision);
-        
+                    
+
                     await this.placeOrUpdateOrder(formattedSymbol, "buy", buyPrice, buyQuantity, i);
                     await this.placeOrUpdateOrder(formattedSymbol, "sell", sellPrice, sellQuantity, i);
+ 
                 }
             }
         } catch (error) {
-            console.error("Fail in [adjustMarketMakerOrders]: ", error);
+            console.error("[adjustMarketMakerOrders] error: ", error);
         }
     }
     
@@ -181,7 +190,7 @@ class MarketMaker {
             const dOrderPrice = new Decimal(orderPrice || 0);
             const priceDifference = dOrderPrice.minus(dCurrentPrice);
             const priceDifferenceAbs = priceDifference.abs();
-            const maxDifference = priceDifferenceAbs.times(50);
+            const maxDifference = priceDifferenceAbs.times(30);
     
             if ((orderStatus === "open" || orderStatus === "partially_filled")
                 && orderSide === "buy" 
@@ -237,31 +246,31 @@ class MarketMaker {
     async initializeMarketMaker(){
         try {
             const existingOrders = await this.getOrders();
-            const orderIndices = {}; 
+            this.orders = {}; // reset orders
 
             for (const order of existingOrders) {
                 if (order.status === "open" || order.status === "partially_filled") {
                     const symbol = order.symbol;
                     const side = order.side;
-                    const orderKey = `${symbol}_${side}`;
+                    
+                    const currentOrderCount = Object.values(this.orders).filter( 
+                        o => o.symbol === symbol && o.side === side
+                    ).length;
 
-                    // if no index array for the order key, create one
-                    if (!orderIndices[orderKey]){
-                        orderIndices[orderKey] = [];
+                    if (currentOrderCount < 5){
+                        let orderIndex = 0;
+                        while(this.orders[`${symbol}_${side}_${orderIndex}`]){
+                            orderIndex++;
+                        }
+
+                        const key = `${symbol}_${side}_${orderIndex}`;
+                        this.orders[key] = order;
+                    }  else  {
+                        console.log(`Skipping order ${order.orderId} ${ order.symbol } with status: ${order.status}`);
+                        await this.cancelOrder(order.orderId, order.symbol);
                     }
-
-                    // Find an unused index for the order
-                    let orderIndex = 0;
-                    while (orderIndices[orderKey].includes(orderIndex)) {
-                        orderIndex++;
-                    }
-
-                    const key = `${symbol}_${side}_${orderIndex}`;
-
-                    this.orders[key] = order;
-                    orderIndices[orderKey].push(orderIndex);
                 }
-            }
+            } 
         } catch (error) {
             console.error("Error in [initializeMarketMaker]: ", error);
         }
