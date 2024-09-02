@@ -36,7 +36,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - KAFKA_BROKERS=kafka:9092
-      - WSS_BINANCE_URL=wss://stream.binance.us:9443/stream
+      - WSS_BINANCE_URL=wss://data-stream.binance.vision:9443/stream
       - BINANCE_API_KEY=https://api.binance.us/api/v3/klines
       - REDIS_HOST=us-west-2-elasticcache-lkplzf.serverless.usw2.cache.amazonaws.com
       - REDIS_PORT=6379
@@ -55,12 +55,10 @@ services:
       dockerfile: matching-engine/Dockerfile
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
+      - ./wait-for-it.sh:/wait-for-it.sh 
     environment:
       - KAFKA_BROKERS=kafka:9092
       - REDIS_HOST=us-west-2-elasticcache-lkplzf.serverless.usw2.cache.amazonaws.com
       - REDIS_PORT=6379
       - REDIS_TLS=true
-    command: python /usr/src/app/matching-engine/src/main.py
-    depends_on:
-      kafka:
-        condition: service_healthy
+    command: ["/bin/sh", "-c", "chmod +x /wait-for-it.sh && /wait-for-it.sh kafka:9092 -- /wait-for-it.sh node-backend:3000 -- python /usr/src/app/matching-engine/src/main.py"]
