@@ -54,12 +54,7 @@ const handleMessage = async ({ topic, message }) => {
 
         case "cancel-result":
             console.log(`(CONSUMER)cancel-result-${symbol}:`, data);
-            const { order_id } = data;
-            if (pendingCancelResults.has(order_id)){
-                const { resolve } = pendingCancelResults.get(order_id); 
-                resolve(data);
-                pendingCancelResults.delete(order_id);
-            }
+            await TradeController.handleCancelResult(data);
             break;
 
         default:

@@ -114,6 +114,7 @@ class TradeController {
         }
     }
 
+/////////////////////////  UPDATE ORDER  ///////////////////////////
     // WS broadcast order update
     async updateOrderData(trade_result) {
         const {
@@ -147,7 +148,7 @@ class TradeController {
     
             return resultOrderData; 
         } catch (error) {
-            console.error("updateOrderData error:", error);
+            console.error("[updateOrderData] error:", error);
             throw error;
         }
     }
@@ -177,7 +178,7 @@ class TradeController {
                 data: processedData
             }); 
         } catch (error) {
-            console.error("broadcastOrderBookToRoom error:", error);
+            console.error("[broadcastOrderBookToRoom] error:", error);
             throw error;
         }
     }
@@ -190,7 +191,6 @@ class TradeController {
         }
 
         try {
-            
             const roomSymbol = `${symbol}_usdt`
             WebSocketService.broadcastToRoom(roomSymbol,{
                 type: "recentTrade",
@@ -200,75 +200,64 @@ class TradeController {
                     timestamp
                 }});
         } catch (error) {  
-            console.error("broadcastRecentTradeToRoom error:", error);
+            console.error("[broadcastRecentTradeToRoom] error:", error);
             throw error;
         }
     }
 
-
+/////////////////////////  CANCEL ORDER  ///////////////////////////
     // router.patch("/order", TradeController.cancelOrder);
     async cancelOrder(req, res){
         const { orderId, symbol } = req.body;
-        const userId = req.user.userId;
+        const  userId = req.user.userId;
 
         if ( !userId || !orderId || !symbol) {
             return res.status(400).json({ error:true, message:"Missing required fields!" })
         }
 
-        // check if order is already fully executed
         const localOrderStatus = await TradeModel.checkCancelOrderStatus(orderId);
         if (localOrderStatus[0].status === "filled") {
             return res.status(401).json({ error: true, message: "Order has been executed" });
         }
 
-        // send to matching engine by kafka
         try {
-            const cancelResultPromise = new Promise((resolve, reject) => {
-                const timeoutId = setTimeout(() => {
-                    if (pendingCancelResults.has(orderId)) {
-                        pendingCancelResults.delete(orderId);
-                        reject(new Error("Cancel request timeout"));
-                    }
-                }, 15000);
-    
-                pendingCancelResults.set(orderId, { resolve, reject, timeoutId, timestamp: new Date() });
-            });
-
             const topicSymbol = symbol.replace("_usdt", "");
             const topic = `cancel-order-${topicSymbol}`
             await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
-            const cancelResult = await cancelResultPromise;
-       
-
-            if (cancelResult.status === "NOT FOUND") {
-                const checkStatus = TradeModel.checkCancelOrderStatus(orderId);
-                if (checkStatus[0].status === "filled") {
-                    return res.status(401).json({ error:true, message:"Order has been executed" });
-                }
-                return res.status(403).json({ error:true, message:"Order not found" });
-            }
-
-
-            const updateOrderId = cancelResult.order_id;
-            const updateStatus = cancelResult.status;
-            const updateUpdateAt = cancelResult.timestamp;
-            const updateResult = await TradeModel.cancelOrder(updateOrderId, updateStatus, updateUpdateAt);
             
+            res.status(200).json({ ok: true, message: "Order cancellation request sent" });
+        } catch(error) {
+            console.error("[cancelOrder] error:", error);
+            throw error;
+        }
+    }
 
-            if (!updateResult) {
-                return res.status(400).json({
-                    error: true,
-                    message: "Unexpected cancellation result",
-                    status: cancelResult.status
-                });
+    async handleCancelResult(cancelResult) {
+        const { order_id: orderId, user_id: userId } = cancelResult;
+        try {
+            if (cancelResult.status === "NOT_FOUND") {
+                const checkStatus = await TradeModel.checkCancelOrderStatus(orderId);
+                if (checkStatus[0].status === "filled") {
+                    console.log(`Order ${orderId} already executed, cannot cancel.`);
+                    return; 
+                }
+                console.log(`Order ${orderId} not found, possibly already cancelled.`);
+                return; 
             }
-
+    
+            const updateResult = await TradeModel.cancelOrder(orderId, cancelResult.status, cancelResult.timestamp);
+    
+            if (!updateResult) {
+                console.error(`Unexpected cancellation result for order ${orderId}:`, cancelResult.status);
+                return; 
+            }
+    
             if (cancelResult.side === "buy") {
                 await TradeModel.releaseLockedBalance(cancelResult);
             } else {
                 await TradeModel.releaseLockedAsset(cancelResult);
             }
-
+    
             if (updateResult.updateStatus === "CANCELED" || updateResult.updateStatus === "PARTIALLY_FILLED_CANCELED") {
                 const cancelMessage = {
                     type: "orderUpdate",
@@ -277,37 +266,18 @@ class TradeController {
                         status: updateResult.updateStatus,
                     }
                 };
-
+    
                 WebSocketService.sendToUser(userId, cancelMessage);
-                return res.status(200).json({
-                    ok: true,
-                    message: "Order cancelled successfully",
-                    orderId: updateResult.updateOrderId,
-                    status: updateResult.updateStatus,
-                    updatedAt: updateResult.updateUpdatedAt
-                });
-            } 
-           
-        } catch(error) {
-            console.error("cancelOrder error:", error);
-            pendingCancelResults.delete(orderId); 
-            if (error.message === "Cancel order request timeout") {
-                return res.status(408).json({ error:true, message:"Cancel order request timeout" });
+                console.log(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
             }
-        }
-    }    
-
-    async processCancelResult(data) {        
-        try {
-            await TradeModel.cancelOrder(data.orderId, data.status);
-            
-            console.log(`Cancel result processed successfully for order: ${data.order_id}`);
-        } catch (error) {
-            console.error(`Error processing cancel result for order ${data.orderId}:`, error);
+        } catch(error) {
+            console.error(`[handleCancelResult] error for order ${orderId}:`, error);
+            throw error;
         }
     }
+    
 
-
+/////////////////////////  TRADE HISTORY  ///////////////////////////
     // consume trade result from kafka
     async createTradeHistory(trade_result){
         const {
