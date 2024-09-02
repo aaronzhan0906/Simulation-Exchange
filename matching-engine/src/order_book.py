@@ -17,7 +17,9 @@ class OrderBook:
         redis_host = os.environ.get("REDIS_HOST")
         redis_port = int(os.environ.get("REDIS_PORT"))
         redis_db = int(os.environ.get("REDIS_DB"))
-        self.redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db)
+        redis_tls = os.environ.get("REDIS_TLS") == "true"
+
+        self.redis_client = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db, ssl=redis_tls)
         
         self.load_snapshot() # if null create snapshot in redis
         

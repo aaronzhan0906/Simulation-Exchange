@@ -9,22 +9,23 @@ import schedule from "node-schedule";
 const router = express.Router();
 // Create Redis client
 const redis = new Redis({
-    host: process.env.REDIS_HOST ,
-    port: process.env.REDIS_PORT ,
+    host: process.env.REDIS_HOST || "172.31.23.16",
+    port: process.env.REDIS_PORT || 6379,
+    tls: process.env.REDIS_TLS === "true" ,
     retryStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);
       return delay;
     }
-  });
+});
   
   // Add connection listeners
-  redis.on("connect", () => {
+redis.on("connect", () => {
     console.log("Successfully connected to Redis");
-  });
+});
   
-  redis.on("error", (error) => {
+redis.on("error", (error) => {
     console.error("Redis connection error:", error);
-  });
+});
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = config.supportedSymbols;
