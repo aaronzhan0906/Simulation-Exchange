@@ -234,7 +234,7 @@ hr {
 
 .asset-list__header, .asset-item {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 0.7fr;
+    grid-template-columns: 0.6fr 0.9fr 0.9fr 1.2fr 0.5fr 0.4fr 0.5fr;
     gap: 20px;
     align-items: center;
     padding: 15px 0;
@@ -295,18 +295,12 @@ hr {
     color: #ff4d4f;
 }
 
-.asset-item__action {
-    transform: translateX(-5px);
-    justify-self: start;
-}
-
 .asset-item__link {
     color: #1890ff;
     text-decoration: none;
     transition: color 0.3s ease;
     cursor: pointer;
 }
-
 
 .asset-item__link:hover {
     color: #40a9ff;

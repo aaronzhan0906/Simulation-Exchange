@@ -138,13 +138,6 @@ class MarketMaker {
     
     
                 const precision = this.determinePrecision(currentPrice);
-
-                // calculate buy and sell quantities
-                // const buyOrdersQty = Object.values(this.orders).filter(order => order.symbol === formattedSymbol && order.side === "buy").length;
-                // const sellOrdersQty = Object.values(this.orders).filter(order => order.symbol === formattedSymbol && order.side === "sell").length;
-
-                // const buyOrdersToCreate = 5 - buyOrdersQty;
-                // const sellOrdersToCreate = 5 - sellOrdersQty;
                 
                 for (let i = 0; i < 5; i++) {
                     const baseSpread = Math.pow(10, -precision-1) * i * 5;
@@ -154,8 +147,8 @@ class MarketMaker {
                     const buyPrice = new Decimal(currentPrice).times(1 - buySpread).toFixed(2);
                     const sellPrice = new Decimal(currentPrice).times(1 + sellSpread).toFixed(2);
         
-                    const min = 1/Math.pow(10, precision);
-                    const max = 50/Math.pow(10, precision);
+                    const min = 5/Math.pow(10, precision);
+                    const max = 7500/Math.pow(10, precision);
                     const buyQuantity = (Math.random() * (max - min) + min).toFixed(precision);
                     const sellQuantity = (Math.random() * (max - min) + min).toFixed(precision);
                     
