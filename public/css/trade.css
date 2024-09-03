@@ -345,7 +345,7 @@ select::-ms-expand {
 }
 
 .order-book__bids div > span:nth-child(odd) {
-    color: #259a32; 
+    color: #228f2f; 
 }
 
 
@@ -646,11 +646,11 @@ input:-webkit-autofill:focus {
 }
 
 .open-orders__cell--buy {
-    color: #3a9b45; 
+    color: rgb(52, 146 ,63); 
 }
 
 .open-orders__cell--sell {
-    color: #ef483f; 
+    color: rgb(239, 72 ,63); 
 }
 
 .cancel-btn {
@@ -721,12 +721,12 @@ input:-webkit-autofill:focus {
 }
 
 
-.recent-trade__item.buy .trade-price {
-    color: #259a32; 
+.recent-trade__item.buy {
+    color: rgba(52, 146, 63, 0.75); 
 }
 
-.recent-trade__item.sell .trade-price {
-    color: #db3a32;
+.recent-trade__item.sell {
+    color: rgba(239, 72 ,63, 0.75);
 }
 
 

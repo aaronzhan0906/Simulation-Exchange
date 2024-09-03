@@ -10,7 +10,7 @@ const pair = location.pathname.split("/")[2];
 const baseAsset = pair.split("_")[0];
 
 
-
+///////////////////////////////// INITIALIZATION ////////////////////////////////////
 // get websocket data
 async function initTradePanelWebSocket(){
     // get recent price by API first
@@ -60,7 +60,7 @@ async function listenForRecentTrade(){
 }
 
 
-// ORDER BOOK //
+// init order book
 function initOrderBook () {
     const tableHeader = document.getElementById("order-book__table-header");
     const priceSpan = document.createElement("span");
@@ -74,7 +74,7 @@ function initOrderBook () {
 
 
 
-// TRADE PANEL /////////////////////////////////////////////////////////////
+//////////////////////////// TRADE PANEL ////////////////////////////
 // get available balance in TRADE PANEL
 async function initAvailableBalance () {
     const isLoggedIn = checkLoginStatus();
@@ -187,7 +187,7 @@ function getPricePrecision(price) {
 function getQuantityPrecision(price) { 
     const integerPart = Math.floor(price);
     if (integerPart === 0) {
-        return 5; // 對於小於1的價格，允許更高的精度
+        return 5; // if price < 1, quantity precision = 5
     }
     return Math.max(Math.floor(Math.log10(integerPart))+1, 0);
 }
@@ -326,7 +326,7 @@ function quickSelectButtonAndInputHandler() {
     });
 }
 
-// OPEN ORDERS ///////////////////////////////////////////////////////////////
+//////////////////////////// OPEN ORDERS ////////////////////////////
 // get open orders
 async function getOpenOrders(){
     const isLoggedIn = checkLoginStatus();
@@ -599,11 +599,12 @@ function handlePriceUpdate(event) {
 
 
 
-// RECENT TRADE /////////////////////////////////////////////////
+//////////////////////////// RECENT TRADES ////////////////////////////
 function handleRecentTrade(event) {
     const recentTradeData = event.detail;
-    const tradesList = document.querySelector(".recent-trades__list");
+    const tradesList = document.getElementById("recent-trades__list");
     const tradeItem = document.createElement("div");
+    console.log(recentTradeData)
     tradeItem.className = `recent-trade__item ${recentTradeData.side}`;
 
     // recent trade

@@ -15,7 +15,7 @@ let isOrderUpdateListening = false;
 let globalSymbols = [];
 
 
-// TAB //////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////// TAB /////////////////////////
 async function initTabActive(){
     const tabsContainer = document.getElementById("history-tab__tabs");
     tabsContainer.addEventListener("click", async (event) => {
@@ -90,7 +90,7 @@ async function fetchOrderHistory() {
     }
 }
 
-// FILTERS //////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////// FILTERS /////////////////////////
 
 function generatePairOptions(symbols) {
     const filtersContainer = document.getElementById("order-history__container");
@@ -201,8 +201,6 @@ function filterTable() {
     const pairFilter = document.querySelector('.filter-select[data-filter="Pair"]').value;
     const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
 
-    console.log("過濾條件：", { pair: pairFilter, side: sideFilter });
-
     const rows = document.querySelectorAll("#open-orders__tbody tr");
     let visibleRowCount = 0;
 
@@ -220,8 +218,6 @@ function filterTable() {
             row.style.display = "none";
         }
     });
-
-    console.log("可見行數：", visibleRowCount);
 }
 
 
@@ -268,10 +264,7 @@ function filterOrderHistoryTable(event) {
     const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
     const statusFilter = document.querySelector('.filter-select[data-filter="Status"]').value;
 
-    console.log("過濾條件：", { pair: pairFilter, side: sideFilter, status: statusFilter });
-
     const rows = document.querySelectorAll("#history__table tbody tr");
-    let visibleRowCount = 0;
 
     rows.forEach(row => {
         const pair = row.children[1].textContent.toLowerCase();
@@ -282,22 +275,20 @@ function filterOrderHistoryTable(event) {
         const sideMatch = sideFilter === "all" || side === sideFilter;
         const statusMatch = statusFilter === "all" 
                             || (statusFilter === "executed" 
-                            && (status === "filled" || status === "partially_filled" || status === "partially_filled_canceled")) 
+                                && (status === "filled" || status.includes("partial"))) 
                             || (statusFilter === "canceled" && status === "canceled");
+
 
         if (pairMatch && sideMatch && statusMatch) {
             row.style.display = "";
-            visibleRowCount++;
         } else {
             row.style.display = "none";
         }
     });
-
-    console.log("可見行數：", visibleRowCount);
 }
 
 
-// OPEN ORDERS //////////////////////////////////////////////////////////////////////////////////////
+///////////////////////// OPEN ORDERS /////////////////////////
 function renderOpenOrdersTable(openOrdersData, table){
     table.innerHTML = "";
 
@@ -420,7 +411,7 @@ async function cancelOrder(orderId) {
     }
 }
 
-// ORDER HISTORY //////////////////////////////////////////////////////////////////////////////////////
+///////////////////////// ORDER HISTORY /////////////////////////
 function renderOrderHistoryTable(orderHistoryData, table) {
     table.innerHTML = "";
     console.log("orderHistoryData:", orderHistoryData);
@@ -455,7 +446,7 @@ function renderOrderHistoryTable(orderHistoryData, table) {
             `${new Decimal(order.quantity).toFixed(5) || 0} ${base}`,
             `${new Decimal(order.filled).toFixed(5) || 0} ${base}`,
             order.averagePrice ? `${new Decimal(order.averagePrice).toFixed(2) || 0} ${quoteCurrency}` : '-',
-            order.status.charAt(0).toUpperCase() + order.status.slice(1)
+            handleOrderStatusDisplay(order.status)
         ];
 
         cells.forEach((cellData, index) => {
@@ -470,6 +461,20 @@ function renderOrderHistoryTable(orderHistoryData, table) {
     })
     filterOrderHistoryTable();
 }
+
+function handleOrderStatusDisplay(status) {
+    if (status === "filled") {
+        return "Filled";
+    } else if (status === "canceled") {
+        return "Canceled";
+    } else if (status === "open") {
+        return "Open";
+    } else {
+        console.log("status:", status);
+        return "Partial" + " " + "Filled";
+    }
+}
+
 
 
 
