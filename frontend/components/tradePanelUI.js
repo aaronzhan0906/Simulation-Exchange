@@ -1,5 +1,6 @@
 import { formatLocalTime, formatLocalTimeOnly } from "../utils/timeUtil.js";
 import { checkLoginStatus } from "../utils/auth.js";
+import tooltipHandler from "./tooltipHandler.js";
 import tradeWebSocket from "../services/tradeWS.js";
 
 
@@ -277,23 +278,40 @@ function quickSelectButtonAndInputHandler() {
         return reg.test(value) ? value : value.slice(0, -1);
     }
 
+    function checkAvailableAmount(amount, isBuyMode) {
+        const availableAmount = isBuyMode
+            ? new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0")
+            : new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
+        
+        if (amount.greaterThan(availableAmount) ){
+            isBuyMode
+            ? tooltipHandler.show(totalInput, `Max Amount  ${availableAmount}`, top)
+            : tooltipHandler.show(quantityInput, `Max Quantity  ${availableAmount}`, top);
+            return false;
+        } else {
+            tooltipHandler.hide();
+        }
+        return true;
+    }
+
     function calculateAndUpdate(changedInput) {
         const price = new Decimal(priceInput.value || "0");
         const quantity = new Decimal(quantityInput.value || "0");
         const total = new Decimal(totalInput.value || "0");
+        const isBuyMode = buyButton.classList.contains("active");
 
         if (price.isZero()) return; // avoid division by zero
-
-        // const availabaleAmount = isBuyMode
-        // ? new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0")
-        // : new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
         
-
         if (changedInput === "price" || changedInput === "quantity") {
-            totalInput.value = price.times(quantity).toFixed(2); // 待調整，小數點問題
+            const calculatedTotal = price.times(quantity);
+            if (checkAvailableAmount(isBuyMode ? calculatedTotal : quantity, isBuyMode)) {
+                totalInput.value = calculatedTotal.toFixed(2);
+            }
         } else if (changedInput === "total") {
-            const calculatedQuantity = total.dividedBy(price);
-            quantityInput.value = calculatedQuantity.toFixed(currentQuantityPrecision);
+            if (checkAvailableAmount(total, isBuyMode)) {
+                const calculatedQuantity = total.div(price);
+                quantityInput.value = calculatedQuantity.toFixed(currentQuantityPrecision);
+            }
         }
     }
 
@@ -687,6 +705,7 @@ export async function initTradePanel() {
     await initAvailableAsset();
     quickSelectButtonAndInputHandler();
     listenForRecentTrade();
+    tooltipHandler.init();
 
     // event listener
     setupOrder();
