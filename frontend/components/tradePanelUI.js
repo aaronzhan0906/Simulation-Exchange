@@ -134,10 +134,11 @@ async function submitOrder(orderType, orderSide, price, quantity) {
             }),
         });
 
-        const data = await response.json();
+        const responseData = await response.json();
 
         if (response.ok) {
-            addOrderToUI(data.order);
+            console.log("Order created:", responseData.order);
+            addOrderToUI(responseData.order);
             initAvailableBalance();
             initAvailableAsset();
             startListeningForOrderUpdate();
@@ -283,6 +284,11 @@ function quickSelectButtonAndInputHandler() {
 
         if (price.isZero()) return; // avoid division by zero
 
+        // const availabaleAmount = isBuyMode
+        // ? new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0")
+        // : new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
+        
+
         if (changedInput === "price" || changedInput === "quantity") {
             totalInput.value = price.times(quantity).toFixed(2); // 待調整，小數點問題
         } else if (changedInput === "total") {
@@ -382,7 +388,6 @@ async function historyBtnHandler(){
 
 // OPEN ORDERS // add order to UI
 function addOrderToUI(orderData) {
-    console.log(orderData);
     const tbody = document.getElementById("open-orders__tbody");
     const newRow = document.createElement("tr");
     newRow.className = "open-orders__tr";
@@ -441,7 +446,6 @@ function addOrderToUI(orderData) {
 
 // handle filled display
 function handlePartiallyFilled(executedQuantity, base) {
-    console.log(executedQuantity);
     if (executedQuantity === "0.00000000") {
         return `- ${base}`;
     } else {
@@ -548,7 +552,6 @@ function updateOpenOrdersCount() {
 // ORDER BOOK // 
 function handleOrderBookUpdate(event){
     const orderBook = event.detail;
-    console.log(orderBook)
     const asksSide = document.getElementById("order-book__asks");
     updateOrderBookContent(asksSide, orderBook.asks, true);  
 
