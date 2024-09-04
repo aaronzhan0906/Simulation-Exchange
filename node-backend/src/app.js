@@ -34,31 +34,31 @@ WebSocketService.init(server);
 
 
 // static
-app.use(express.static(path.join(__dirname, "..", "..", "public")));
+app.use(express.static(path.join(__dirname, "..", "..", "frontend")));
 
 // html routes
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "..", "public", "home.html"));
+    res.sendFile(path.join(__dirname, "..", "..", "frontend", "home.html"));
 });
 
 app.get("/wallet", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "..", "public", "wallet.html"));
+    res.sendFile(path.join(__dirname, "..", "..", "frontend", "wallet.html"));
 });
 
 app.get("/history", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "..", "public", "history.html"));
+    res.sendFile(path.join(__dirname, "..", "..", "frontend", "history.html"));
 });
 
 app.get("/login", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "..", "public", "login.html"));
+    res.sendFile(path.join(__dirname, "..", "..", "frontend", "login.html"));
 });
 
 app.get("/signup", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "..", "public", "signup.html"));
+    res.sendFile(path.join(__dirname, "..", "..", "frontend", "signup.html"));
 });
 
 app.get("/practice", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "..", "public", "chartPractice.html"));
+    res.sendFile(path.join(__dirname, "..", "..", "frontend", "chartPractice.html"));
 });
 
 
@@ -78,7 +78,7 @@ app.use("/api/history", historyRoute);
 app.get("/trade/:pair", (req, res) => {
     const { pair } = req.params;
     console.log("Trading pair:", pair);
-    res.sendFile(path.join(__dirname, "..", "..", "public", "trade.html"));
+    res.sendFile(path.join(__dirname, "..", "..", "frontend", "trade.html"));
 });
 
 import quoteService from "./services/quoteService.js";

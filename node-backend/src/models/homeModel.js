@@ -11,7 +11,6 @@ class HomeModel {
             );
             
             // return symbols array
-            console.log("symbols:", symbols);
             return symbols;
         } catch (error) {
             console.error("Error in getSymbols:", error);
