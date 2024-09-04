@@ -23,6 +23,7 @@ class TradeController {
                 type: order.type,
                 price: order.price,
                 quantity: order.quantity,
+                executedQuantity: order.executed_quantity,
                 status: order.status,
                 createdAt: order.created_at
             }));

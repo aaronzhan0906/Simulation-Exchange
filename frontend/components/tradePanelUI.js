@@ -36,7 +36,7 @@ async function initTradePanelWebSocket(){
     const isLoggedIn = checkLoginStatus();
     if (!isLoggedIn) {
         submitBtn.classList.remove("buy");
-        submitBtn.classList.add("unauthorized");
+        submitBtn.classList.add("buyUnauthorized");
         submitBtn.disabled = true;
     }
 
@@ -195,6 +195,8 @@ function getQuantityPrecision(price) {
 
 // buy and sell mode status
 function initTabsAndSubmit() {
+    const isLoggedIn = checkLoginStatus();
+
     const buyButton = document.getElementById("trade-panel__tab--buy");
     const sellButton = document.getElementById("trade-panel__tab--sell");
     const submitButton = document.getElementById("trade-panel__submit");
@@ -212,25 +214,44 @@ function initTabsAndSubmit() {
     submitButton.classList.add("buy")
     updateDisplayAvailable(true);
 
-
+    if (isLoggedIn) {
+        submitButton.classList.add("buy");
+    } else {
+        submitButton.classList.add("buyUnauthorized");
+    }
+    
     // status change
     buyButton.addEventListener("click", () => {
         buyButton.classList.add("active");
         sellButton.classList.remove("active");
-        submitButton.classList.add("buy");   
+        submitButton.classList.add("buy");
         submitButton.classList.remove("sell");
-        submitButton.textContent = `Buy ${baseAsset.toUpperCase()}`; 
+        submitButton.textContent = `Buy ${baseAsset.toUpperCase()}`;
+        
+        if (isLoggedIn) {
+            submitButton.classList.add("buy");
+            submitButton.classList.remove("buyUnauthorized", "sell", "sellUnauthorized");
+        } else {
+            submitButton.classList.add("buyUnauthorized");
+            submitButton.classList.remove("buy", "sell", "sellUnauthorized");
+        }
         updateDisplayAvailable(true);
     });
-
+    
     sellButton.addEventListener("click", () => {
         sellButton.classList.add("active");
         buyButton.classList.remove("active");
         submitButton.classList.add("sell");
         submitButton.classList.remove("buy");
-        submitButton.textContent = `Sell ${baseAsset.toUpperCase()}`; 
+        submitButton.textContent = `Sell ${baseAsset.toUpperCase()}`;        
+        if (isLoggedIn) {
+            submitButton.classList.add("sell");
+            submitButton.classList.remove("sellUnauthorized", "buy", "buyUnauthorized");
+        } else {
+            submitButton.classList.add("sellUnauthorized");
+            submitButton.classList.remove("sell", "buy", "buyUnauthorized");
+        }
         updateDisplayAvailable(false);
-
     });
 }
 
@@ -361,6 +382,7 @@ async function historyBtnHandler(){
 
 // OPEN ORDERS // add order to UI
 function addOrderToUI(orderData) {
+    console.log(orderData);
     const tbody = document.getElementById("open-orders__tbody");
     const newRow = document.createElement("tr");
     newRow.className = "open-orders__tr";
@@ -375,8 +397,8 @@ function addOrderToUI(orderData) {
         orderData.side.charAt(0).toUpperCase() + orderData.side.slice(1),
         `${new Decimal(orderData.price).toFixed(2)} ${quoteCurrency}`,
         `${new Decimal(orderData.quantity).toFixed(5)} ${base}`,
-        `- ${base}`,
-        orderData.status,
+        handlePartiallyFilled(orderData.executedQuantity, base),
+        handleStatusName(orderData.status),
         "Cancel"
     ];
 
@@ -417,7 +439,30 @@ function addOrderToUI(orderData) {
     updateOpenOrdersCount();
 }
 
+// handle filled display
+function handlePartiallyFilled(executedQuantity, base) {
+    console.log(executedQuantity);
+    if (executedQuantity === "0.00000000") {
+        return `- ${base}`;
+    } else {
+        return `${new Decimal(executedQuantity).toFixed(5)} ${base}`;  // Added return statement
+    }
+}
+ 
 
+// change status name
+function handleStatusName(status){
+    switch (status){
+        case "filled":
+            return "Filled";
+        case "partially_filled":
+            return "Partially Filled";
+        case "open":
+            return "Open";
+        default:
+            return status;
+    }
+}
 
 // OPEN ORDERS // update status
 async function handleOrderUpdate(event) {
@@ -500,7 +545,7 @@ function updateOpenOrdersCount() {
     openOrdersCount.textContent = `Open orders(${cancelButtons.length})`;
 }
 
-// ORDER BOOK /////////////////////////////////////////////////
+// ORDER BOOK // 
 function handleOrderBookUpdate(event){
     const orderBook = event.detail;
     console.log(orderBook)
@@ -604,7 +649,6 @@ function handleRecentTrade(event) {
     const recentTradeData = event.detail;
     const tradesList = document.getElementById("recent-trades__list");
     const tradeItem = document.createElement("div");
-    console.log(recentTradeData)
     tradeItem.className = `recent-trade__item ${recentTradeData.side}`;
 
     // recent trade

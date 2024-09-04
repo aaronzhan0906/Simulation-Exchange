@@ -550,8 +550,12 @@ input:-webkit-autofill:focus {
     transition: all 0.3s ease;
 }
 
-.trade-panel__submit.unauthorized {
-    background-color: #356049;
+.trade-panel__submit.buyUnauthorized {
+    background-color: #56c488a8;
+}
+
+.trade-panel__submit.sellUnauthorized {
+    background-color: #c45656b5;
 }
 
 .trade-panel__submit.buy {

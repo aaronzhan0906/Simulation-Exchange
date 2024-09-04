@@ -332,8 +332,8 @@ function addOpenOrderRow(orderData) {
         orderData.side.charAt(0).toUpperCase() + orderData.side.slice(1),
         `${new Decimal(orderData.price).toFixed(2)} ${quoteCurrency}`,
         `${new Decimal(orderData.quantity).toFixed(5)} ${base}`,
-        `- ${base}`,
-        orderData.status,
+        handlePartiallyFilled(orderData.executedQuantity, base),
+        handleStatusName(orderData.status),
         "Cancel"
     ];
 
@@ -446,7 +446,7 @@ function renderOrderHistoryTable(orderHistoryData, table) {
             `${new Decimal(order.quantity).toFixed(5) || 0} ${base}`,
             `${new Decimal(order.filled).toFixed(5) || 0} ${base}`,
             order.averagePrice ? `${new Decimal(order.averagePrice).toFixed(2) || 0} ${quoteCurrency}` : '-',
-            handleOrderStatusDisplay(order.status)
+            handleStatusName(order.status)
         ];
 
         cells.forEach((cellData, index) => {
@@ -462,16 +462,30 @@ function renderOrderHistoryTable(orderHistoryData, table) {
     filterOrderHistoryTable();
 }
 
-function handleOrderStatusDisplay(status) {
-    if (status === "filled") {
-        return "Filled";
-    } else if (status === "canceled") {
-        return "Canceled";
-    } else if (status === "open") {
-        return "Open";
+function handlePartiallyFilled(executedQuantity, base) {
+    console.log(executedQuantity);
+    if (executedQuantity === "0.00000000") {
+        return `- ${base}`;
     } else {
-        console.log("status:", status);
-        return "Partial" + " " + "Filled";
+        return `${new Decimal(executedQuantity).toFixed(5)} ${base}`;  // Added return statement
+    }
+}
+ 
+
+function handleStatusName(status) {
+    switch (status) {
+        case "open":
+            return "Open";
+        case "filled":
+            return "Filled";
+        case "canceled":
+            return "Canceled";
+        case "partially_filled":
+            return "Partially Filled";
+        case "partially_filled_canceled":
+            return "Partially Filled";
+        default:
+            return status;
     }
 }
 

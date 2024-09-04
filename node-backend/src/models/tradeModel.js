@@ -17,7 +17,7 @@ class TradeModel {
             
             return result;
         } catch(error) {
-            console.error("Error in [getOrders]:", error);
+            console.error("[getOrders] error:", error);
             throw error
         } finally {
             connection.release();
