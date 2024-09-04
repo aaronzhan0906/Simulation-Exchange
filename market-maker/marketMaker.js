@@ -182,8 +182,8 @@ class MarketMaker {
             const dCurrentPrice = new Decimal(currentPrice);
             const dOrderPrice = new Decimal(orderPrice || 0);
             const priceDifference = dOrderPrice.minus(dCurrentPrice);
-            const maxDifference = Decimal.sqrt(dCurrentPrice.dividedBy(15))
-            console.log(dCurrentPrice,"maxDifference: ", maxDifference.toString());
+            const maxDifference = Decimal.sqrt(dCurrentPrice.div(25))
+            console.log("maxDifference: ", maxDifference.toString());
     
             if ((orderStatus === "open" || orderStatus === "partially_filled")
                 && orderSide === "buy" 
