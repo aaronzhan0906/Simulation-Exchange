@@ -129,7 +129,7 @@ class WebSocketService {
         }
     }
 
-// SUBSCRIBE //////////////////////////////////////////////////////////////
+/////////////////////////  SUBSCRIBE ///////////////////////// 
     subscribeToAllSymbols(ws){
         this.globalSubscribers.add(ws);
         console.log("Subscribed to all symbols");
@@ -172,7 +172,6 @@ class WebSocketService {
                 }
             });
         }
-        // 移除了對全局訂閱者的廣播
     }
 
     broadcastToAllSubscribers(message) {
@@ -195,7 +194,7 @@ class WebSocketService {
     }
     
 
-// CLEANUP //////////////////////////////////////////////////////////////
+/////////////////////////  CLEANUP ///////////////////////// 
     cleanupConnection(ws) {
         ws.rooms.forEach(symbol => {
             if (this.rooms.has(symbol)) {

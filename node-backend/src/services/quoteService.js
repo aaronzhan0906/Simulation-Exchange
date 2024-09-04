@@ -38,7 +38,7 @@ let latestTickerData = {}; // for different trading pairs { BNBUSDT: {symbol: 'B
 // store price at least once every 1s
 
 
-// WebSocket functions //////////////////////////////////////////
+/////////////////////////  WebSocket functions ///////////////////////// 
 function broadcastMessageToAll(type, data) {
     WebSocketService.broadcastToAllSubscribers({ type, data });
 }
@@ -68,7 +68,7 @@ export async function updatePriceData(pair, price) {
 }
 
 
-// Redis functions //////////////////////////////////////////
+/////////////////////////  Redis functions ///////////////////////// 
 async function storePriceData(pair, data) {
     try {
         const now = Date.now(); 
@@ -157,11 +157,6 @@ async function cleanupData() {
     }
 }
 
-export async function queryDailyTrend(pair) {
-    const now = Date.now();
-    const dayAgo = now - 86400000;
-    return await redis.zrangebyscore(`recent_price_data:${pair}`, dayAgo, now, "WITHSCORES");
-}
 
 export async function queryMonthlyTrend(pair) {
     const now = Date.now();
@@ -187,7 +182,7 @@ async function get24hHighLow(pair) {
 }
 
 
-// Binance websocket events  //////////////////////////////////////////
+///////////////////////// Binance websocket events  /////////////////////////
 binanceWS.on("message", (data) => {
     const parsedData = JSON.parse(data);
     const { stream, data: streamData } = parsedData;
@@ -207,12 +202,12 @@ binanceWS.on("error", (error) => {
 });
 
 
-// schedule jobs  //////////////////////////////////////////
+/////////////////////////  SCHEDULE JOBS  ///////////////////////// 
 schedule.scheduleJob("0 * * * *", storeHourlyData); // store hourly data every hour
 schedule.scheduleJob("0 0 * * *", cleanupData); // clean up data every day
 
 
-// API routes //////////////////////////////////////////////
+///////////////////////// API ROUTES /////////////////////////
 router.get("/ticker", (req, res) => {
     res.status(200).json({ ok: true, latestTickerData: latestTickerData });
 });
@@ -254,11 +249,6 @@ router.get("/24hHighAndLow/:pair", async (req, res) => {
     res.status(200).json({ ok: true, data: highLow });
 });
 
-router.get("/dailyTrend/:pair", async (req, res) => {
-    const { pair } = req.params;
-    const dailyTrend = await queryDailyTrend(pair);
-    res.status(200).json({ ok: true, dailyTrend });
-});
 
 router.get("/monthlyTrend/:pair", async (req, res) => {
     const { pair } = req.params;
@@ -271,7 +261,7 @@ router.get("/monthlyTrend/:pair", async (req, res) => {
     }
 });
 
-// Error handling //////////////////////////////////////////
+///////////////////////// Error handling /////////////////////////
 process.on("uncaughtException", (error) => {
     console.error("Uncaught Exception:", error);
 });
