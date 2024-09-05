@@ -79,14 +79,14 @@ class MarketMaker {
             });
             return response.data.orders || [];
         } catch (error) {
-            console.error("Error in [getOrders]: ", error);
+            console.error("[getOrders] error:", error);
             return [];
         }
     }
 
     async createOrder(symbol, side, type, price, quantity){
         try {
-            const response = await this.axiosInstance.post(`${this.url}/api/trade/order`, 
+            const response = await this.axiosInstance.post(`${this.url}/api/trade/marketMaker/order`, 
                 { symbol, side, type, price, quantity }, {
                     headers: {
                         "Content-Type": "application/json",
@@ -95,7 +95,7 @@ class MarketMaker {
                 });
             return response.data;
         } catch (error) {
-            console.error("Error in [createOrder]: ", error);
+            console.error("[createOrder] error: ", error);
         }
     }
 
@@ -112,7 +112,7 @@ class MarketMaker {
                 });
             return response.data;
         } catch (error) {
-            console.error("Error in [cancelOrder]: ", error);
+            console.error("[cancelOrder]: ", error);
         }
     }
 
@@ -182,8 +182,7 @@ class MarketMaker {
             const dCurrentPrice = new Decimal(currentPrice);
             const dOrderPrice = new Decimal(orderPrice || 0);
             const priceDifference = dOrderPrice.minus(dCurrentPrice);
-            const maxDifference = Decimal.sqrt(dCurrentPrice.div(25))
-            console.log("maxDifference: ", maxDifference.toString());
+            const maxDifference = Decimal.sqrt(dCurrentPrice.div(35))
     
             if ((orderStatus === "open" || orderStatus === "partially_filled")
                 && orderSide === "buy" 

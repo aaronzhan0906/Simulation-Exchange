@@ -130,6 +130,85 @@ class TradeController {
         }
     }
 
+    
+    // router.post("/marketMaker/order", TradeController.createOrder);
+    async createOrderByMarketMaker(req, res){
+        const { symbol, side, type, price, quantity } = req.body;
+            const userId = req.user.userId;
+
+            if ( !userId || !symbol || !side || !type || !price || !quantity) {
+                return res.status(400).json({ error:true, message:"Missing required fields!" })
+            }
+
+        try { 
+            if (side === "buy") {
+                try {
+                    await preBuyAuth(userId, price, quantity);
+                } catch (error) {
+                    return res.status(400).json({ error: true, message: error.message });
+                }
+            } else if (side === "sell") {
+                try {
+                    await preSellAuth(userId, symbol, quantity);
+                } catch (error) {
+                    return res.status(400).json({ error: true, message: error.message });
+                }
+            } 
+
+            // snowflake order_id 
+            const orderId = generateSnowflakeId();
+        
+            const orderIdString = orderId.toString();
+            const order = await TradeModel.createOrder(
+                orderIdString,
+                userId,
+                symbol,
+                side,
+                type,
+                price,
+                quantity,
+                "open"
+            );
+            const topicSymbol = symbol.replace("_usdt","")
+            const topic = `new-order-${topicSymbol}`
+
+        
+            // send order to kafka 
+            await kafkaProducer.sendMessage(topic, {
+                orderId: order.order_id,
+                userId: order.user_id,
+                symbol: order.symbol,
+                side: order.side,
+                type: order.type,
+                price: order.price,
+                quantity: order.quantity,
+                status: order.status,
+                createdAt: order.created_at
+            })
+            
+
+            res.status(200).json({
+                ok: true,
+                message: "Order created successfully",
+                order: {
+                    orderId: order.order_id,
+                    userId: order.user_id,
+                    symbol: order.symbol,
+                    side: order.side,
+                    type: order.type,
+                    price: order.price,
+                    quantity: order.quantity,
+                    status: order.status,
+                    createdAt: order.created_at
+                }
+            })
+
+        } catch(error) {
+            console.error(error);
+            throw error;
+        }
+    }
+
 /////////////////////////  UPDATE ORDER  ///////////////////////////
     // WS broadcast order update
     async updateOrderData(trade_result) {

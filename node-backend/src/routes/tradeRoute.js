@@ -14,6 +14,8 @@ router.post("/order", TradeController.createOrder);
 // cancel order
 router.patch("/order", TradeController.cancelOrder);
 
+// create order by market maker
+router.post("/marketMaker/order",TradeController.createOrderByMarketMaker)
 
 
 export default router

@@ -139,10 +139,10 @@ async function submitOrder(orderType, orderSide, price, quantity) {
     };
 
     if (price == 0) {
-        const inputPrice = document.getElementById("trade-panel__input--price");
+        // const inputPrice = document.getElementById("trade-panel__input--price");
         const inputTotal = document.getElementById("trade-panel__input--total");
-        tooltipHandler.show((inputPrice), "Price cannot be 0", top);
-        tooltipHandler.show((inputTotal), "Total cannot be 0", top);
+        // tooltipHandler.show(inputPrice, "Price cannot be 0", top);
+        tooltipHandler.show(inputTotal, "Total cannot be 0", top);
         return;
     }
 
@@ -416,7 +416,7 @@ async function getOpenOrders(){
         tradeWebSocket.requestPersonalData(); // for personal room
         listenForOrderUpdate(); 
     } catch (error) {
-        console.error("Fail to get open orders in getOpenOrders():", error);
+        console.error("[getOpenOrders] error", error);
         throw error;
     }
 }
@@ -532,18 +532,18 @@ async function handleOrderUpdate(event) {
         if (orderData.status === "CANCELED" || orderData.status === "PARTIALLY_FILLED_CANCELED") {
             orderRow.remove();
         } else {
-            if (orderData.filledQuantity !== undefined) {
-                filledQuantityCell.textContent = `${orderData.filledQuantity} ${symbol}`;
-            }
-
-            statusCell.textContent = orderData.status;
-
             if (orderData.status === "filled") {
                 if (cancelBtn) {
                     cancelBtn.remove();
                 }
                 orderRow.remove();
             }
+
+            if (orderData.filledQuantity !== undefined) {
+                filledQuantityCell.textContent = `${orderData.filledQuantity.toFixed(5)} ${symbol}`;
+            }
+
+            statusCell.textContent = handleStatusName(orderData.status); // 這邊
         }
 
         updateOpenOrdersCount();
