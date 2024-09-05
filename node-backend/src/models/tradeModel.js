@@ -203,10 +203,9 @@ class TradeModel {
         await connection.beginTransaction();
 
         try {
-            // 獲取全局鎖 這部分可以思考一下是否需要
             await connection.query('SELECT GET_LOCK("trade_lock", 10) as lock_result');
 
-            // 使用 FOR UPDATE 鎖定訂單記錄
+            // use FOR UPDATE to lock the row
             const [[oldData]] = await connection.query(
                 `SELECT quantity, executed_quantity, remaining_quantity, average_price, price
                 FROM orders
@@ -279,10 +278,10 @@ class TradeModel {
             return resultOrderData;
         } catch (error) {
             await connection.rollback();
-            console.error("Error in updateOrderData:", error);
+            console.error("[updateOrderData(model)] error:", error);
             throw error;
         } finally {
-            // 釋放全局鎖
+            // 釋release lock
             await connection.query('SELECT RELEASE_LOCK("trade_lock") as release_result');
             connection.release();
         }

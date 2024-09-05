@@ -78,7 +78,7 @@ class WebSocketService {
 
                 case "getPersonalData":
                     this.handleAuthenticatedAction(ws, () => {
-                        console.log("Handling getPersonalData for user:", ws.userId);
+                        console.log("WS Handling getPersonalData:", ws.userId);
                     });
                     break;
 

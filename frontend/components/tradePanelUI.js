@@ -138,12 +138,13 @@ async function submitOrder(orderType, orderSide, price, quantity) {
         const responseData = await response.json();
 
         if (response.ok) {
-            console.log("Order created:", responseData.order);
-            addOrderToUI(responseData.order);
+            console.log("Order created:", responseData);
+            tradeWebSocket.requestPersonalData(); // for personal room
+            startListeningForOrderUpdate();
+            // addOrderToUI(responseData.order);
             initAvailableBalance();
             initAvailableAsset();
-            startListeningForOrderUpdate();
-            tradeWebSocket.requestPersonalData();
+            
         } else {
             throw new Error(response.status);
         }
@@ -384,10 +385,8 @@ async function getOpenOrders(){
             data.orders.forEach(order => {
                 addOrderToUI(order);
             })
-            if (data.orders.length > 0){
-                startListeningForOrderUpdate();
-                tradeWebSocket.requestPersonalData();
-            }
+            startListeningForOrderUpdate();
+            tradeWebSocket.requestPersonalData(); // for personal room
         }
     } catch (error) {
         console.error("Fail to get open orders in getOpenOrders():", error);
@@ -398,7 +397,6 @@ async function getOpenOrders(){
 async function historyBtnHandler(){
     const historyBtn = document.getElementById("open-orders__history-btn");
     historyBtn.addEventListener("click", async () => {
-        event.preventDefault();
         window.location.href = "/history";
     });
 }
@@ -488,6 +486,10 @@ function handleStatusName(status){
 
 // OPEN ORDERS // update status
 async function handleOrderUpdate(event) {
+    if (event.detail.message === "newOrder") {
+        addOrderToUI(event.detail);
+    }
+
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
     if (!orderRow) return;
@@ -498,6 +500,7 @@ async function handleOrderUpdate(event) {
     const filledQuantityCell = cells[6];
     const statusCell = cells[7];
 
+    // for different page cancel order (trade / history)
     try {
         if (orderData.status === "CANCELED" || orderData.status === "PARTIALLY_FILLED_CANCELED") {
             orderRow.remove();

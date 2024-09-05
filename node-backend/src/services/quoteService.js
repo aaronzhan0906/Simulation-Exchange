@@ -214,7 +214,7 @@ router.get("/ticker", (req, res) => {
 
 router.get("/ticker/:pair", async (req, res) => {
     const { pair } = req.params;
-    console.log("Latest price:", pair);
+    // console.log("Latest price:", pair);
     const formattedPair = pair.toUpperCase().replace("_", "");
     const latestPrice = latestTickerData[formattedPair];
     res.status(200).json({ ok: true, data: latestPrice });
@@ -230,7 +230,7 @@ export async function logOrderBookSnapshot(symbol, processedData) {
 
 router.get("/orderBook/:pair", async (req, res) => {
     const { pair } = req.params;
-    console.log("Latest order book snapshot:", pair);
+    // console.log("Latest order book snapshot:", pair);
     const symbol = pair.split("_")[0]; // xxx_usdt -> xxx
     const orderBookSnapshot = latestOrderBookSnapshot[symbol];
     
@@ -244,7 +244,7 @@ router.get("/orderBook/:pair", async (req, res) => {
 
 router.get("/24hHighAndLow/:pair", async (req, res) => {
     const { pair } = req.params;
-    console.log("24h high low:", pair);
+    // console.log("24h high low:", pair);
     const highLow = await get24hHighLow(pair);
     res.status(200).json({ ok: true, data: highLow });
 });
@@ -252,7 +252,7 @@ router.get("/24hHighAndLow/:pair", async (req, res) => {
 
 router.get("/monthlyTrend/:pair", async (req, res) => {
     const { pair } = req.params;
-    console.log("Monthly trend:", pair);
+    // console.log("Monthly trend:", pair);
     try {
         const monthlyTrend = await queryMonthlyTrend(pair);
         res.status(200).json({ ok: true, monthlyTrend });

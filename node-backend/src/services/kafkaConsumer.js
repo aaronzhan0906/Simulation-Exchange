@@ -1,7 +1,7 @@
 import { Kafka } from "kafkajs";
 import config from "../config/config.js";
 import TradeController from "../controllers/tradeController.js";
-import { pendingCancelResults } from "../controllers/tradeController.js";
+
 
 const supportedSymbols = config.supportedSymbols;
 const createKafkaClient = () => new Kafka({

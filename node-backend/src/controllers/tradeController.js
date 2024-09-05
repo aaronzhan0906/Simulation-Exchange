@@ -37,6 +37,13 @@ class TradeController {
             throw error;
         }
     }
+
+    async getOrdersByMarketMaker(req, res){
+    }
+
+    async createOrderByMarketMaker(orderList) {
+
+    }
         
     // router.post("/order", TradeController.createOrder);
     async createOrder(req, res){
@@ -92,13 +99,13 @@ class TradeController {
                 createdAt: order.created_at
             })
             
-
-            res.status(200).json({
-                ok: true,
-                message: "Order created successfully",
-                order: {
+            // sendOrderUpdateToUser
+            const newOrder = {
+                type: "orderUpdate",
+                message: "newOrder",
+                data: {
+                    message: "newOrder",
                     orderId: order.order_id,
-                    userId: order.user_id,
                     symbol: order.symbol,
                     side: order.side,
                     type: order.type,
@@ -108,6 +115,13 @@ class TradeController {
                     status: order.status,
                     createdAt: order.created_at
                 }
+            };
+
+            sendOrderUpdateToUser(order.user_id, newOrder);
+            
+            res.status(200).json({
+                ok: true,
+                message: "Order created successfully",
             })
 
         } catch(error) {
@@ -139,14 +153,33 @@ class TradeController {
             const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
     
             if (!resultOrderData) {
-                throw new Error("Order not found or update failed");
+                console.error("[updateOrderData] No data returned, maybe update data is slower than cancel data");
+                return null; // sometimes cancel data is faster than update data
             }
     
             // WebSocket 
             const quantity = new Decimal(resultOrderData.quantity);
             const remainingQuantity = new Decimal(resultOrderData.remaining_quantity);
             const filledQuantity = quantity.minus(remainingQuantity).toString();
-            await sendOrderUpdateToUser(resultOrderData, filledQuantity);
+
+            const newUpdate = {
+                type: "orderUpdate",
+                message: "newUpdate",
+                data: {
+                    message: "newUpdate",
+                    orderId: resultOrderData.order_id,
+                    averagePrice: resultOrderData.average_price,
+                    status: resultOrderData.status,
+                    symbol: resultOrderData.symbol,
+                    side: resultOrderData.side,
+                    price: resultOrderData.price,
+                    quantity: resultOrderData.quantity,
+                    filledQuantity: filledQuantity,
+                    createdAt: resultOrderData.created_at
+                }
+            };
+
+            await sendOrderUpdateToUser(resultOrderData.user_id,  newUpdate);
     
             return resultOrderData; 
         } catch (error) {
@@ -263,6 +296,7 @@ class TradeController {
             if (updateResult.updateStatus === "CANCELED" || updateResult.updateStatus === "PARTIALLY_FILLED_CANCELED") {
                 const cancelMessage = {
                     type: "orderUpdate",
+                    message: "Order cancelled",
                     data: {
                         orderId: updateResult.updateOrderId,
                         status: updateResult.updateStatus,
@@ -327,8 +361,6 @@ class TradeController {
 
 export default new TradeController();
 
-// pending cancel orders
-export const pendingCancelResults = new Map()
 
 async function preBuyAuth(userId, price, quantity) {
     const dPrice = new Decimal(price);
@@ -382,24 +414,32 @@ async function preSellAuth(userId, symbol, quantity) {
 
 
 
-async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
+async function sendOrderUpdateToUser(user_id, orderMessage) {
     try {
-        const message = {
-            type: "orderUpdate",
-            data: {
-                orderId: resultOrderData.order_id,
-                filledQuantity: filledQuantity,
-                averagePrice: resultOrderData.average_price,
-                status: resultOrderData.status,
-                symbol: resultOrderData.symbol,
-                side: resultOrderData.side,
-                price: resultOrderData.price,
-                quantity: resultOrderData.quantity,
-                createdAt: resultOrderData.created_at
-            }
-        };
-        WebSocketService.sendToUser(resultOrderData.user_id, message);
+        WebSocketService.sendToUser(user_id, orderMessage);
     } catch (error) {
         console.error("Error sending order update to user:", error);
     }
 }
+
+// async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
+//     try {
+//         const message = {
+//             type: "orderUpdate",
+//             data: {
+//                 orderId: resultOrderData.order_id,
+//                 filledQuantity: filledQuantity,
+//                 averagePrice: resultOrderData.average_price,
+//                 status: resultOrderData.status,
+//                 symbol: resultOrderData.symbol,
+//                 side: resultOrderData.side,
+//                 price: resultOrderData.price,
+//                 quantity: resultOrderData.quantity,
+//                 createdAt: resultOrderData.created_at
+//             }
+//         };
+//         WebSocketService.sendToUser(resultOrderData.user_id, message);
+//     } catch (error) {
+//         console.error("Error sending order update to user:", error);
+//     }
+// }
