@@ -6,9 +6,29 @@ import tradeWebSocket from "../services/tradeWS.js";
 
 let lastPrice = null;
 let isPriceSet = false;
-let isOrderUpdateListening = false;
+// let isOrderUpdateListening = false;
 const pair = location.pathname.split("/")[2];
 const baseAsset = pair.split("_")[0];
+
+// precision
+let currentPricePrecision = 2;
+let currentQuantityPrecision = 2;
+
+function getPricePrecision(price) {
+    const decimalPart = price.toString().split(".")[1];
+    if (!decimalPart) return 2;
+    return decimalPart.length;
+}
+
+// if 1 < price < 10, quantity precision = 1 and so on
+function getQuantityPrecision(price) { 
+    const integerPart = Math.floor(price);
+    if (integerPart === 0) {
+        return 5; // if price < 1, quantity precision = 5
+    }
+    return Math.max(Math.floor(Math.log10(integerPart))+1, 0);
+}
+
 
 
 ///////////////////////////////// INITIALIZATION ////////////////////////////////////
@@ -27,11 +47,10 @@ async function initTradePanelWebSocket(){
     const orderBookData = responseOrderBookData.data;
     if (orderBookResponse.ok){
         handleOrderBookUpdate({ detail: orderBookData });
-    }
-
+    } 
+    
     document.addEventListener("recentPrice", handlePriceUpdate);
     document.addEventListener("orderBook", handleOrderBookUpdate);
-
 
     const submitBtn = document.getElementById("trade-panel__submit");
     const isLoggedIn = checkLoginStatus();
@@ -46,11 +65,8 @@ async function initTradePanelWebSocket(){
     submitBtn.textContent = `Buy ${baseAsset.toUpperCase()}`;
 }
 
-async function startListeningForOrderUpdate(){
-   if (!isOrderUpdateListening){
-        document.addEventListener("orderUpdate", handleOrderUpdate);
-        isOrderUpdateListening = true;
-   }
+async function listenForOrderUpdate(){
+    document.addEventListener("orderUpdate", handleOrderUpdate);
 }
 
 async function listenForRecentTrade(){
@@ -93,6 +109,8 @@ async function initAvailableBalance () {
     }
 }
 
+
+
 //get available asset in TRADE PANEL
 async function initAvailableAsset(){
     const isLoggedIn = checkLoginStatus();
@@ -112,13 +130,30 @@ async function initAvailableAsset(){
 }
 
 // create order by TRADE PANEL 
-async function submitOrder(orderType, orderSide, price, quantity) {
+async function submitOrder(orderType, orderSide, price, quantity) { 
     const isLoggedIn = checkLoginStatus();
 
     if (!isLoggedIn) {
         alert("Please login first");
         return;
     };
+
+    if (price == 0) {
+        const inputPrice = document.getElementById("trade-panel__input--price");
+        const inputTotal = document.getElementById("trade-panel__input--total");
+        tooltipHandler.show((inputPrice), "Price cannot be 0", top);
+        tooltipHandler.show((inputTotal), "Total cannot be 0", top);
+        return;
+    }
+
+    if (quantity == 0) {
+        const inputQuantity = document.getElementById("trade-panel__input--quantity");
+        const minQuantity = 1 / Math.pow(10, currentQuantityPrecision);
+        tooltipHandler.show(inputQuantity, `Min Quantity: ${minQuantity}`, top);
+        return;
+    }
+
+    tooltipHandler.hide();
 
     try {
         const response = await fetch("/api/trade/order", {
@@ -135,16 +170,9 @@ async function submitOrder(orderType, orderSide, price, quantity) {
             }),
         });
 
-        const responseData = await response.json();
-
         if (response.ok) {
-            console.log("Order created:", responseData);
-            tradeWebSocket.requestPersonalData(); // for personal room
-            startListeningForOrderUpdate();
-            // addOrderToUI(responseData.order);
             initAvailableBalance();
             initAvailableAsset();
-            
         } else {
             throw new Error(response.status);
         }
@@ -159,7 +187,7 @@ async function setupOrder(){
     const submitButton = document.getElementById("trade-panel__submit");
     const priceInput = document.getElementById("trade-panel__input--price");
     const quantityInput = document.getElementById("trade-panel__input--quantity");
-    const orderTypeSelect = document.getElementById("orderTypeSelect");
+    const orderTypeSelect = document.getElementById("trade-panel__type");
    
 
     submitButton.addEventListener("click", async () => {
@@ -174,25 +202,6 @@ async function setupOrder(){
             console.error("Fail to submit order in setupOrder():", error);
         }
     });
-}
-
-// precision calculation issue
-let currentPricePrecision = 2;
-let currentQuantityPrecision = 2;
-
-function getPricePrecision(price) {
-    const decimalPart = price.toString().split(".")[1];
-    if (!decimalPart) return 2;
-    return decimalPart.length;
-}
-
-// if 1 < price < 10, quantity precision = 1 and so on
-function getQuantityPrecision(price) { 
-    const integerPart = Math.floor(price);
-    if (integerPart === 0) {
-        return 5; // if price < 1, quantity precision = 5
-    }
-    return Math.max(Math.floor(Math.log10(integerPart))+1, 0);
 }
 
 
@@ -274,9 +283,9 @@ function quickSelectButtonAndInputHandler() {
     }
 
     // restrict input to positive numbers with specified decimal places
-    function restrictPositiveNum(value, decimalPlaces) {
+    function restrictPositiveNum(inputValue, decimalPlaces) {
         const reg = new RegExp(`^\\d*(\\.\\d{0,${decimalPlaces}})?$`);
-        return reg.test(value) ? value : value.slice(0, -1);
+        return reg.test(inputValue) ? inputValue : inputValue.slice(0, -1);
     }
 
     function checkAvailableAmount(amount, isBuyMode) {
@@ -295,14 +304,16 @@ function quickSelectButtonAndInputHandler() {
         return true;
     }
 
+
     function calculateAndUpdate(changedInput) {
         const price = new Decimal(priceInput.value || "0");
         const quantity = new Decimal(quantityInput.value || "0");
         const total = new Decimal(totalInput.value || "0");
         const isBuyMode = buyButton.classList.contains("active");
 
-        if (price.isZero()) return; // avoid division by zero
-        
+        // No calculation if any of the input is zero
+        // if (price.isZero()) return;  
+              
         if (changedInput === "price" || changedInput === "quantity") {
             const calculatedTotal = price.times(quantity);
             if (checkAvailableAmount(isBuyMode ? calculatedTotal : quantity, isBuyMode)) {
@@ -345,10 +356,23 @@ function quickSelectButtonAndInputHandler() {
 
     // Input event handling
     inputs.forEach(input => {
-        input.addEventListener("focus", clearActiveButtons);
+        input.addEventListener("focus", (event) => {
+            clearActiveButtons(); // clear active percentage buttons
+            
+            // Show tooltip for min quantity when quantity input is focused
+            // const inputType = event.target.id.split("--")[1];
+            // if (inputType === "quantity") {
+            //     const quantityInput = event.target;
+            //     const minQuantity = 1 / Math.pow(10, currentQuantityPrecision);
+            //     tooltipHandler.show(quantityInput, `Min Quantity: ${minQuantity}`, top);
+            // }
+        });
 
-        // Prevent arrow keys from changing input value
-        input.addEventListener("keydown", function(event) {
+        input.addEventListener("blur", () => {
+            tooltipHandler.hide();
+        });
+
+        input.addEventListener("keydown", function(event) { // Prevent arrow keys from changing input value
             if (event.key === "ArrowUp" || event.key === "ArrowDown") {
                 event.preventDefault();
             }
@@ -357,20 +381,23 @@ function quickSelectButtonAndInputHandler() {
         input.addEventListener("input", (event) => {
             const inputId = event.target.id;
             const inputType = inputId.split("--")[1]; // price, quantity, or total
+            const inputValue = event.target.value;
             
             // Apply appropriate restrictions based on input type
             if (inputType === "price") {
-                event.target.value = restrictPositiveNum(event.target.value, currentPricePrecision);
+                event.target.value = restrictPositiveNum(inputValue, currentPricePrecision);
             } else if (inputType === "quantity") {
-                event.target.value = restrictPositiveNum(event.target.value, currentQuantityPrecision);
+                event.target.value = restrictPositiveNum(inputValue, currentQuantityPrecision);
             } else {
-                event.target.value = restrictPositiveNum(event.target.value, 2);
+                event.target.value = restrictPositiveNum(inputValue, 2); // only (0.XX) for total
             }
             
             calculateAndUpdate(inputType);
         });
     });
 }
+
+
 
 //////////////////////////// OPEN ORDERS ////////////////////////////
 // get open orders
@@ -385,9 +412,9 @@ async function getOpenOrders(){
             data.orders.forEach(order => {
                 addOrderToUI(order);
             })
-            startListeningForOrderUpdate();
-            tradeWebSocket.requestPersonalData(); // for personal room
         }
+        tradeWebSocket.requestPersonalData(); // for personal room
+        listenForOrderUpdate(); 
     } catch (error) {
         console.error("Fail to get open orders in getOpenOrders():", error);
         throw error;

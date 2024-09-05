@@ -49,6 +49,11 @@ class TradeModel {
         const updateOrderId = orderId;
         const updateStatus = status;
         const updateUpdatedAt = updatedAt;
+        if (updateStatus === "NOT FOUND") {
+            console.log(`Order ${updateOrderId} not found in matching engine`);
+            return
+        }
+
         try {
             const result = await pool.query(
                 `UPDATE orders
@@ -60,7 +65,7 @@ class TradeModel {
             if (result.affectedRows > 0) {
                 return { updateOrderId, updateStatus, updateUpdatedAt };}
         } catch (error) {
-            console.error("Error in [cancelOrder]:", error);
+            console.error("[cancelOrder(model)] Error:", error);
             throw error;
         }
     }
