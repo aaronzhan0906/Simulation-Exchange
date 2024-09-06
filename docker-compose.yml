@@ -28,6 +28,7 @@ services:
       - redis-data:/data
     command: redis-server --appendonly yes
 
+
   node-backend:
   build: 
     context: .
@@ -77,3 +78,6 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     command: ["/bin/sh", "-c", "chmod +x /wait-for-it.sh && /wait-for-it.sh kafka:9092 -- /wait-for-it.sh node-backend:3000 -- python /usr/src/app/matching-engine/src/main.py"]
+
+volumes:
+  redis-data:
