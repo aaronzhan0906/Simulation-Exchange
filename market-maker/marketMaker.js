@@ -6,7 +6,7 @@ import Decimal from "decimal.js";
 
 dotenv.config();
 console.log("Environment variables loaded");
-const MAX_ORDER = 5;
+const MAX_ORDER = 9;
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = process.env.SUPPORTED_SYMBOLS.split(",").map(symbol => symbol.trim());
@@ -185,41 +185,27 @@ class MarketMaker {
     handleOrderCreated(orderData) {
         const newOrder = orderData.order;
         if (newOrder) {
-            const { symbol, side, price, quantity } = newOrder;
-            const baseOrderKey = `${symbol}_${side}_`;
-            let orderIndex = 0;
-
-            while(this.orders[`${baseOrderKey}${orderIndex}`]){
-                orderIndex++;
+            const { symbol, side, orderId } = newOrder;
+            const baseOrderKey = `${symbol}_${side}`;
+    
+            if (!this.orders[baseOrderKey]) {
+                this.orders[baseOrderKey] = {};
             }
-
-            const orderKey = `${baseOrderKey}${orderIndex}`;
-        
-            console.log(`Creating a new ${side} order #${orderIndex}: ${symbol}, price: ${price}, quantity: ${quantity}`);
-            this.orders[orderKey] = newOrder;
+    
+            if (Object.keys(this.orders[baseOrderKey]).length < MAX_ORDER) {
+                this.orders[baseOrderKey][orderId] = newOrder;
+            } else {
+                console.log(`${baseOrderKey} 已達到最大訂單數 ${MAX_ORDER}，不添加新訂單`);
+                this.cancelOrder(orderId, symbol);
+            }
         } else {
-            console.error(`Failed to create ${symbol} ${side} order #${orderIndex}`);
+            console.error(`Failed to create order: ${JSON.stringify(orderData)}`);
         }
     }
 
-    // async createOrder(symbol, side, type, price, quantity){
-    //     try {
-    //         const response = await this.axiosInstance.post(`${this.url}/api/trade/marketMaker/order`, 
-    //             { symbol, side, type, price, quantity }, {
-    //                 headers: {
-    //                     "Content-Type": "application/json",
-    //                     "Cookie": `accessToken=${this.cookies.accessToken}`
-    //                 }
-    //             });
-    //         return response.data;
-    //     } catch (error) {
-    //         console.error("[createOrder] error:", error);
-    //     }
-    // }
-
     async cancelOrder(orderId, symbol) {
         try {
-            console.log(`Cancelling order: ${orderId} for ${symbol}`);
+            console.log(`～～～～～Cancelling order: ${orderId} for ${symbol}`);
             const response = await this.axiosInstance.patch(`${this.url}/api/trade/order`, {
                     orderId, symbol
                 }, {
@@ -237,6 +223,30 @@ class MarketMaker {
             );
         }
     }
+
+    async cancelAllOrders() {
+        try {
+            console.log("Starting to cancel all orders");
+            
+            const allOrders = await this.getOrders();
+            const cancelPromises = [];
+            console.log("cancelPromises:",cancelPromises);
+            for (const order of allOrders) {
+                if (order.status === "open" || order.status === "partially_filled") {
+                    cancelPromises.push(this.cancelOrder(order.orderId, order.symbol));
+                }
+            }
+
+            await Promise.all(cancelPromises);
+
+            this.orders = {};
+
+            console.log("Cancelled all orders");
+        } catch (error) {
+            console.error("[cancelAllOrders] error", error);
+        }
+    }
+
 
     determinePrecision(currentPrice) {
         const priceNum = parseFloat(currentPrice);
@@ -275,8 +285,8 @@ class MarketMaker {
                     const sellQuantity = (Math.random() * (max - min) + min).toFixed(precision);
                     
 
-                    await this.placeOrUpdateOrder(formattedSymbol, "buy", buyPrice, buyQuantity, i);
-                    await this.placeOrUpdateOrder(formattedSymbol, "sell", sellPrice, sellQuantity, i);
+                    await this.placeOrUpdateOrder(formattedSymbol, "buy", buyPrice, buyQuantity);
+                    await this.placeOrUpdateOrder(formattedSymbol, "sell", sellPrice, sellQuantity);
  
                 }
             }
@@ -285,112 +295,105 @@ class MarketMaker {
         }
     }
     
-    async placeOrUpdateOrder(symbol, side, price, quantity, orderIndex) {
+    async placeOrUpdateOrder(symbol, side, price, quantity) {
         const pair = `${symbol.toUpperCase()}`.replace("_", "");
-        const orderKey = `${symbol}_${side}_${orderIndex}`;
+        const baseOrderKey = `${symbol}_${side}`;
         const currentPrice = latestTickerData[pair]?.price;
-
-        const allOrders = await this.getOrders();
-
-        let existingOrder = allOrders.find(order => 
-            order.orderId === this.orders[orderKey]?.orderId
-        );
-            
-        if (existingOrder) {
-            const orderStatus = existingOrder.status;
-            const orderSide = existingOrder.side;
-            const orderPrice = existingOrder.price;
         
-            const dCurrentPrice = new Decimal(currentPrice);
-            const dOrderPrice = new Decimal(orderPrice || 0);
-            const priceDifference = dOrderPrice.minus(dCurrentPrice);
-            const maxDifference = Decimal.sqrt(dCurrentPrice.div(45))
+        if (!this.orders[baseOrderKey]) {
+            this.orders[baseOrderKey] = {};
+        }
     
-            if ((orderStatus === "open" || orderStatus === "partially_filled")
-                && orderSide === "buy" 
-                && (dOrderPrice.minus(dCurrentPrice).abs().greaterThan(maxDifference) || priceDifference.greaterThan(0))) {
-                await this.cancelOrder(existingOrder.orderId, symbol);
-                delete this.orders[orderKey];
-            } else if (
-                (orderStatus === "open" || orderStatus === "partially_filled")
-                && orderSide === "sell"
-                && (dOrderPrice.minus(dCurrentPrice).abs().greaterThan(maxDifference) || priceDifference.lessThan(0))) {
-                await this.cancelOrder(existingOrder.orderId, symbol);
-                delete this.orders[orderKey];
-            } else if (
-                orderStatus === "filled" 
-                || orderStatus === "CANCEL" 
-                || orderStatus === "PARTIALLY_FILLED_CANCELED" ) { 
-                delete this.orders[orderKey];
+        const allOrders = await this.getOrders();
+        
+        for (const orderId in this.orders[baseOrderKey]) {
+            let existingOrder = allOrders.find(order => order.orderId === orderId);
+    
+            if (existingOrder) {
+                const orderStatus = existingOrder.status;
+                const orderSide = existingOrder.side;
+                const orderPrice = existingOrder.price;
+                
+                const dCurrentPrice = new Decimal(currentPrice);
+                const dOrderPrice = new Decimal(orderPrice || 0);
+                const priceDifference = dOrderPrice.minus(dCurrentPrice);
+                const maxDifference = Decimal.sqrt(dCurrentPrice.div(45));
+            
+                if ((orderStatus === "open" || orderStatus === "partially_filled")
+                    && orderSide === "buy" 
+                    && (dOrderPrice.minus(dCurrentPrice).abs().greaterThan(maxDifference) || priceDifference.greaterThan(0))) {
+                    await this.cancelOrder(orderId, symbol);
+                    delete this.orders[baseOrderKey][orderId];
+                } else if (
+                    (orderStatus === "open" || orderStatus === "partially_filled")
+                    && orderSide === "sell"
+                    && (dOrderPrice.minus(dCurrentPrice).abs().greaterThan(maxDifference) || priceDifference.lessThan(0))) {
+                    await this.cancelOrder(orderId, symbol);
+                    delete this.orders[baseOrderKey][orderId];
+                } else if (
+                    orderStatus === "filled" 
+                    || orderStatus === "CANCELED" 
+                    || orderStatus === "PARTIALLY_FILLED_CANCELED" ) { 
+                    console.log(`訂單已完成或已取消，從記錄中刪除: ${orderId}`);
+                    delete this.orders[baseOrderKey][orderId];
+                }
             } else {
-                console.log(`${symbol} ${side} order #${orderIndex} does not need updating`);
-                return;
+                console.log(`？？？？？沒有找到現有訂單: ${orderId}`);
+                delete this.orders[baseOrderKey][orderId];
             }
         }
     
-        await this.createOrder(symbol, side, "limit", price, quantity);
-    }
-
-    async getOrderDetails(orderId) {
-        try {
-            const orders = await this.getOrders();
-            const order = orders.find(order => order.orderId === orderId);
-            if (order) {
-                return {
-                    orderStatus: order.status,
-                    orderSide: order.side,
-                    orderPrice: order.price
-                };
-            } else {
-                return { status: "NOT_FOUND", side: null, price: null };
-            }
-        } catch (error) {
-            console.error("[getOrderStatus] error: ", error);
-            return { status: "ERROR", side: null, price: null };
+        // 如果訂單數量小於最大訂單數，創建新訂單
+        if (Object.keys(this.orders[baseOrderKey]).length < MAX_ORDER) {
+            console.log(`＋＋＋＋＋創建新訂單: ${symbol}, ${side}, ${price}, ${quantity}`);
+            await this.createOrder(symbol, side, "limit", price, quantity);
+        } else {
+            console.log(`${baseOrderKey} 已達到最大訂單數 ${MAX_ORDER}，不創建新訂單`);
         }
     }
 
 ///////////////////////// INITIALIZE MARKET MAKER /////////////////////////
-    async initializeMarketMaker(){
+    async initializeMarketMaker() {
         try {
             const existingOrders = await this.getOrders();
-            this.orders = {}; // reset orders
+            this.orders = {}; 
 
             for (const order of existingOrders) {
                 if (order.status === "open" || order.status === "partially_filled") {
-                    const symbol = order.symbol;
-                    const side = order.side;
-                    
-                    const currentOrderCount = Object.values(this.orders).filter( 
-                        o => o.symbol === symbol && o.side === side
-                    ).length;
+                    const baseOrderKey = `${order.symbol}_${order.side}`;
 
-                    if (currentOrderCount < MAX_ORDER){
-                        let orderIndex = 0;
-                        while(this.orders[`${symbol}_${side}_${orderIndex}`]){
-                            orderIndex++;
-                        }
+                    if (!this.orders[baseOrderKey]) {
+                        this.orders[baseOrderKey] = {};
+                    }
 
-                        const key = `${symbol}_${side}_${orderIndex}`;
-                        this.orders[key] = order;
-                    }  else  {
-                        console.log(`Skipping order ${order.orderId} ${ order.symbol } with status: ${order.status}`);
+                    if (Object.keys(this.orders[baseOrderKey]).length < MAX_ORDER) {
+                        this.orders[baseOrderKey][order.orderId] = {
+                            ...order,
+                            orderKey: `${baseOrderKey}_${order.orderId}`
+                        };
+                    } else {
                         await this.cancelOrder(order.orderId, order.symbol);
                     }
                 }
-            } 
+            }
+
+            for (const [key, orders] of Object.entries(this.orders)) {
+                console.log(`${key}: ${Object.keys(orders).length} 個訂單`);
+            }
         } catch (error) {
-            console.error("[initializeMarketMaker] error: ", error);
+            console.error("[initializeMarketMaker] 錯誤: ", error);
         }
-    }
+}
 
     async startMarketMaker(){
         console.log("Starting market maker");
         await this.initializeMarketMaker();
         setInterval(() => {
             this.adjustMarketMakerOrders();
-        }, 7000);
+        }, 2000);
     }
+
+
 }
 
 async function main(){
@@ -400,6 +403,8 @@ async function main(){
         await marketMaker.login(`${process.env.MARKET_MAKER_EMAIL}`, `${process.env.MARKET_MAKER_PASSWORD}`);
         if (marketMaker.cookies.accessToken) {
             console.log("Market Maker logged in successfully");
+            // await marketMaker.cancelAllOrders();
+
             await marketMaker.connect();
             marketMaker.startMarketMaker();
             await new Promise(() => {});
@@ -410,3 +415,37 @@ async function main(){
 }
 
 main();
+
+ // async getOrderDetails(orderId) {
+    //     try {
+    //         const orders = await this.getOrders();
+    //         const order = orders.find(order => order.orderId === orderId);
+    //         if (order) {
+    //             return {
+    //                 orderStatus: order.status,
+    //                 orderSide: order.side,
+    //                 orderPrice: order.price
+    //             };
+    //         } else {
+    //             return { status: "NOT_FOUND", side: null, price: null };
+    //         }
+    //     } catch (error) {
+    //         console.error("[getOrderStatus] error: ", error);
+    //         return { status: "ERROR", side: null, price: null };
+    //     }
+    // }
+
+    // async createOrder(symbol, side, type, price, quantity){
+    //     try {
+    //         const response = await this.axiosInstance.post(`${this.url}/api/trade/marketMaker/order`, 
+    //             { symbol, side, type, price, quantity }, {
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                     "Cookie": `accessToken=${this.cookies.accessToken}`
+    //                 }
+    //             });
+    //         return response.data;
+    //     } catch (error) {
+    //         console.error("[createOrder] error:", error);
+    //     }
+    // }

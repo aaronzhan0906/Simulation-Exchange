@@ -55,19 +55,17 @@ class TradeController {
             }
 
         try {
+            let authResult;
             if (side === "buy") {
-                try {
-                    await preBuyAuth(userId, price, quantity);
-                } catch (error) {
-                    return res.status(400).json({ error: true, message: error.message });
-                }
+                authResult = await preBuyAuth(userId, price, quantity);
             } else if (side === "sell") {
-                try {
-                    await preSellAuth(userId, symbol, quantity);
-                } catch (error) {
-                    return res.status(400).json({ error: true, message: error.message });
-                }
+                authResult = await preSellAuth(userId, symbol, quantity);
             } 
+    
+            if (!authResult.success) {
+                console.log("authResult:", authResult);
+                return res.status(400).json({ error: true, message: authResult.message });
+            }
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
@@ -142,19 +140,17 @@ class TradeController {
             }
 
         try { 
+            let authResult;
             if (side === "buy") {
-                try {
-                    await preBuyAuth(userId, price, quantity);
-                } catch (error) {
-                    ws.send(JSON.stringify({ type:"error", message: error.message }));
-                }
+                authResult = await preBuyAuth(userId, price, quantity);
             } else if (side === "sell") {
-                try {
-                    await preSellAuth(userId, symbol, quantity);
-                } catch (error) {
-                    ws.send(JSON.stringify({ type:"error", message: error.message }));
-                }
+                authResult = await preSellAuth(userId, symbol, quantity);
             } 
+    
+            if (!authResult.success) {
+                ws.send(JSON.stringify({ type: "error", message: authResult.message }));
+                return;
+            }
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
