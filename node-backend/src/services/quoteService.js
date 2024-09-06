@@ -11,7 +11,6 @@ const router = express.Router();
 const redis = new Redis({
     host: process.env.REDIS_HOST || "172.31.23.16",
     port: process.env.REDIS_PORT || 6379,
-    tls: process.env.REDIS_TLS === "true" ,
     retryStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);
       return delay;
