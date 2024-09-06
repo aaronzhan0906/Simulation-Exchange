@@ -37,7 +37,7 @@ services:
       - "3000:3000"
     volumes:
       - ./node-backend:/usr/src/app/node-backend
-      - ./public:/usr/src/app/public
+      - ./public:/usr/src/app/frontend
       - ./package.json:/usr/src/app/package.json
       - ./package-lock.json:/usr/src/app/package-lock.json
       - /usr/src/app/node_modules
