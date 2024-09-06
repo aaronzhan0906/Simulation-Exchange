@@ -513,7 +513,8 @@ function handleStatusName(status){
 
 // OPEN ORDERS // update status
 async function handleOrderUpdate(event) {
-    if (event.detail.message === "newOrder") {
+    console.log(event.detail);
+    if (event.detail.status === "open") {
         addOrderToUI(event.detail);
     }
 
@@ -540,7 +541,8 @@ async function handleOrderUpdate(event) {
             }
 
             if (orderData.filledQuantity !== undefined) {
-                filledQuantityCell.textContent = `${orderData.filledQuantity.toFixed(5)} ${symbol}`;
+                const dFilledQty = new Decimal(orderData.filledQuantity).toFixed(5);
+                filledQuantityCell.textContent = `${dFilledQty} ${symbol}`;
             }
 
             statusCell.textContent = handleStatusName(orderData.status); // 這邊

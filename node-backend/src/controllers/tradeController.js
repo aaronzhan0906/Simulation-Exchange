@@ -55,18 +55,19 @@ class TradeController {
             }
 
         try {
-            let authResult;
             if (side === "buy") {
-                authResult = await preBuyAuth(userId, price, quantity);
+                try {
+                    await preBuyAuth(userId, price, quantity);
+                } catch (error) {
+                    return res.status(400).json({ error: true, message: error.message });
+                }
             } else if (side === "sell") {
-                authResult = await preSellAuth(userId, symbol, quantity);
-            } else {
-                return res.status(400).json({ error: true, message: "Invalid order side" });
-            }
-
-            if (!authResult.success) {
-                return res.status(403).json({ error: true, message: authResult.message });
-            }
+                try {
+                    await preSellAuth(userId, symbol, quantity);
+                } catch (error) {
+                    return res.status(400).json({ error: true, message: error.message });
+                }
+            } 
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
@@ -132,12 +133,12 @@ class TradeController {
 
     
     // router.post("/marketMaker/order", TradeController.createOrder);
-    async createOrderByMarketMaker(req, res){
-        const { symbol, side, type, price, quantity } = req.body;
-            const userId = req.user.userId;
+    async createOrderByMarketMaker(ws, message) {
+        const { symbol, side, type, price, quantity } = message.data;
+            const userId = ws.userId;
 
             if ( !userId || !symbol || !side || !type || !price || !quantity) {
-                return res.status(400).json({ error:true, message:"Missing required fields!" })
+                ws.send(JSON.stringify({ type:"error", message: "Missing required fields" }));
             }
 
         try { 
@@ -145,13 +146,13 @@ class TradeController {
                 try {
                     await preBuyAuth(userId, price, quantity);
                 } catch (error) {
-                    return res.status(400).json({ error: true, message: error.message });
+                    ws.send(JSON.stringify({ type:"error", message: error.message }));
                 }
             } else if (side === "sell") {
                 try {
                     await preSellAuth(userId, symbol, quantity);
                 } catch (error) {
-                    return res.status(400).json({ error: true, message: error.message });
+                    ws.send(JSON.stringify({ type:"error", message: error.message }));
                 }
             } 
 
@@ -185,27 +186,48 @@ class TradeController {
                 status: order.status,
                 createdAt: order.created_at
             })
-            
 
-            res.status(200).json({
-                ok: true,
-                message: "Order created successfully",
-                order: {
+            const newOrder = {
+                type: "orderUpdate",
+                message: "newOrder",
+                data: {
+                    message: "newOrder",
                     orderId: order.order_id,
-                    userId: order.user_id,
                     symbol: order.symbol,
                     side: order.side,
                     type: order.type,
                     price: order.price,
                     quantity: order.quantity,
+                    executedQuantity: order.executed_quantity,
                     status: order.status,
                     createdAt: order.created_at
                 }
-            })
+            };
+
+            sendOrderUpdateToUser(order.user_id, newOrder);
+            
+
+            ws.send(JSON.stringify({
+                type: "orderCreated",
+                data: {
+                    ok: true,
+                    message: "Order created successfully",
+                    order: {
+                        orderId: order.order_id,
+                        symbol: order.symbol,
+                        side: order.side,
+                        type: order.type,
+                        price: order.price,
+                        quantity: order.quantity,
+                        status: order.status,
+                        createdAt: order.created_at
+                    }
+                }
+            }));
 
         } catch(error) {
             console.error(error);
-            throw error;
+            ws.send(JSON.stringify({ type:"error", message: error.message }));
         }
     }
 

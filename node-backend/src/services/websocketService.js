@@ -2,6 +2,7 @@ import { WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import { parse } from "cookie";
+import TradeController from "../controllers/tradeController.js";
 
 class WebSocketService {
     constructor(){
@@ -79,6 +80,13 @@ class WebSocketService {
                 case "getPersonalData":
                     this.handleAuthenticatedAction(ws, () => {
                         console.log("WS Handling getPersonalData:", ws.userId);
+                    });
+                    break;
+
+                case "createOrderByMarketMaker":
+                    this.handleAuthenticatedAction(ws, () => {
+                        console.log("WS Handling createOrderByMarketMaker:", ws.userId);
+                        TradeController.createOrderByMarketMaker(ws, data);
                     });
                     break;
 

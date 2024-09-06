@@ -6,6 +6,7 @@ import Decimal from "decimal.js";
 
 dotenv.config();
 console.log("Environment variables loaded");
+const MAX_ORDER = 5;
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = process.env.SUPPORTED_SYMBOLS.split(",").map(symbol => symbol.trim());
@@ -16,7 +17,6 @@ const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 const binanceWS = new WebSocket(wsUrl);
 
 let latestTickerData = {};
-
 
 binanceWS.on("message", (data) => {
     const parsedData = JSON.parse(data);
@@ -37,6 +37,7 @@ binanceWS.on("error", (error) => {
 class MarketMaker {
     constructor(){
         this.url = process.env.TARGET_URL;
+        this.wsUrl = process.env.TARGET_URL.replace("https", "wss");
         this.cookies = {};
         this.orders = {};
         this.axiosInstance = axios.create({
@@ -47,6 +48,89 @@ class MarketMaker {
         console.log("MarketMaker instance created");
     }
 
+///////////////////////// WS FUNCTIONS /////////////////////////
+    connect() {
+        return new Promise((resolve, reject) => {
+            const headers = {
+                Cookie: `accessToken=${this.cookies.accessToken}`
+            };
+    
+            this.ws = new WebSocket(this.wsUrl, {
+                headers: headers,
+                rejectUnauthorized: false
+            });
+        
+            this.ws.on("open", () => {
+                console.log("WebSocket connected to trading server");
+                resolve();
+            });
+        
+            this.ws.on("message", (data) => {
+                this.handleMessage(data);
+            });
+        
+            this.ws.on("error", (error) => {
+                console.error("Trading server WebSocket error: ", error);
+                reject(error);
+            });
+        
+            this.ws.on("close", () => {
+                console.log("WebSocket connection closed");
+                this.onClose();
+            })
+        });
+    }
+
+    requestPersonalData(){
+        console.log("requesting personal data");
+        if (this.ws && this.ws.readyState === 1) {
+            this.ws.send(JSON.stringify({ action: "getPersonalData"}));
+        } else {
+            console.error("WebSocket is not open. Unable to request personal data.");
+        }
+    }
+
+    handleMessage(event) {
+        try {
+            const message = JSON.parse(event);
+            switch(message.type) {
+                case "welcome":
+                    console.log("Received welcome message");
+                    break;
+
+                case "subscribed":
+                    console.log(`Successfully subscribed to ${message.symbol}`);
+                    break;
+
+                case "orderCreated":
+                    this.handleOrderCreated(message.data);
+                    break;
+                
+                case "orderUpdate":
+                    break;
+
+                case "error":
+                    console.error("WS error:", message.message);
+                    break;
+                default:
+                    console.log("Unhandled message type:", message.type);
+            }
+        } catch (error) {
+            console.error("Error parsing message:", error);
+        }
+    }
+    
+
+    sendMessage(message){ 
+        if (this.ws && this.ws.readyState === 1) {
+            this.ws.send(JSON.stringify(message));
+        } else {
+            console.error("WebSocket is not open");
+        }
+    }
+
+
+///////////////////////// MARKET MAKER FUNCTIONS /////////////////////////
     async login(email, password){
         try {
             const response = await this.axiosInstance.post(`${this.url}/api/user/auth`, { email, password }, {
@@ -84,20 +168,54 @@ class MarketMaker {
         }
     }
 
-    async createOrder(symbol, side, type, price, quantity){
-        try {
-            const response = await this.axiosInstance.post(`${this.url}/api/trade/marketMaker/order`, 
-                { symbol, side, type, price, quantity }, {
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Cookie": `accessToken=${this.cookies.accessToken}`
-                    }
-                });
-            return response.data;
-        } catch (error) {
-            console.error("[createOrder] error: ", error);
+    async createOrder(symbol, side, type, price, quantity) {
+        const message = {
+            action: "createOrderByMarketMaker",
+            data: { 
+                symbol, 
+                side, 
+                type, 
+                price, 
+                quantity
+            }
+        };
+        this.sendMessage(message);
+    }
+
+    handleOrderCreated(orderData) {
+        const newOrder = orderData.order;
+        if (newOrder) {
+            const { symbol, side, price, quantity } = newOrder;
+            const baseOrderKey = `${symbol}_${side}_`;
+            let orderIndex = 0;
+
+            while(this.orders[`${baseOrderKey}${orderIndex}`]){
+                orderIndex++;
+            }
+
+            const orderKey = `${baseOrderKey}${orderIndex}`;
+        
+            console.log(`Creating a new ${side} order #${orderIndex}: ${symbol}, price: ${price}, quantity: ${quantity}`);
+            this.orders[orderKey] = newOrder;
+        } else {
+            console.error(`Failed to create ${symbol} ${side} order #${orderIndex}`);
         }
     }
+
+    // async createOrder(symbol, side, type, price, quantity){
+    //     try {
+    //         const response = await this.axiosInstance.post(`${this.url}/api/trade/marketMaker/order`, 
+    //             { symbol, side, type, price, quantity }, {
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                     "Cookie": `accessToken=${this.cookies.accessToken}`
+    //                 }
+    //             });
+    //         return response.data;
+    //     } catch (error) {
+    //         console.error("[createOrder] error:", error);
+    //     }
+    // }
 
     async cancelOrder(orderId, symbol) {
         try {
@@ -112,7 +230,11 @@ class MarketMaker {
                 });
             return response.data;
         } catch (error) {
-            console.error("[cancelOrder]: ", error);
+            console.error(
+                (error.response && error.response.status === 401) 
+                  ? "[createOrder] error: order has been executed" 
+                  : `[createOrder] error: ${error}` 
+            );
         }
     }
 
@@ -139,10 +261,10 @@ class MarketMaker {
     
                 const precision = this.determinePrecision(currentPrice);
                 
-                for (let i = 0; i < 5; i++) {
-                    const baseSpread = Math.pow(10, -precision-1) * i * 5;
-                    const buySpread = baseSpread + (Math.random() * Math.pow(10, -precision));
-                    const sellSpread = baseSpread + (Math.random() * Math.pow(10, -precision));
+                for (let i = 0; i < MAX_ORDER; i++) {
+                    const baseSpread = Math.pow(10, -precision-1) * Math.pow(i , 4)/7 ;
+                    const buySpread = (baseSpread + (Math.random() * Math.pow(10, -precision)))/5;
+                    const sellSpread = (baseSpread + (Math.random() * Math.pow(10, -precision)))/5;
         
                     const buyPrice = new Decimal(currentPrice).times(1 - buySpread).toFixed(2);
                     const sellPrice = new Decimal(currentPrice).times(1 + sellSpread).toFixed(2);
@@ -182,7 +304,7 @@ class MarketMaker {
             const dCurrentPrice = new Decimal(currentPrice);
             const dOrderPrice = new Decimal(orderPrice || 0);
             const priceDifference = dOrderPrice.minus(dCurrentPrice);
-            const maxDifference = Decimal.sqrt(dCurrentPrice.div(35))
+            const maxDifference = Decimal.sqrt(dCurrentPrice.div(45))
     
             if ((orderStatus === "open" || orderStatus === "partially_filled")
                 && orderSide === "buy" 
@@ -206,13 +328,7 @@ class MarketMaker {
             }
         }
     
-        console.log(`Creating a new ${side} order #${orderIndex}: ${symbol}, price: ${price}, quantity: ${quantity}`);
-        const newOrder = await this.createOrder(symbol, side, "limit", price, quantity);
-        if (newOrder && newOrder.order) {
-            this.orders[orderKey] = newOrder.order;
-        } else {
-            console.error(`Failed to create ${symbol} ${side} order #${orderIndex}`);
-        }
+        await this.createOrder(symbol, side, "limit", price, quantity);
     }
 
     async getOrderDetails(orderId) {
@@ -229,7 +345,7 @@ class MarketMaker {
                 return { status: "NOT_FOUND", side: null, price: null };
             }
         } catch (error) {
-            console.error("Error in [getOrderStatus]: ", error);
+            console.error("[getOrderStatus] error: ", error);
             return { status: "ERROR", side: null, price: null };
         }
     }
@@ -249,7 +365,7 @@ class MarketMaker {
                         o => o.symbol === symbol && o.side === side
                     ).length;
 
-                    if (currentOrderCount < 5){
+                    if (currentOrderCount < MAX_ORDER){
                         let orderIndex = 0;
                         while(this.orders[`${symbol}_${side}_${orderIndex}`]){
                             orderIndex++;
@@ -264,7 +380,7 @@ class MarketMaker {
                 }
             } 
         } catch (error) {
-            console.error("Error in [initializeMarketMaker]: ", error);
+            console.error("[initializeMarketMaker] error: ", error);
         }
     }
 
@@ -284,11 +400,12 @@ async function main(){
         await marketMaker.login(`${process.env.MARKET_MAKER_EMAIL}`, `${process.env.MARKET_MAKER_PASSWORD}`);
         if (marketMaker.cookies.accessToken) {
             console.log("Market Maker logged in successfully");
+            await marketMaker.connect();
             marketMaker.startMarketMaker();
             await new Promise(() => {});
         }
     } catch (error) {
-        console.error("Error in main: ", error);
+        console.error("[Main] error: ", error);
     }
 }
 

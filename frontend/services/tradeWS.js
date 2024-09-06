@@ -41,7 +41,6 @@ class TradeWebSocket {
                 break;
 
             case "subscribed":
-
                 console.log(`Successfully subscribed to ${message.symbol}`);
                 break;
     
