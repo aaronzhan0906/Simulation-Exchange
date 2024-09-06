@@ -37,7 +37,7 @@ services:
       - "3000:3000"
     volumes:
       - ./node-backend:/usr/src/app/node-backend
-      - ./public:/usr/src/app/frontend
+      - ./frontend:/usr/src/app/frontend
       - ./package.json:/usr/src/app/package.json
       - ./package-lock.json:/usr/src/app/package-lock.json
       - /usr/src/app/node_modules
@@ -50,7 +50,6 @@ services:
       - BINANCE_API_KEY=https://api.binance.us/api/v3/klines
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_TLS=false
     command: >
       /bin/sh -c "
         chmod +x /wait-for-it.sh &&

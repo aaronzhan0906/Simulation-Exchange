@@ -57,10 +57,6 @@ app.get("/signup", (req, res) => {
     res.sendFile(path.join(__dirname, "..", "..", "frontend", "signup.html"));
 });
 
-app.get("/practice", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "..", "frontend", "chartPractice.html"));
-});
-
 
 // route
 import homeRoute from "./routes/homeRoute.js";
