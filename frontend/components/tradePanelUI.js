@@ -277,6 +277,7 @@ function quickSelectButtonAndInputHandler() {
     const totalInput = document.getElementById("trade-panel__input--total");
     const inputs = [priceInput, quantityInput, totalInput];
     const buyButton = document.getElementById("trade-panel__tab--buy");
+    const submitButton = document.getElementById("trade-panel__submit");
 
     function clearActiveButtons() {
         buttons.forEach(btn => btn.classList.remove("active"));
@@ -293,15 +294,39 @@ function quickSelectButtonAndInputHandler() {
             ? new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0")
             : new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
         
-        if (amount.greaterThan(availableAmount) ){
-            isBuyMode
-            ? tooltipHandler.show(totalInput, `Max Amount  ${availableAmount}`, top)
-            : tooltipHandler.show(quantityInput, `Max Quantity  ${availableAmount}`, top);
-            return false;
+        if (amount.greaterThan(availableAmount)) {
+            const tooltipMessage = isBuyMode
+                ? `Max Amount ${availableAmount} USDT`
+                : `Max Quantity ${availableAmount} ${baseAsset.toUpperCase()}`;
+            
+            const tooltipTarget = isBuyMode ? totalInput : quantityInput;
+            
+            tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
+            submitButton.disabled = true;
+            
+            submitButton.addEventListener("mouseover", () => showButtonTooltip(availableAmount));
+            submitButton.addEventListener("mouseout", hideButtonTooltip);
         } else {
             tooltipHandler.hide();
+            submitButton.disabled = false;
+            
+            submitButton.removeEventListener("mouseover", () => showButtonTooltip(availableAmount));
+            submitButton.removeEventListener("mouseout", hideButtonTooltip);
         }
-        return true;
+        
+        return true;  // keep calculation
+    }
+    
+    function showButtonTooltip(availableAmount) {
+        const isBuyMode = buyButton.classList.contains("active");
+        const tooltipMessage = isBuyMode
+            ? `Max Amount ${availableAmount} USDT`
+            : `Max Quantity ${availableAmount} ${baseAsset.toUpperCase()}`;
+        tooltipHandler.show(submitButton, tooltipMessage, "top");
+    }
+    
+    function hideButtonTooltip() {
+        tooltipHandler.hide();
     }
 
 
@@ -579,7 +604,6 @@ async function cancelOrder(orderId) {
             initAvailableBalance();
             initAvailableAsset();
         } else if (response.status === 401) {
-            // alert("Order already filled");
             orderRow.remove();
             console.log("Order already filled");
         } else {
@@ -590,6 +614,10 @@ async function cancelOrder(orderId) {
         console.error("Fail to cancel order in cancelOrder():", error);
         throw error;
     }
+}
+
+function updateAvailableBalanceAfterCancel() {
+
 }
 
 // OPEN ORDERS // update open orders count 

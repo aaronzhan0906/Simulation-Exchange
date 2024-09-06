@@ -391,16 +391,16 @@ class TradeController {
             }
     
             if (updateResult.updateStatus === "CANCELED" || updateResult.updateStatus === "PARTIALLY_FILLED_CANCELED") {
-                const cancelMessage = {
-                    type: "orderUpdate",
-                    message: "Order cancelled",
+                const releaseAvailable = {
+                    type: "releaseAvailable",
+                    message: "Order cancelled and released available balance or asset",
                     data: {
                         orderId: updateResult.updateOrderId,
                         status: updateResult.updateStatus,
                     }
                 };
     
-                WebSocketService.sendToUser(userId, cancelMessage);
+                WebSocketService.sendToUser(userId, releaseAvailable);
                 console.log(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
             }
         } catch(error) {
@@ -470,7 +470,7 @@ async function preBuyAuth(userId, price, quantity) {
         if (usableBalance.lessThan(costAmount)) {
             return {
                 success: false,
-                message: "Insufficient balance"
+                message: "INSUFFICIENT AVAILABLE BALANCE"
             };
         } 
         await TradeModel.lockBalance(userId, price, quantity);
@@ -495,7 +495,7 @@ async function preSellAuth(userId, symbol, quantity) {
         if (dAvailableQuantity.lessThan(sellQuantity)) {
             return {
                 success: false,
-                message: "Insufficient available asset"
+                message: "INSUFFICIENT AVAILABLE ASSET"
             };
         }
         await TradeModel.lockAsset(userId, symbol, quantity);
