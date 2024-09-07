@@ -4,12 +4,12 @@ function initializeTooltip() {
     tooltipElement = document.createElement("div");
     tooltipElement.className = "tooltip";
     tooltipElement.style.display = "none";
-    tooltipElement.style.position = "absolute";
+    tooltipElement.style.position = "fixed";
     tooltipElement.style.backgroundColor = "rgba(74, 144, 226, 1)" ;
     tooltipElement.style.color = "#eeeeee";
     tooltipElement.style.padding = "8px 12px";
     tooltipElement.style.borderRadius = "5px";
-    tooltipElement.style.fontSize = "12px";
+    tooltipElement.style.fontSize = "11px";
     tooltipElement.style.zIndex = "1000";
 
     // Add CSS for the triangle
@@ -23,7 +23,7 @@ function initializeTooltip() {
             content: "";
             position: absolute;
             top: 100%;
-            left: 50%;
+            left: 60%;
             margin-left: calc(var(--triangle-size) * -1);
             border-width: var(--triangle-size);
             border-style: solid;

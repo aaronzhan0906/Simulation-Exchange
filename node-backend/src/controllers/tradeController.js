@@ -399,8 +399,17 @@ class TradeController {
                         status: updateResult.updateStatus,
                     }
                 };
-    
-                WebSocketService.sendToUser(userId, releaseAvailable);
+
+                const cancelMessage = {
+                    type: "orderUpdate",
+                    message: "Order cancelled",
+                    data: {
+                        orderId: updateResult.updateOrderId,
+                        status: updateResult.updateStatus,
+                    }
+                };
+
+                WebSocketService.sendToUser(userId, cancelMessage);
                 console.log(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
             }
         } catch(error) {

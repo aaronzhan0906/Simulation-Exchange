@@ -280,11 +280,10 @@ class MarketMaker {
                     const sellPrice = new Decimal(currentPrice).times(1 + sellSpread).toFixed(2);
         
                     const min = 5/Math.pow(10, precision);
-                    const max = 7500/Math.pow(10, precision);
+                    const max = 6000/Math.pow(10, precision);
                     const buyQuantity = (Math.random() * (max - min) + min).toFixed(precision);
                     const sellQuantity = (Math.random() * (max - min) + min).toFixed(precision);
                     
-
                     await this.placeOrUpdateOrder(formattedSymbol, "buy", buyPrice, buyQuantity);
                     await this.placeOrUpdateOrder(formattedSymbol, "sell", sellPrice, sellQuantity);
  
@@ -382,7 +381,7 @@ class MarketMaker {
                 console.log(`${key}: ${Object.keys(orders).length} 個訂單`);
             }
         } catch (error) {
-            console.error("[initializeMarketMaker] 錯誤: ", error);
+            console.error("[initializeMarketMaker] error: ", error);
         }
     }
 

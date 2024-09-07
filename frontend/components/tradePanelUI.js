@@ -149,7 +149,7 @@ async function submitOrder(orderType, orderSide, price, quantity) {
     if (quantity == 0) {
         const inputQuantity = document.getElementById("trade-panel__input--quantity");
         const minQuantity = 1 / Math.pow(10, currentQuantityPrecision);
-        tooltipHandler.show(inputQuantity, `Min Quantity: ${minQuantity}`, top);
+        tooltipHandler.show(inputQuantity, `Min Quantity: ${minQuantity} ${baseAsset}`, top);
         return;
     }
 
@@ -277,7 +277,27 @@ function quickSelectButtonAndInputHandler() {
     const totalInput = document.getElementById("trade-panel__input--total");
     const inputs = [priceInput, quantityInput, totalInput];
     const buyButton = document.getElementById("trade-panel__tab--buy");
+    const sellButton = document.getElementById("trade-panel__tab--sell");
     const submitButton = document.getElementById("trade-panel__submit");
+
+    // re evaluate current mode
+    buyButton.addEventListener("click", reevaluateSubmitButtonState);
+    sellButton.addEventListener("click", reevaluateSubmitButtonState);
+
+    function reevaluateSubmitButtonState() {
+        updateMode();
+        const isBuyMode = currentMode === "buy";
+        const price = new Decimal(priceInput.value || "0");
+        const quantity = new Decimal(quantityInput.value || "0");
+        const total = price.times(quantity);
+    
+        checkAvailableAmount(isBuyMode ? total : quantity);
+    }
+
+    let currentMode = "buy";
+    function updateMode() {
+        currentMode = buyButton.classList.contains("active") ? "buy" : "sell";
+    }
 
     function clearActiveButtons() {
         buttons.forEach(btn => btn.classList.remove("active"));
@@ -289,94 +309,107 @@ function quickSelectButtonAndInputHandler() {
         return reg.test(inputValue) ? inputValue : inputValue.slice(0, -1);
     }
 
-    function checkAvailableAmount(amount, isBuyMode) {
+    function checkLeastQuantity(quantity) {
+        const minQuantity = 1 / Math.pow(10, currentQuantityPrecision);
+        return new Decimal(quantity).lessThan(minQuantity);
+    }
+
+    function checkAvailableAmount(amount) {
+        const isBuyMode = currentMode === "buy";
         const availableAmount = isBuyMode
             ? new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0")
             : new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
         
-        if (availableAmount.isZero()) {
-            const tooltipMessage = isBuyMode
-                ? `Insufficient balance: 0 USDT`
-                : `Insufficient asset: 0 ${baseAsset.toUpperCase()}`;
-            
-            tooltipHandler.show(quantityInput, tooltipMessage, "top");
-            submitButton.disabled = true;
-            
-            submitButton.addEventListener("mouseover", showButtonTooltip);
-            submitButton.addEventListener("mouseout", hideButtonTooltip);
-            
-            return false; // stop calculation
-        }
+        let isDisabled = false;
+        let tooltipMessage = "";
+        let tooltipTarget = isBuyMode ? totalInput : quantityInput;
 
-        if (amount.greaterThan(availableAmount)) {
-            const tooltipMessage = isBuyMode
-                ? `Max Amount ${availableAmount} USDT`
-                : `Max Quantity ${availableAmount} ${baseAsset.toUpperCase()}`;
-            
-            const tooltipTarget = isBuyMode ? totalInput : quantityInput;
-            
+        if (amount.isZero() && inputType !== "quantity") {
+            return true; 
+        }
+    
+        if (availableAmount.isZero()) {
+            isDisabled = true;
+            tooltipTarget = isBuyMode
+                ? availablePriceElement
+                : availableAssetElement;
+            tooltipMessage = isBuyMode
+                ? "Insufficient balance"
+                : "Insufficient asset";
+        } else if (amount.greaterThan(availableAmount)) {
+            console.log(availableAmount);
+            isDisabled = true;
+            tooltipMessage = isBuyMode
+                ? `Max Amount ${availableAmount.toFixed(2)} USDT`
+                : `Max Quantity ${availableAmount.toFixed(5)} ${baseAsset.toUpperCase()}`;
+        } else if (checkLeastQuantity(quantityInput.value)) {
+            isDisabled = true;
+            tooltipMessage = `Min Quantity: ${(1 / Math.pow(10, currentQuantityPrecision)).toFixed(currentQuantityPrecision)} ${baseAsset.toUpperCase()}`;
+            tooltipTarget = quantityInput;
+        }
+    
+        if (isDisabled) {
             tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
             submitButton.disabled = true;
-            
-            submitButton.addEventListener("mouseover", showButtonTooltip);
-            submitButton.addEventListener("mouseout", hideButtonTooltip);
         } else {
             tooltipHandler.hide();
             submitButton.disabled = false;
-            
-            submitButton.removeEventListener("mouseover", showButtonTooltip);
-            submitButton.removeEventListener("mouseout", hideButtonTooltip);
         }
-        
+    
+        submitButton.removeEventListener("mouseover", showButtonTooltip);
+        submitButton.removeEventListener("mouseout", hideButtonTooltip);
+    
+        if (isDisabled) {
+            submitButton.addEventListener("mouseover", showButtonTooltip);
+            submitButton.addEventListener("mouseout", hideButtonTooltip);
+        }
+    
         return true;  // keep calculation
     }
     
     function showButtonTooltip() {
-        const isBuyMode = buyButton.classList.contains("active");
-        const availableAmount = isBuyMode
-            ? new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0")
-            : new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
-        const tooltipMessage = isBuyMode
-            ? `Max Amount ${availableAmount} USDT`
-            : `Max Quantity ${availableAmount} ${baseAsset.toUpperCase()}`;
-        tooltipHandler.show(submitButton, tooltipMessage, "top");
+        updateMode(); 
+        const isBuyMode = currentMode === "buy";
+        let availableAmount, tooltipMessage, tooltipTarget;
+    
+        if (isBuyMode) {
+            availableAmount = new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0");
+            tooltipTarget = totalInput;
+            tooltipMessage = availableAmount.isZero() ? "Insufficient balance" : `Max Amount ${availableAmount.toFixed(2)} USDT`;
+        } else {
+            availableAmount = new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
+            tooltipTarget = availableAssetElement;
+            tooltipMessage = availableAmount.isZero() ? "Insufficient Asset" : `Max Quantity ${availableAmount.toFixed(5)} ${baseAsset.toUpperCase()}`;
+        }
+    
+        tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
     }
     
     function hideButtonTooltip() {
         tooltipHandler.hide();
     }
 
-
+    // CALCULATE AND UPDATE
     function calculateAndUpdate(changedInput) {
         const price = new Decimal(priceInput.value || "0");
         const quantity = new Decimal(quantityInput.value || "0");
         const total = new Decimal(totalInput.value || "0");
         const isBuyMode = buyButton.classList.contains("active");
-        const minTotalAmount = new Decimal("0.01");
-    
+              
         if (changedInput === "price" || changedInput === "quantity") {
             const calculatedTotal = price.times(quantity);
-            if (checkAvailableAmount(isBuyMode ? calculatedTotal : quantity, isBuyMode)) {
-                if (calculatedTotal.lessThan(minTotalAmount)) {
-                    tooltipHandler.show(totalInput, `Min Amount：0.01 USDT`, "top");
-                    submitButton.disabled = true;
-                } else {
-                    tooltipHandler.hide();
-                    submitButton.disabled = false;
-                    totalInput.value = calculatedTotal.toFixed(2);
-                }
+            if (checkAvailableAmount(isBuyMode ? calculatedTotal : quantity, changedInput)) {
+                totalInput.value = calculatedTotal.toFixed(2);
             }
         } else if (changedInput === "total") {
-            if (total.lessThan(minTotalAmount)) {
-                tooltipHandler.show(totalInput, `Min Amount：0.01 USDT`, "top");
-                submitButton.disabled = true;
+            if (price.isZero()) {
+                quantityInput.value = "0";
             } else {
-                if (checkAvailableAmount(total, isBuyMode)) {
-                    tooltipHandler.hide();
-                    submitButton.disabled = false;
-                    const calculatedQuantity = total.div(price);
-                    quantityInput.value = calculatedQuantity.toFixed(currentQuantityPrecision);
-                }
+                const calculatedQuantity = total.div(price);
+                quantityInput.value = calculatedQuantity.toFixed(currentQuantityPrecision);
+            }
+            
+            if (!checkAvailableAmount(isBuyMode ? total : new Decimal(quantityInput.value), changedInput)) {
             }
         }
     }
