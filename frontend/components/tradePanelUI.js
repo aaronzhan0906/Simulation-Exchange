@@ -304,21 +304,24 @@ function quickSelectButtonAndInputHandler() {
             tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
             submitButton.disabled = true;
             
-            submitButton.addEventListener("mouseover", () => showButtonTooltip(availableAmount));
+            submitButton.addEventListener("mouseover", showButtonTooltip);
             submitButton.addEventListener("mouseout", hideButtonTooltip);
         } else {
             tooltipHandler.hide();
             submitButton.disabled = false;
             
-            submitButton.removeEventListener("mouseover", () => showButtonTooltip(availableAmount));
+            submitButton.removeEventListener("mouseover", showButtonTooltip);
             submitButton.removeEventListener("mouseout", hideButtonTooltip);
         }
         
         return true;  // keep calculation
     }
     
-    function showButtonTooltip(availableAmount) {
+    function showButtonTooltip() {
         const isBuyMode = buyButton.classList.contains("active");
+        const availableAmount = isBuyMode
+            ? new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0")
+            : new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
         const tooltipMessage = isBuyMode
             ? `Max Amount ${availableAmount} USDT`
             : `Max Quantity ${availableAmount} ${baseAsset.toUpperCase()}`;
@@ -335,19 +338,31 @@ function quickSelectButtonAndInputHandler() {
         const quantity = new Decimal(quantityInput.value || "0");
         const total = new Decimal(totalInput.value || "0");
         const isBuyMode = buyButton.classList.contains("active");
-
-        // No calculation if any of the input is zero
-        // if (price.isZero()) return;  
-              
+        const minTotalAmount = new Decimal("0.01");
+    
         if (changedInput === "price" || changedInput === "quantity") {
             const calculatedTotal = price.times(quantity);
             if (checkAvailableAmount(isBuyMode ? calculatedTotal : quantity, isBuyMode)) {
-                totalInput.value = calculatedTotal.toFixed(2);
+                if (calculatedTotal.lessThan(minTotalAmount)) {
+                    tooltipHandler.show(totalInput, `Min Amount：0.01 USDT`, "top");
+                    submitButton.disabled = true;
+                } else {
+                    tooltipHandler.hide();
+                    submitButton.disabled = false;
+                    totalInput.value = calculatedTotal.toFixed(2);
+                }
             }
         } else if (changedInput === "total") {
-            if (checkAvailableAmount(total, isBuyMode)) {
-                const calculatedQuantity = total.div(price);
-                quantityInput.value = calculatedQuantity.toFixed(currentQuantityPrecision);
+            if (total.lessThan(minTotalAmount)) {
+                tooltipHandler.show(totalInput, `Min Amount：0.01 USDT`, "top");
+                submitButton.disabled = true;
+            } else {
+                if (checkAvailableAmount(total, isBuyMode)) {
+                    tooltipHandler.hide();
+                    submitButton.disabled = false;
+                    const calculatedQuantity = total.div(price);
+                    quantityInput.value = calculatedQuantity.toFixed(currentQuantityPrecision);
+                }
             }
         }
     }
@@ -383,14 +398,6 @@ function quickSelectButtonAndInputHandler() {
     inputs.forEach(input => {
         input.addEventListener("focus", (event) => {
             clearActiveButtons(); // clear active percentage buttons
-            
-            // Show tooltip for min quantity when quantity input is focused
-            // const inputType = event.target.id.split("--")[1];
-            // if (inputType === "quantity") {
-            //     const quantityInput = event.target;
-            //     const minQuantity = 1 / Math.pow(10, currentQuantityPrecision);
-            //     tooltipHandler.show(quantityInput, `Min Quantity: ${minQuantity}`, top);
-            // }
         });
 
         input.addEventListener("blur", () => {
