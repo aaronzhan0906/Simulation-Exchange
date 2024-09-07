@@ -46,7 +46,7 @@ class MarketMaker {
             })
         });
         this.lastInitializeTime = 0;
-        this.initializeInterval = 15000;
+        this.initializeInterval = 10000;
         console.log("MarketMaker instance created");
     }
 
@@ -317,11 +317,11 @@ class MarketMaker {
         const allOrders = await this.getOrders();
         const totalOrderCount = allOrders.length;
 
-        if (totalOrderCount > MAX_ORDER * 20) {
-            console.log(`訂單總數（${totalOrderCount}）超過 200，執行初始化`);
+        if (totalOrderCount > MAX_ORDER * 15) {
+            console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 15}，執行初始化`);
             await this.initializeMarketMaker();
             
-            console.log(`訂單總數（${totalOrderCount}）超過 200，暫停操作 5 秒`);
+            console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 15}，暫停操作 5 秒`);
             await new Promise(resolve => setTimeout(resolve, 5000));
             console.log("恢復操作");
         }
