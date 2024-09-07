@@ -46,7 +46,7 @@ class MarketMaker {
             })
         });
         this.lastInitializeTime = 0;
-        this.initializeInterval = 60000;
+        this.initializeInterval = 15000;
         console.log("MarketMaker instance created");
     }
 

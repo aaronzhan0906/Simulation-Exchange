@@ -171,8 +171,7 @@ async function submitOrder(orderType, orderSide, price, quantity) {
         });
 
         if (response.ok) {
-            initAvailableBalance();
-            initAvailableAsset();
+            console.log("Order created successfully");
         } else {
             throw new Error(response.status);
         }
@@ -624,10 +623,12 @@ async function handleOrderUpdate(event) {
                 filledQuantityCell.textContent = `${dFilledQty} ${symbol}`;
             }
 
-            statusCell.textContent = handleStatusName(orderData.status); // 這邊
+            statusCell.textContent = handleStatusName(orderData.status); 
         }
 
         updateOpenOrdersCount();
+        initAvailableBalance();
+        initAvailableAsset();
 
     } catch (error) {
         console.error("Failed to handle order update:", error);
@@ -654,9 +655,6 @@ async function cancelOrder(orderId) {
 
         if (response.ok){
             orderRow.remove();
-            updateOpenOrdersCount();
-            initAvailableBalance();
-            initAvailableAsset();
         } else if (response.status === 401) {
             orderRow.remove();
             console.log("Order already filled");
