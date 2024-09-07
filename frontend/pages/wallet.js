@@ -59,9 +59,7 @@ async function initAssets() {
         const assetListContainer = document.getElementById("asset-list__container");
         const assetElements = new Map(); // { symbol: { priceDiv, changeDiv } } to subscribe room
 
-        let totalAsset = new Decimal(usdtBalance);
-        console.log("totalAsset(usdtBalance)", totalAsset.toString())
-        let totalProfit = new Decimal(0);
+        let totalAssetValue = new Decimal(usdtBalance);
 
         assetsData.assets.forEach(asset => {
             const ticker = tickerData.latestTickerData[`${asset.symbol.toUpperCase()}USDT`]; // xxx -> XXXUSDT to get ticker data
@@ -69,17 +67,11 @@ async function initAssets() {
             const amount = new Decimal(asset.amount || 0); 
             if (amount.isZero()) return; 
 
-            const averageCost = new Decimal(asset.averagePrice || 0);
             const recentPrice = new Decimal(ticker.price || 0);
 
             const assetValue = amount.times(recentPrice)
-            const profitValue = amount.mul(recentPrice).sub(amount.mul(averageCost)).mul(100).div(new Decimal(10000));
 
-
-            totalAsset = assetValue.plus(totalAsset);
-            console.log("totalAsset", totalAsset.toString())
-            totalProfit = profitValue
-        
+            totalAssetValue = assetValue.plus(totalAssetValue);
         
             const combinedData = {
                 ...asset,
@@ -99,9 +91,11 @@ async function initAssets() {
             }
         });
 
+        const profitValue = totalAssetValue.minus(new Decimal(10000)).div(new Decimal(10000));
+
         // Update total asset and profit/less
-        updateTotalAsset(totalAsset);
-        updateTotalProfit(totalProfit);
+        updateTotalAsset(totalAssetValue);
+        updateTotalProfit(profitValue);
 
         // Initialize WebSocket connection
         walletWebSocket.init(assetsData.assets.map(asset => asset.symbol));
@@ -205,11 +199,14 @@ function updateTotalAsset(totalAsset) {
 function updateTotalProfit(totalProfit) {
     const balanceValueProfit = document.getElementById("balance-value__profit");
     const roundedProfit = Math.ceil(totalProfit * 100) / 100; // round to 2 decimal places
-    balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
+
+    
     if (totalProfit.greaterThan(0)) {
+        balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
         balanceValueProfit.classList.add("positive");
         balanceValueProfit.classList.remove("negative");
     } else if (totalProfit.lessThan(0)) {
+        balanceValueProfit.textContent = `- ${roundedProfit.toFixed(2)} %`;
         balanceValueProfit.classList.remove("positive");
         balanceValueProfit.classList.add("negative");
     } else {
