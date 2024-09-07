@@ -297,7 +297,7 @@ function quickSelectButtonAndInputHandler() {
         const quantity = new Decimal(quantityInput.value || "0");
         const total = price.times(quantity);
     
-        checkAvailableAmount(isBuyMode ? total : quantity);
+        checkAvailableAmount(isBuyMode ? total : quantity); // 連到 isDisabled
     }
 
     let currentMode = "buy";
@@ -325,10 +325,6 @@ function quickSelectButtonAndInputHandler() {
         let isDisabled = false;
         let tooltipMessage = "";
         let tooltipTarget = isBuyMode ? availablePriceElement : availableAssetElement;
-
-        if (amount.isZero() && inputType !== "quantity") {
-            return true; 
-        }
     
         if (availableAmount.isZero()) {
             isDisabled = true;
@@ -360,9 +356,9 @@ function quickSelectButtonAndInputHandler() {
         if (isDisabled) {
             submitButton.addEventListener("mouseover", showButtonTooltip);
             submitButton.addEventListener("mouseout", hideButtonTooltip);
-        }
-    
-        return true;  // keep calculation
+        }   
+        
+        return !isDisabled;  // keep calculation
     }
     
     function showButtonTooltip() {
@@ -435,8 +431,8 @@ function quickSelectButtonAndInputHandler() {
                 console.log("quantity", quantity.toString());
                 quantityInput.value = quantity.toFixed(currentQuantityPrecision);
                 totalInput.value = totalAmount.toFixed(2);
-            
             }
+            reevaluateSubmitButtonState();
         });
         clearActiveButtons();
     });
@@ -472,6 +468,7 @@ function quickSelectButtonAndInputHandler() {
             }
             
             calculateAndUpdate(inputType);
+            reevaluateSubmitButtonState();
         });
     });
 }
