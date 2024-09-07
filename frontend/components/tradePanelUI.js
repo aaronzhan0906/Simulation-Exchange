@@ -294,6 +294,20 @@ function quickSelectButtonAndInputHandler() {
             ? new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0")
             : new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
         
+        if (availableAmount.isZero()) {
+            const tooltipMessage = isBuyMode
+                ? `Insufficient balance: 0 USDT`
+                : `Insufficient asset: 0 ${baseAsset.toUpperCase()}`;
+            
+            tooltipHandler.show(quantityInput, tooltipMessage, "top");
+            submitButton.disabled = true;
+            
+            submitButton.addEventListener("mouseover", showButtonTooltip);
+            submitButton.addEventListener("mouseout", hideButtonTooltip);
+            
+            return false; // stop calculation
+        }
+
         if (amount.greaterThan(availableAmount)) {
             const tooltipMessage = isBuyMode
                 ? `Max Amount ${availableAmount} USDT`

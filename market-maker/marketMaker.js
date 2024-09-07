@@ -343,7 +343,6 @@ class MarketMaker {
             }
         }
     
-        // 如果訂單數量小於最大訂單數，創建新訂單
         if (Object.keys(this.orders[baseOrderKey]).length < MAX_ORDER) {
             console.log(`＋＋＋＋＋創建新訂單: ${symbol}, ${side}, ${price}, ${quantity}`);
             await this.createOrder(symbol, side, "limit", price, quantity);
@@ -351,6 +350,8 @@ class MarketMaker {
             console.log(`${baseOrderKey} 已達到最大訂單數 ${MAX_ORDER}，不創建新訂單`);
         }
     }
+
+    
 
 ///////////////////////// INITIALIZE MARKET MAKER /////////////////////////
     async initializeMarketMaker() {
@@ -383,14 +384,19 @@ class MarketMaker {
         } catch (error) {
             console.error("[initializeMarketMaker] 錯誤: ", error);
         }
-}
+    }
 
     async startMarketMaker(){
         console.log("Starting market maker");
         await this.initializeMarketMaker();
         setInterval(() => {
             this.adjustMarketMakerOrders();
-        }, 2000);
+        }, 3500);
+
+        setInterval(() => {
+            console.log("定期清理（初始化）訂單");
+            this.initializeMarketMaker();
+        }, 71000);
     }
 
 
@@ -447,5 +453,29 @@ main();
     //         return response.data;
     //     } catch (error) {
     //         console.error("[createOrder] error:", error);
+    //     }
+    // }
+
+
+    // async cleanUpOrders(){
+    //     for (const symbol of supportedSymbols) {
+    //         const pair = `${symbol.toUpperCase()}USDT`;
+    //         const formattedSymbol = `${symbol}_usdt`;
+    //         const currentPrice = latestTickerData[pair]?.price;
+    //         if (!currentPrice) continue;
+
+    //         const allOrders = await this.getOrders();
+    //         const symbolOrders = allOrders.filter(order => order.symbol === formattedSymbol);
+
+    //         const buyOrders = symbolOrders.filter(order => order.side === "buy").sort((a, b) => b.price - a.price);
+    //         const sellOrders = symbolOrders.filter(order => order.side === "sell").sort((a, b) => a.price - b.price);
+
+    //         const ordersToKeep = new Set([...buyOrders.slice(0, MAX_ORDER), ...sellOrders.slice(0, MAX_ORDER)].map(order => order.orderId));
+
+    //         for (const order of symbolOrders) {
+    //             if(!ordersToKeep.has(order.orderId)){
+    //                 await this.cancelOrder(order.orderId, formattedSymbol);
+    //             }
+    //         }
     //     }
     // }
