@@ -421,19 +421,20 @@ function quickSelectButtonAndInputHandler() {
 
             const availablePrice = new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0" );
             const availableAsset = new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
-            const currentPrice = new Decimal(priceInput.value || "0");
+            const priceInputValue = new Decimal(priceInput.value || "0");
             const dataValue = new Decimal(this.dataset.value); // 0.25, 0.5, 0.75, 1
 
             const isBuyMode = buyButton.classList.contains("active");
 
             if (isBuyMode) {
                 const totalAmount = availablePrice.times(dataValue);
-                const quantity = currentPrice.isZero() ? new Decimal(0) : totalAmount.dividedBy(currentPrice);
-                quantityInput.value = quantity.toFixed(currentQuantityPrecision);
+                const quantity = totalAmount.div(priceInputValue);
+                quantityInput.value = quantity.toFixed(currentQuantityPrecision, Decimal.ROUND_DOWN);
                 totalInput.value = totalAmount.toFixed(2);
             } else {
                 const quantity = availableAsset.times(dataValue);
-                const totalAmount = quantity.times(currentPrice);
+                const totalAmount = quantity.times(priceInputValue);
+                console.log("quantity", quantity.toString());
                 quantityInput.value = quantity.toFixed(currentQuantityPrecision);
                 totalInput.value = totalAmount.toFixed(2);
             }
