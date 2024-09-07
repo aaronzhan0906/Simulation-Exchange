@@ -60,12 +60,15 @@ async function initAssets() {
         const assetElements = new Map(); // { symbol: { priceDiv, changeDiv } } to subscribe room
 
         let totalAsset = new Decimal(usdtBalance);
+        console.log("totalAsset(usdtBalance)", totalAsset.toString())
         let totalProfit = new Decimal(0);
 
         assetsData.assets.forEach(asset => {
             const ticker = tickerData.latestTickerData[`${asset.symbol.toUpperCase()}USDT`]; // xxx -> XXXUSDT to get ticker data
 
-            const amount = new Decimal(asset.amount || 0); // 之後處理，如果賣光應該要不出現
+            const amount = new Decimal(asset.amount || 0); 
+            if (amount.isZero()) return; 
+
             const averageCost = new Decimal(asset.averagePrice || 0);
             const recentPrice = new Decimal(ticker.price || 0);
 
@@ -74,7 +77,9 @@ async function initAssets() {
 
 
             totalAsset = assetValue.plus(totalAsset);
-            totalProfit = profitValue.plus(totalProfit);
+            console.log("totalAsset", totalAsset.toString())
+            totalProfit = profitValue
+        
         
             const combinedData = {
                 ...asset,

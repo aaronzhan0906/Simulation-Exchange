@@ -592,6 +592,8 @@ function handleStatusName(status){
 // OPEN ORDERS // update status
 async function handleOrderUpdate(event) {
     console.log(event.detail);
+    initAvailableBalance();
+    initAvailableAsset();
     if (event.detail.status === "open") {
         addOrderToUI(event.detail);
     }
@@ -626,10 +628,7 @@ async function handleOrderUpdate(event) {
             statusCell.textContent = handleStatusName(orderData.status); 
         }
 
-        updateOpenOrdersCount();
-        initAvailableBalance();
-        initAvailableAsset();
-
+        updateOpenOrdersCount()
     } catch (error) {
         console.error("Failed to handle order update:", error);
     }
@@ -655,6 +654,7 @@ async function cancelOrder(orderId) {
 
         if (response.ok){
             orderRow.remove();
+            updateOpenOrdersCount()
         } else if (response.status === 401) {
             orderRow.remove();
             console.log("Order already filled");
