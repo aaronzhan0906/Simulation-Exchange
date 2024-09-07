@@ -132,28 +132,21 @@ async function initAvailableAsset(){
 // create order by TRADE PANEL 
 async function submitOrder(orderType, orderSide, price, quantity) { 
     const isLoggedIn = checkLoginStatus();
+    const priceInput = document.getElementById("trade-panel__input--price");
+    const quantityInput = document.getElementById("trade-panel__input--quantity");
+    const totalInput = document.getElementById("trade-panel__input--total");
 
     if (!isLoggedIn) {
         alert("Please login first");
         return;
     };
 
-    if (price == 0) {
-        // const inputPrice = document.getElementById("trade-panel__input--price");
-        const inputTotal = document.getElementById("trade-panel__input--total");
-        // tooltipHandler.show(inputPrice, "Price cannot be 0", top);
-        tooltipHandler.show(inputTotal, "Total cannot be 0", top);
+    if (price === "" || quantity === "" || totalInput.value === "" ||
+        new Decimal(price).isZero() || new Decimal(quantity).isZero() || new Decimal(totalInput.value).isZero()) {
+        alert("Please enter valid price and quantity");
         return;
     }
 
-    if (quantity == 0) {
-        const inputQuantity = document.getElementById("trade-panel__input--quantity");
-        const minQuantity = 1 / Math.pow(10, currentQuantityPrecision);
-        tooltipHandler.show(inputQuantity, `Min Quantity: ${minQuantity} ${baseAsset}`, top);
-        return;
-    }
-
-    tooltipHandler.hide();
 
     try {
         const response = await fetch("/api/trade/order", {
@@ -171,6 +164,11 @@ async function submitOrder(orderType, orderSide, price, quantity) {
         });
 
         if (response.ok) {
+            const quantityInput = document.getElementById("trade-panel__input--quantity");
+            const totalInput = document.getElementById("trade-panel__input--total");
+            quantityInput.value = "";
+            totalInput.value = "";
+            clearActiveButtons()
             console.log("Order created successfully");
         } else {
             throw new Error(response.status);
@@ -247,6 +245,7 @@ function initTabsAndSubmit() {
             submitButton.classList.remove("buy", "sell", "sellUnauthorized");
         }
         updateDisplayAvailable(true);
+        clearActiveButtons(); 
     });
     
     sellButton.addEventListener("click", () => {
@@ -263,7 +262,15 @@ function initTabsAndSubmit() {
             submitButton.classList.remove("sell", "buy", "buyUnauthorized");
         }
         updateDisplayAvailable(false);
+        clearActiveButtons();
     });
+}
+
+
+// clear active PERCENT buttons
+function clearActiveButtons() {
+    const buttons = document.querySelectorAll(".trade-panel__quick-select button");
+    buttons.forEach(btn => btn.classList.remove("active"));
 }
 
 // quick select button and input handler in TRADE PANEL
@@ -298,10 +305,6 @@ function quickSelectButtonAndInputHandler() {
         currentMode = buyButton.classList.contains("active") ? "buy" : "sell";
     }
 
-    function clearActiveButtons() {
-        buttons.forEach(btn => btn.classList.remove("active"));
-    }
-
     // restrict input to positive numbers with specified decimal places
     function restrictPositiveNum(inputValue, decimalPlaces) {
         const reg = new RegExp(`^\\d*(\\.\\d{0,${decimalPlaces}})?$`);
@@ -309,7 +312,7 @@ function quickSelectButtonAndInputHandler() {
     }
 
     function checkLeastQuantity(quantity) {
-        const minQuantity = 1 / Math.pow(10, currentQuantityPrecision);
+        const minQuantity = new Decimal(1).div(Math.pow(10, currentQuantityPrecision));
         return new Decimal(quantity).lessThan(minQuantity);
     }
 
@@ -321,7 +324,7 @@ function quickSelectButtonAndInputHandler() {
         
         let isDisabled = false;
         let tooltipMessage = "";
-        let tooltipTarget = isBuyMode ? totalInput : quantityInput;
+        let tooltipTarget = isBuyMode ? availablePriceElement : availableAssetElement;
 
         if (amount.isZero() && inputType !== "quantity") {
             return true; 
@@ -329,14 +332,10 @@ function quickSelectButtonAndInputHandler() {
     
         if (availableAmount.isZero()) {
             isDisabled = true;
-            tooltipTarget = isBuyMode
-                ? availablePriceElement
-                : availableAssetElement;
             tooltipMessage = isBuyMode
-                ? "Insufficient balance"
-                : "Insufficient asset";
+                ? "Max Amount 0"
+                : "Max Quantity 0";
         } else if (amount.greaterThan(availableAmount)) {
-            console.log(availableAmount);
             isDisabled = true;
             tooltipMessage = isBuyMode
                 ? `Max Amount ${availableAmount.toFixed(2)} USDT`
@@ -373,12 +372,10 @@ function quickSelectButtonAndInputHandler() {
     
         if (isBuyMode) {
             availableAmount = new Decimal(availablePriceElement.textContent.replace(" USDT", "") || "0");
-            tooltipTarget = totalInput;
-            tooltipMessage = availableAmount.isZero() ? "Insufficient balance" : `Max Amount ${availableAmount.toFixed(2)} USDT`;
+            tooltipMessage = availableAmount.isZero() ? "Max Amount 0" : `Max Amount ${availableAmount.toFixed(2)} USDT`;
         } else {
             availableAmount = new Decimal(availableAssetElement.textContent.replace(` ${baseAsset.toUpperCase()}`, "") || "0");
-            tooltipTarget = availableAssetElement;
-            tooltipMessage = availableAmount.isZero() ? "Insufficient Asset" : `Max Quantity ${availableAmount.toFixed(5)} ${baseAsset.toUpperCase()}`;
+            tooltipMessage = availableAmount.isZero() ? "Max Quantity 0" : `Max Quantity ${availableAmount.toFixed(5)} ${baseAsset.toUpperCase()}`;
         }
     
         tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
@@ -425,20 +422,23 @@ function quickSelectButtonAndInputHandler() {
             const dataValue = new Decimal(this.dataset.value); // 0.25, 0.5, 0.75, 1
 
             const isBuyMode = buyButton.classList.contains("active");
-
+            
             if (isBuyMode) {
                 const totalAmount = availablePrice.times(dataValue);
                 const quantity = totalAmount.div(priceInputValue);
                 quantityInput.value = quantity.toFixed(currentQuantityPrecision, Decimal.ROUND_DOWN);
                 totalInput.value = totalAmount.toFixed(2);
+                
             } else {
                 const quantity = availableAsset.times(dataValue);
                 const totalAmount = quantity.times(priceInputValue);
                 console.log("quantity", quantity.toString());
                 quantityInput.value = quantity.toFixed(currentQuantityPrecision);
                 totalInput.value = totalAmount.toFixed(2);
+            
             }
         });
+        clearActiveButtons();
     });
 
     // Input event handling
