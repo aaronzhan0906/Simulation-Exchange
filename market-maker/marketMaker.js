@@ -386,10 +386,10 @@ class MarketMaker {
         }
 
         const currentTime = Date.now();
-        if (currentTime - this.lastInitializeTime < 90000) {
-            console.log(`距離上次初始化時間不足 ${this.initializeInterval / 1000} 秒，跳過本次初始化`);
-            return;
-        }
+        // if (currentTime - this.lastInitializeTime < 90000) {
+        //     console.log(`距離上次初始化時間不足 ${this.initializeInterval / 1000} 秒，跳過本次初始化`);
+        //     return;
+        // }
 
         this.isInitializing = true;
         console.log("開始初始化市場造市者");
