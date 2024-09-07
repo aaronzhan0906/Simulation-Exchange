@@ -6,7 +6,7 @@ import Decimal from "decimal.js";
 
 dotenv.config();
 console.log("Environment variables loaded");
-const MAX_ORDER = 9;
+const MAX_ORDER = 10;
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = process.env.SUPPORTED_SYMBOLS.split(",").map(symbol => symbol.trim());
@@ -391,12 +391,12 @@ class MarketMaker {
         await this.initializeMarketMaker();
         setInterval(() => {
             this.adjustMarketMakerOrders();
-        }, 3500);
+        }, 3000);
 
         setInterval(() => {
             console.log("定期清理（初始化）訂單");
             this.initializeMarketMaker();
-        }, 71000);
+        }, 90000);
     }
 
 
