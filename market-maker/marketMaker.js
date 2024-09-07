@@ -45,6 +45,8 @@ class MarketMaker {
                 rejectUnauthorized: false
             })
         });
+        this.lastInitializeTime = 0;
+        this.initializeInterval = 60000;
         console.log("MarketMaker instance created");
     }
 
@@ -76,7 +78,6 @@ class MarketMaker {
         
             this.ws.on("close", () => {
                 console.log("WebSocket connection closed");
-                this.onClose();
             })
         });
     }
@@ -256,10 +257,12 @@ class MarketMaker {
     }
 
     async adjustMarketMakerOrders() {
+
         try {
             console.log("------------------------------------");
             console.log("start adjusting market maker orders");
             console.log("------------------------------------");
+
             for (const symbol of supportedSymbols) {
                 const pair = `${symbol.toUpperCase()}USDT`;
                 const formattedSymbol = `${symbol}_usdt`;
@@ -267,7 +270,13 @@ class MarketMaker {
                 if (!currentPrice) {
                     continue;
                 }
-    
+
+                if (this.orderCount > MAX_ORDER * 20) {
+                    console.log(`訂單數量（${this.orderCount}）超過 ${MAX_ORDER * 20}，暫停操作 5 秒`);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    console.log("恢復操作");
+                }
+                
     
                 const precision = this.determinePrecision(currentPrice);
                 
@@ -291,6 +300,8 @@ class MarketMaker {
             }
         } catch (error) {
             console.error("[adjustMarketMakerOrders] error: ", error);
+        } finally {
+            this.isAdjusting = false;
         }
     }
     
@@ -304,6 +315,17 @@ class MarketMaker {
         }
     
         const allOrders = await this.getOrders();
+        const totalOrderCount = allOrders.length;
+
+        if (totalOrderCount > MAX_ORDER * 20) {
+            console.log(`訂單總數（${totalOrderCount}）超過 200，執行初始化`);
+            await this.initializeMarketMaker();
+            
+            console.log(`訂單總數（${totalOrderCount}）超過 200，暫停操作 5 秒`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            console.log("恢復操作");
+        }
+
         
         for (const orderId in this.orders[baseOrderKey]) {
             let existingOrder = allOrders.find(order => order.orderId === orderId);
@@ -354,6 +376,12 @@ class MarketMaker {
 
 ///////////////////////// INITIALIZE MARKET MAKER /////////////////////////
     async initializeMarketMaker() {
+        const currentTime = Date.now();
+        if (currentTime - this.lastInitializeTime < 90000) {
+            console.log(`距離上次初始化時間不足 ${this.initializeInterval / 1000} 秒，跳過本次初始化`);
+            return;
+        }
+
         try {
             const existingOrders = await this.getOrders();
             this.orders = {}; 
@@ -380,6 +408,8 @@ class MarketMaker {
             for (const [key, orders] of Object.entries(this.orders)) {
                 console.log(`${key}: ${Object.keys(orders).length} 個訂單`);
             }
+
+            this.lastInitializeTime = currentTime;
         } catch (error) {
             console.error("[initializeMarketMaker] error: ", error);
         }
