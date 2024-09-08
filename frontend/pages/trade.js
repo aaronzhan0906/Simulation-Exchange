@@ -148,7 +148,7 @@ function updateChart(price) {
 
 document.addEventListener("DOMContentLoaded", async () => {
     tradeWebSocket.init();
-    await initChartHeader();
+    initChartHeader();
     await initChart(); 
     initTradePanel();
     initializeHeader();    
