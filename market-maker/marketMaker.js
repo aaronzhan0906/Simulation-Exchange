@@ -369,8 +369,8 @@ class MarketMaker {
         const allOrders = await this.getOrders();
         const totalOrderCount = allOrders.length;
 
-        if (totalOrderCount > MAX_ORDER * 15) {
-            console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 15}，執行初始化`);
+        if (totalOrderCount > MAX_ORDER * 12) {
+            console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 12}，執行初始化`);
             await this.initializeMarketMaker();
         }
 
@@ -470,6 +470,9 @@ class MarketMaker {
         } catch (error) {
             console.error("[initializeMarketMaker] error: ", error);
         } finally {
+            console.log("初始化完成，暫停1秒以等待系統處理變更...");
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log("清除快取以重新獲得訂單狀況...");
             this.clearOrdersCache();
             this.isInitializing = false
         }
