@@ -199,7 +199,7 @@ function updateTotalAsset(totalAsset) {
 function updateTotalProfit(totalProfit) {
     const balanceValueProfit = document.getElementById("balance-value__profit");
     const roundedProfit = Math.ceil(totalProfit * 100) / 100; // round to 2 decimal places
-
+    console.log("totalProfit", totalProfit);
     
     if (totalProfit.greaterThan(0)) {
         balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
@@ -210,6 +210,7 @@ function updateTotalProfit(totalProfit) {
         balanceValueProfit.classList.remove("positive");
         balanceValueProfit.classList.add("negative");
     } else {
+        balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
         balanceValueProfit.classList.remove("positive");
         balanceValueProfit.classList.remove("negative");
     }

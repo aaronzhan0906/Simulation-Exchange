@@ -122,30 +122,30 @@ async function calculate24hChangePercent(pair, currentPrice) {
 }
 
 async function storeHourlyData() {
-        const now = new Date();
-        now.setUTCMinutes(0, 0, 0);
-        const timestamp = now.toISOString(); 
-        const currentTime = now.getTime();
+    const now = new Date();
+    now.setUTCMinutes(0, 0, 0);
+    const timestamp = now.toISOString(); 
+    const currentTime = now.getTime();
+
+    for (const pair of Object.keys(latestTickerData)) {
+        const currentHourPrice = latestTickerData[pair].price;
+
+        const hourlyData = JSON.stringify({
+            timestamp: timestamp,
+            open: currentHourPrice
+        });
+
+        try {
+            await redis.zadd(`hourly_price_data:${pair}`, currentTime, hourlyData);
+
+            const thirtyDaysAgo = currentTime - 30 * 24 * 60 * 60 * 1000;
+            await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, thirtyDaysAgo);
     
-        for (const pair of Object.keys(latestTickerData)) {
-            const currentHourPrice = latestTickerData[pair].price;
-    
-            const hourlyData = JSON.stringify({
-                timestamp: timestamp,
-                open: currentHourPrice
-            });
-    
-            try {
-                await redis.zadd(`hourly_price_data:${pair}`, currentTime, hourlyData);
-    
-                const thirtyDaysAgo = currentTime - 30 * 24 * 60 * 60 * 1000;
-                await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, thirtyDaysAgo);
-    
-            } catch (error) {
-                console.error(`Error store hourly data for ${pair}:`, error);
-            }
+        } catch (error) {
+            console.error(`Error store hourly data for ${pair}:`, error);
         }
     }
+}
 
 async function cleanupData() {
     const now = Date.now();
