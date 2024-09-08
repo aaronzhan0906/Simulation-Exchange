@@ -1,5 +1,5 @@
 <h2>系統架構圖：</h2>
-<img width="99%" alt="Screenshot 2024-09-08 at 19 45 20" src="https://github.com/user-attachments/assets/3d36cd04-bdfc-4778-9e98-d8b7f2fb75d0">
+<img width="99%" alt="Screenshot 2024-09-08 at 22 08 31" src="https://github.com/user-attachments/assets/fb6f12d6-17e0-4eea-8140-7b24476b5fe6">
 
 
 
