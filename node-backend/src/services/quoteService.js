@@ -170,6 +170,7 @@ async function get24hHighLow(pair) {
     try {
         const prices = await redis.zrangebyscore(`recent_price_data:${newPair}`, dayAgo, now);
         const priceValues = prices.map(p => parseFloat(JSON.parse(p).price));
+        console.log("Price values:", priceValues);
         return {
             high: Math.max(...priceValues),
             low: Math.min(...priceValues)
