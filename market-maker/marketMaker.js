@@ -52,6 +52,11 @@ class MarketMaker {
         this.isInitializing = false;
         this.lastInitializeTime = 0;
         this.initializeInterval = 5000;
+
+        // ordersCache
+        this.ordersCache = null;
+        this.ordersCacheTime = 0;
+        this.ordersCacheTTL = 500;
         console.log("MarketMaker instance created");
     }
 
@@ -176,6 +181,13 @@ class MarketMaker {
 
     async getOrders(){
         return new Promise((resolve, reject) => {
+            const now = Date.now();
+            if (this.ordersCache && now - this.ordersCacheTime < this.ordersCacheTTL) {
+                console.log("使用快取訂單數據");
+                resolve(this.ordersCache);
+                return;
+            }
+
             try {
                 const message = {
                     action: "getOrdersByMarketMaker",
@@ -183,6 +195,8 @@ class MarketMaker {
                 this.sendMessage(message);
                 
                 this.eventEmitter.once("ordersReceived", (orders) => {
+                    this.ordersCache = orders;
+                    this.ordersCacheTime = Date.now();
                     resolve(orders);
                 });
 
@@ -198,6 +212,11 @@ class MarketMaker {
 
     handleOrdersData(ordersData) {
         this.eventEmitter.emit("ordersReceived", ordersData.orders);
+    }
+
+    clearOrdersCache() {
+        this.ordersCache = null;
+        this.ordersCacheTime = 0;
     }
 
     async createOrder(symbol, side, type, price, quantity) {
@@ -411,13 +430,14 @@ class MarketMaker {
         }
 
         const currentTime = Date.now();
-        // if (currentTime - this.lastInitializeTime < 90000) {
+        // if (currentTime - this.lastInitializeTime < 1000) {
         //     console.log(`距離上次初始化時間不足 ${this.initializeInterval / 1000} 秒，跳過本次初始化`);
         //     return;
         // }
 
         this.isInitializing = true;
         console.log("開始初始化市場造市者");
+        // this.clearOrdersCache();
 
         try {
             const existingOrders = await this.getOrders();
@@ -450,6 +470,7 @@ class MarketMaker {
         } catch (error) {
             console.error("[initializeMarketMaker] error: ", error);
         } finally {
+            this.clearOrdersCache();
             this.isInitializing = false
         }
     } 
@@ -459,12 +480,12 @@ class MarketMaker {
         await this.initializeMarketMaker();
         setInterval(() => {
             this.adjustMarketMakerOrders();
-        }, 3000);
+        }, 1000);
 
         setInterval(() => {
             console.log("定期清理（初始化）訂單");
             this.initializeMarketMaker();
-        }, 60000);
+        }, 30000);
     }
 
 
@@ -489,6 +510,7 @@ async function main(){
 }
 
 main();
+
 
  // async getOrderDetails(orderId) {
     //     try {
