@@ -3,6 +3,9 @@ import https from "https";
 import dotenv from "dotenv";
 import WebSocket from "ws";
 import Decimal from "decimal.js";
+import { EventEmitter } from "events";
+
+
 
 dotenv.config();
 console.log("Environment variables loaded");
@@ -45,6 +48,7 @@ class MarketMaker {
                 rejectUnauthorized: false
             })
         });
+        this.eventEmitter = new EventEmitter();
         this.isInitializing = false;
         this.lastInitializeTime = 0;
         this.initializeInterval = 5000;
@@ -100,8 +104,8 @@ class MarketMaker {
                     console.log("Received welcome message");
                     break;
 
-                case "subscribed":
-                    console.log(`Successfully subscribed to ${message.symbol}`);
+                case "orders":
+                    this.handleOrdersData(message.data);
                     break;
 
                 case "orderCreated":
@@ -156,18 +160,44 @@ class MarketMaker {
         }
     }
 
+    // async getOrders(){
+    //     try{
+    //         const response = await this.axiosInstance.get(`${this.url}/api/trade/order`,{
+    //             headers: {
+    //                 Cookie: `accessToken=${this.cookies.accessToken}`
+    //             }
+    //         });
+    //         return response.data.orders || [];
+    //     } catch (error) {
+    //         console.error("[getOrders] error:", error);
+    //         return [];
+    //     }
+    // }
+
     async getOrders(){
-        try{
-            const response = await this.axiosInstance.get(`${this.url}/api/trade/order`,{
-                headers: {
-                    Cookie: `accessToken=${this.cookies.accessToken}`
-                }
-            });
-            return response.data.orders || [];
-        } catch (error) {
-            console.error("[getOrders] error:", error);
-            return [];
-        }
+        return new Promise((resolve, reject) => {
+            try {
+                const message = {
+                    action: "getOrdersByMarketMaker",
+                };
+                this.sendMessage(message);
+                
+                this.eventEmitter.once("ordersReceived", (orders) => {
+                    resolve(orders);
+                });
+
+                setTimeout(() => {
+                    reject(new Error("獲取訂單超時"));
+                }, 5000);
+            } catch (error) {
+                console.error("[getOrders] error:", error);
+                reject(error);
+            }
+        });
+    }
+
+    handleOrdersData(ordersData) {
+        this.eventEmitter.emit("ordersReceived", ordersData.orders);
     }
 
     async createOrder(symbol, side, type, price, quantity) {
@@ -309,7 +339,6 @@ class MarketMaker {
             return;
         }
 
-
         const pair = `${symbol.toUpperCase()}`.replace("_", "");
         const baseOrderKey = `${symbol}_${side}`;
         const currentPrice = latestTickerData[pair]?.price;
@@ -324,10 +353,6 @@ class MarketMaker {
         if (totalOrderCount > MAX_ORDER * 15) {
             console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 15}，執行初始化`);
             await this.initializeMarketMaker();
-            
-            // console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 15}，暫停操作 5 秒`);
-            // await new Promise(resolve => setTimeout(resolve, 5000));
-            // console.log("恢復操作");
         }
 
         

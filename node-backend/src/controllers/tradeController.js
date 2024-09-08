@@ -31,19 +31,47 @@ class TradeController {
             return res.status(200).json({
                 ok: true,
                 message: "Orders retrieved successfully",
-                orders: formattedOrders});
+                orders: formattedOrders
+            });
         } catch(error) {
-            console.error("getOrders error:", error);
+            console.error("[getOrders] error:", error);
             throw error;
         }
     }
 
-    async getOrdersByMarketMaker(req, res){
+    async getOrdersByMarketMaker(ws){
+        const userId = ws.userId;
+
+        try {
+            const result = await TradeModel.getOrders(userId)
+            const formattedOrders = result.map(order => ({
+                orderId: order.order_id,
+                userId: order.user_id,
+                symbol: order.symbol,
+                side: order.side,
+                type: order.type,
+                price: order.price,
+                quantity: order.quantity,
+                executedQuantity: order.executed_quantity,
+                status: order.status,
+                createdAt: order.created_at
+            }));
+
+            ws.send(JSON.stringify({
+                type: "orders",
+                message: "Orders retrieved successfully",
+                data: {
+                    orders:formattedOrders
+                }
+            }))
+        } catch(error) {
+            console.error("[getOrdersByMarketMaker] error:", error);
+            ws.send(JSON.stringify({ type:"error", message: error.message }));
+            throw error;
+        }
     }
 
-    async createOrderByMarketMaker(orderList) {
-
-    }
+    
         
     // router.post("/order", TradeController.createOrder);
     async createOrder(req, res){

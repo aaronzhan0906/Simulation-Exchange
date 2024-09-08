@@ -69,6 +69,7 @@ class WebSocketService {
                         this.subscribeToRoom(ws, data.symbol);
                     }
                     break;
+                    
                 case "unsubscribe":
                     if (data.symbol === "ALL") {
                         this.unsubscribeFromAllSymbols(ws);
@@ -82,6 +83,12 @@ class WebSocketService {
                         console.log("WS Handling getPersonalData:", ws.userId);
                     });
                     break;
+
+                case "getOrdersByMarketMaker":
+                    this.handleAuthenticatedAction(ws, () => {
+                        console.log("WS Handling getOrdersByMarketMaker:", ws.userId);
+                        TradeController.getOrdersByMarketMaker(ws);
+                    })
 
                 case "createOrderByMarketMaker":
                     this.handleAuthenticatedAction(ws, () => {
