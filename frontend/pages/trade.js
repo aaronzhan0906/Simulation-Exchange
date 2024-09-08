@@ -29,6 +29,7 @@ async function initChartHeader() {
     const lowDiv = document.getElementById("chart-header__low");
     const response = await fetch(`/api/quote/24hHighAndLow/${pair}`);
     const responseData = await response.json();
+    console.log("24h high and low:", responseData);
 
     highDiv.firstElementChild.textContent = "24h Highest";
     lowDiv.firstElementChild.textContent = "24h Lowest";
@@ -147,7 +148,7 @@ function updateChart(price) {
 
 document.addEventListener("DOMContentLoaded", async () => {
     tradeWebSocket.init();
-    initChartHeader();
+    await initChartHeader();
     await initChart(); 
     initTradePanel();
     initializeHeader();    
