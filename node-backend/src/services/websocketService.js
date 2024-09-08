@@ -89,6 +89,7 @@ class WebSocketService {
                         console.log("WS Handling getOrdersByMarketMaker:", ws.userId);
                         TradeController.getOrdersByMarketMaker(ws);
                     })
+                    break;
 
                 case "createOrderByMarketMaker":
                     this.handleAuthenticatedAction(ws, () => {

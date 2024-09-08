@@ -161,11 +161,11 @@ class TradeController {
     // router.post("/marketMaker/order", TradeController.createOrder);
     async createOrderByMarketMaker(ws, message) {
         const { symbol, side, type, price, quantity } = message.data;
-            const userId = ws.userId;
+        const userId = ws.userId;
 
-            if ( !userId || !symbol || !side || !type || !price || !quantity) {
-                ws.send(JSON.stringify({ type:"error", message: "Missing required fields" }));
-            }
+        if ( !userId || !symbol || !side || !type || !price || !quantity) {
+            ws.send(JSON.stringify({ type:"error", message: "Missing required fields" }));
+        }
 
         try { 
             let authResult;
