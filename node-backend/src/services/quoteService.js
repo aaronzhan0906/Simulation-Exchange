@@ -84,6 +84,8 @@ async function storePriceData(pair, data) {
             JSON.stringify(storedData)
         );
 
+        const oneDayAgo = now - 86400000;
+        await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, oneDayAgo);
     } catch (error) {
         console.error(`Error storing price for ${pair}:`, error);
     }
@@ -169,15 +171,32 @@ async function get24hHighLow(pair) {
     const dayAgo = now - 86400000;
     try {
         const prices = await redis.zrangebyscore(`recent_price_data:${newPair}`, dayAgo, now);
-        const priceValues = prices.map(p => parseFloat(JSON.parse(p).price));
-        console.log("Price values:", priceValues);
-        return {
-            high: Math.max(...priceValues),
-            low: Math.min(...priceValues)
-        };
+
+        let high = -Infinity;
+        let low = Infinity;
+
+        for (const priceStr of prices) {
+            const price = parseFloat(JSON.parse(priceStr).price);
+            if (price > high) { high = price; }
+            if (price < low) { low = price; }
+        }
+
+        return { high, low };
     } catch (error) {
         console.error("Error fetching 24h high low:", error);
-        return null;
+        const currentPriceData = latestTickerData[newPair];
+        if (!currentPriceData) {
+            console.error(`No current price data for ${newPair}`);
+            return null;
+        }
+        
+        const currentPrice = parseFloat(currentPriceData.price);
+        
+        const high = currentPrice * 1.05;
+        const low = currentPrice * 0.95;
+        
+        console.log(`Using fallback high-low for ${newPair}: ${high}-${low}`);
+        return { high, low };
     }
 }
 
