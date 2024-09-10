@@ -43,7 +43,7 @@ const handleMessage = async ({ topic, message }) => {
 
         switch (topicType) {
             case "trade-result":
-                logger.info(`(CONSUMER)trade-result-${symbol}:`, data);
+                logger.info({ message: `(CONSUMER)trade-result-${symbol}`, orderId: data.order_id });
                 await TradeController.createTradeHistory(data);
                 await TradeController.updateOrderData(data);
                 await TradeController.broadcastRecentTradeToRoom(data, symbol);
@@ -60,10 +60,11 @@ const handleMessage = async ({ topic, message }) => {
                 break;
 
             default:
-                logger.warn({ topic }, "Received message from unknown topic");
+                logger.warn({ topic: topic }, "Received message from unknown topic");
         } 
     } catch (error) {
-        logger.error({ error: error.message, topic, partition }, "Error processing Kafka message");
+        logger.error({ error: error.message, topic }, "Error processing Kafka message");
+        console.log(error);
     }
 };
 
@@ -79,7 +80,7 @@ export default {
                 try {
                     await handleMessage(payload);
                 } catch (error) {
-                    logger.error({ error: error.message, topic: payload.topic, partition: payload.partition }, "Error processing message");
+                    logger.error({ error: error, topic: payload.topic }, "Error processing Kafka message");
                 }
             },
         });

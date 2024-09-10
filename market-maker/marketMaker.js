@@ -255,6 +255,7 @@ class MarketMaker {
     }
 
     async cancelOrder(orderId, symbol) {
+        // 避免重複取消訂單和轉換成 WS
         try {
             console.log(`～～～～～Cancelling order: ${orderId} for ${symbol}`);
             const response = await this.axiosInstance.patch(`${this.url}/api/trade/order`, {

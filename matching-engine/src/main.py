@@ -6,6 +6,43 @@ from dotenv import load_dotenv
 from kafka_client import KafkaClient
 from order_book import OrderBook
 from matching_engine import MatchingEngine
+import logging
+from colorama import Fore, Style, init
+
+init(autoreset=True)
+
+class ColoredFormatter(logging.Formatter):
+    COLORS = {
+        "DEBUG": Fore.CYAN,
+        "INFO": Fore.GREEN,
+        "WARNING": Fore.YELLOW,
+        "ERROR": Fore.RED,
+        "CRITICAL": Fore.RED + Style.BRIGHT
+    }
+
+    def format(self, record):
+        levelname = record.levelname
+        if levelname in self.COLORS:
+            levelname_color = f"{self.COLORS[levelname]}[{levelname}]{Style.RESET_ALL}"
+            record.levelname = levelname_color
+        return super().format(record)
+
+def setup_logger():
+    """logger setting"""
+    handler = logging.StreamHandler()
+    formatter = ColoredFormatter(
+        fmt="[%(asctime)s] - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger()
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    return logger
+
+logger = setup_logger()
+
 
 load_dotenv()
 SUPPORTED_SYMBOLS = os.environ.get("SUPPORTED_SYMBOLS").split(',')
@@ -23,14 +60,14 @@ matching_engines = {
 shutdown_event = asyncio.Event()
 
 def signal_handler():  # Handle termination signals
-    print("Termination signal received, shutting down gracefully...")
+    logging.info("Termination signal received, shutting down gracefully...")
     shutdown_event.set()
 
 
 async def handle_new_order(order, matching_engine, kafka_client, order_book):
     symbol = order["symbol"].replace("_usdt","")
     # Process the order using the matching engine
-    print(f"Received new-order-{symbol}:",order)
+    logging.info(f"Received new-order-{symbol}: {order}")
     results = matching_engine.process_order(
         order["orderId"], 
         order["userId"], 
@@ -44,33 +81,33 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
     # Send the results executed by matching engine to Kafka
     for trade_result in results:
         await kafka_client.produce_result(f"trade-result-{symbol}", trade_result)
-        print("========================")
-        print(f"Sent 'trade-result-{symbol}': {trade_result}")
+        logging.info("========================")
+        logging.info(f"Sent 'trade-result-{symbol}': {trade_result}")
 
     order_book_snapshot = order_book.get_order_book()
     await kafka_client.produce_result(f"order-book-snapshot-{symbol}", order_book_snapshot)
-    print("========================")
-    print(f"Sent 'order-book-snapshot-{symbol}': {order_book_snapshot}")
-    print("========================")
+    logging.info("========================")
+    logging.info(f"Sent 'order-book-snapshot-{symbol}': {order_book_snapshot}")
+    logging.info("========================")
 
 # Function to handel order cancellation
 async def handle_cancel_order(cancel_request, matching_engine, kafka_client, order_book):
     symbol = cancel_request["symbol"].replace("_usdt","")
-    print(f"Received cancel-order-{symbol}:", cancel_request)
+    logger.info(f"Received cancel-order-{symbol}: {cancel_request}")
     cancel_result = matching_engine.cancel_order(
         cancel_request["orderId"],
         cancel_request["userId"],
         cancel_request["symbol"]
     )
     await kafka_client.produce_result(f"cancel-result-{symbol}", cancel_result)
-    print("========================")
-    print(f"Sent 'cancel-result-{symbol}': {cancel_result}")
+    logging.info("========================")
+    logging.info(f"Sent 'cancel-result-{symbol}': {cancel_result}")
 
     order_book_snapshot = order_book.get_order_book()
     await kafka_client.produce_result(f"order-book-snapshot-{symbol}", order_book_snapshot)
-    print("========================")
-    print(f"Sent 'order-book-snapshot-{symbol}': {order_book_snapshot}")
-    print("========================")
+    logging.info("========================")
+    logging.info(f"Sent 'order-book-snapshot-{symbol}': {order_book_snapshot}")
+    logging.info("========================")
 
 # Function to periodically send order book snapshots
 async def send_order_book_every_two_seconds(symbol, order_book, kafka_client):
@@ -87,12 +124,12 @@ async def send_order_book_every_two_seconds(symbol, order_book, kafka_client):
             except asyncio.TimeoutError:
                 pass
         except asyncio.CancelledError:
-            print(f"Order book snapshot task cancelled - {symbol}")
+            logging.info(f"Order book snapshot task cancelled - {symbol}")
             break
 
 
 async def shutdown(kafka_client, tasks):
-    print("Starting to shut down the program...")
+    logging.info("Starting to shut down the program...")
     
     for order_book in order_books.values(): # Stop all order book snapshot timers
         order_book.stop_snapshot_timer()
@@ -104,14 +141,14 @@ async def shutdown(kafka_client, tasks):
     try:    # Wait for all tasks to complete with a timeout
         await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=10)
     except asyncio.TimeoutError:
-        print("Some tasks did not complete in time")
+        logging.warning("Some tasks did not complete in time")
     
     for order_book in order_books.values(): # Close all order books and save final snapshots
         await order_book.close()
     
     await kafka_client.close()   # Close the Kafka client
 
-    print("Program has been completely shut down")
+    logging.info("Program has been completely shut down")
 
 
 # Main function to setup and run the trading engine
@@ -123,8 +160,8 @@ async def main():
 
     kafka_client = KafkaClient()
     await kafka_client.setup()
-    print("Trading engine started")
-    print("----------------------")
+    logging.info("Trading engine started")
+    logging.info("----------------------")
 
     for symbol in SUPPORTED_SYMBOLS:
         kafka_client.add_topic_handler(
@@ -153,9 +190,9 @@ async def main():
     try:
         await asyncio.shield(shutdown_event.wait()) # Wait for the shutdown signal to be set (shutdown_event = True)
     except asyncio.CancelledError:
-        print("Main task cancelled")
+        logging.info("Main task cancelled")
     except Exception as e:
-        print(f"Error in main loop: {e}")
+        logging.error(f"Error in main loop: {e}")
     finally:
         await shutdown(kafka_client, tasks) # Perform shutdown procedure
 

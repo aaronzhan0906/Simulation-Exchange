@@ -1,5 +1,6 @@
 import pool from "../config/database.js";
 import Decimal from 'decimal.js';
+import { logger } from "../app.js";
 
 class TradeModel {
 ///////////////////// GET ORDERS //////////////////////////
@@ -144,7 +145,7 @@ class TradeModel {
                 tradeData.buyer_user_id, tradeData.buyer_order_id, tradeData.seller_user_id, tradeData.seller_order_id
             ]);
         } catch (error) {
-            console.error("Error in [createTradeHistory]:", error);
+            console.error("[createTradeHistory(model)] error:", error);
             throw error;
         }
     }
@@ -227,7 +228,7 @@ class TradeModel {
                 return {
                     success: false,
                     orderId: oldData.order_id,
-                    message: "Cannot update order with status canceled or partially_filled_canceled",
+                    message: "Cannot update order with status CANCELED or PARTIALLY_FILLED_CANCELED",
                 }
             }
 
@@ -293,8 +294,8 @@ class TradeModel {
             return { success: true, data: resultOrderData };
         } catch (error) {
             await connection.rollback();
-            logger.error("[updateOrderData(model)] error:", error);
-            return { success: false, error: error.message };
+            logger.error("[updateOrderData(model)] 297:", { error : error});
+            return { success: false, error: error.message || "Already CANCELED and rollback" };
         } finally {
             // 釋release lock
             await connection.query('SELECT RELEASE_LOCK("trade_lock") as release_result');

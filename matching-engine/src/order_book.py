@@ -5,6 +5,7 @@ import pickle
 from sortedcontainers import SortedDict
 from decimal import Decimal
 from collections import deque
+import logging
 
 class OrderBook:
     def __init__(self, symbol):
@@ -58,9 +59,9 @@ class OrderBook:
                     self.asks[price].append(order_id)
                     self.order_index[order_id] = ("sell", price, Decimal(quantity), Decimal(original_quantity), user_id)
             
-            print(f"Order book snapshot loaded from Redis（{self.symbol}）")
+            logging.info(f"Order book snapshot loaded from Redis（{self.symbol}）")
         else:
-            print(f"No order book snapshot found（{self.symbol}），initializing am empty order book。")
+            logging.info(f"No order book snapshot found（{self.symbol}），initializing am empty order book。")
 
     async def save_snapshot(self):
         serialized_data = pickle.dumps({
@@ -72,7 +73,6 @@ class OrderBook:
                      for price, orders in self.asks.items()},
         })
         await asyncio.to_thread(self.redis_client.set, f"order_book_snapshot:{self.symbol}", serialized_data)
-        # print(f"Order book snapshot saved to Redis ({self.symbol}).")
 
     def get_order_book(self, levels: int = 10) -> dict:
         def aggregate_orders(book, reverse=False):
@@ -86,7 +86,7 @@ class OrderBook:
                     if order_id in self.order_index:
                         total_quantity += self.order_index[order_id][2]
                     else:
-                        print(f"Warning: Order ID {order_id} not found in order_index")
+                        logging.warning(f"Warning: Order ID {order_id} not found in order_index")
                 result.append({"price": str(price), "quantity": str(total_quantity)})
             return result
         
@@ -97,7 +97,7 @@ class OrderBook:
     
     async def close(self):
         self.stop_snapshot_timer()
-        print("Save before shutdown")
+        logging.info("Save before shutdown")
         await self.save_snapshot() 
 
 
@@ -128,12 +128,12 @@ class OrderBook:
                         del book[price]  # Remove price level if it becomes empty
                     return self.order_index.pop(order_id)
                 else:
-                    print(f"Order {order_id} not found at price {price}. It may have been executed.")
+                    logging.info(f"Order {order_id} not found at price {price}. It may have been executed.")
                     return None
                 
             return self.order_index.pop(order_id) # if the order is in the index but not in order book, we should remove it
     
-        print(f"Order {order_id} not found in order index. It may have been cancelled or executed.")
+        logging.info(f"Order {order_id} not found in order index. It may have been cancelled or executed.")
         return None
 
     def match_order(self, order):
@@ -157,7 +157,7 @@ class OrderBook:
                 break  
 
             order_ids = opposite_book[opposite_price]
-            print(f"Checking price level: {opposite_price}, Order IDs: {order_ids}")
+            logging.info(f"Checking price level: {opposite_price}, Order IDs: {order_ids}")
 
             for matched_order_id in list(order_ids): # Use list() to copy order_ids, avoiding modifying the set while iterating
                 matched_side, _, matched_quantity, matched_original_quantity, matched_user_id = self.order_index[matched_order_id]

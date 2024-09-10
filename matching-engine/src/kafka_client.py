@@ -4,6 +4,7 @@ from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 import json
 from decimal import Decimal
 from dotenv import load_dotenv
+import logging
 
 
 load_dotenv()
@@ -48,10 +49,10 @@ class KafkaClient:
                 )
                 await self.producer.start()
 
-                print("Successfully connected to Kafka")
+                logging.info("Successfully connected to Kafka")
                 return
             except Exception as event:
-                print(f"Failed to connect to Kafka (attempt {attempt + 1}/{max_retries}): {str(event)}")
+                logging.error(f"Failed to connect to Kafka (attempt {attempt + 1}/{max_retries}): {str(event)}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay)
                 else:
@@ -65,9 +66,9 @@ class KafkaClient:
                     try:
                         await self.topic_handlers[msg.topic](msg.value)
                     except Exception as handler_error:
-                        print(f"Error in topic handler for {msg.topic}: {str(handler_error)}")
+                        logging.error(f"Error in topic handler for {msg.topic}: {str(handler_error)}")
                         import traceback
-                        print(traceback.format_exc())
+                        logging.error(traceback.format_exc())
         except Exception as e:
             print(f"Error in consume_messages: {str(e)}")
             import traceback

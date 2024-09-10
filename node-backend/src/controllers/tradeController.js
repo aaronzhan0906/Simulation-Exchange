@@ -150,8 +150,7 @@ class TradeController {
             })
 
         } catch(error) {
-            logging.error("[createOrder] error:", error);
-            ws.send(JSON.stringify({ type:"error", message: error.message }));
+            logger.error("[createOrder] error:", error);
         }
     }
 
@@ -248,7 +247,7 @@ class TradeController {
             }));
 
         } catch(error) {
-            logging.error("[createOrderByMarketMaker] error:", error);
+            logger.error("[createOrderByMarketMaker] error:", error);
             ws.send(JSON.stringify({ type:"error", message: error.message }));
         }
     }
@@ -273,11 +272,10 @@ class TradeController {
         };
     
         try {
-            const result= await TradeModel.updateOrderData(updateOrderData);
+            const result = await TradeModel.updateOrderData(updateOrderData);
             if (!result.success) {
                 logger.warn({
-                    orderId: result.orderId,
-                    message: result.message,
+                    result: result,
                 })
                 return; // sometimes cancel data is faster than update data
             }
@@ -308,8 +306,8 @@ class TradeController {
 
             await sendOrderUpdateToUser(resultOrderData.user_id,  newUpdate);
         } catch (error) {
-           logging.error("[updateOrderData] error:", error);
-           ws.send(JSON.stringify({ type:"error", message: error.message }));
+           logger.error("[updateOrderData(controller)] error:", error);
+           console.error("[updateOrderData(controller)] error:", error);
         }
     }
 
@@ -419,15 +417,6 @@ class TradeController {
             }
     
             if (updateResult.updateStatus === "CANCELED" || updateResult.updateStatus === "PARTIALLY_FILLED_CANCELED") {
-                const releaseAvailable = {
-                    type: "releaseAvailable",
-                    message: "Order cancelled and released available balance or asset",
-                    data: {
-                        orderId: updateResult.updateOrderId,
-                        status: updateResult.updateStatus,
-                    }
-                };
-
                 const cancelMessage = {
                     type: "orderUpdate",
                     message: "Order cancelled",
@@ -441,8 +430,9 @@ class TradeController {
                 console.log(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
             }
         } catch(error) {
-            console.error(`[handleCancelResult] error for order ${orderId}:`, error);
-            throw error;
+            logger.error(`[handleCancelResult] error for order ${orderId}:`, error.sqlMessage);
+            ws.send(JSON.stringify({ type:"error", message: error.message }));
+            return;
         }
     }
     
@@ -484,8 +474,8 @@ class TradeController {
             const formattedSymbol = symbol.toUpperCase().replace("_", "");
             updatePriceData(formattedSymbol, executed_price);
         } catch(error) {
-            console.error("createTradeHistory error, error:", error);
-            throw error;
+            console.error("[createTradeHistory(controller)] error:", error);
+            return;
         }
     }
 
