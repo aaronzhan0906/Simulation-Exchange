@@ -1,5 +1,6 @@
 import { Kafka, logLevel } from "kafkajs";
 import config from "../config/config.js";
+import { logger } from "../app.js";
 
 const kafka = new Kafka({
     clientId: config.kafka.clientId,
@@ -15,7 +16,7 @@ const retryOperation = async (operation, maxRetries = 5, delay = 5000) => {
             return await operation();
         } catch (error) {
             if (i === maxRetries - 1) throw error;
-            console.log(`Attempt ${i + 1} failed. Retrying in ${delay}ms...`);
+            logger.info(`Attempt ${i + 1} failed. Retrying in ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
@@ -24,7 +25,7 @@ const retryOperation = async (operation, maxRetries = 5, delay = 5000) => {
 export default {
     init: async () => {
         await producer.connect();
-        console.log("Kafka producer connected");
+        logger.info("Kafka producer connected");
     },
 
     sendMessage: async (topic, message) => {
@@ -33,13 +34,13 @@ export default {
                 topic: topic,
                 messages: [{ value: JSON.stringify(message) }],
             });
-            console.log(`Message sent successfully to topic ${topic}`);
+            logger.info(`Message sent successfully to topic ${topic}`);
             return result;
         });
     },
 
     disconnect: async () => {
         await producer.disconnect();
-        console.log("Kafka producer disconnected");
+        logger.info("Kafka producer disconnected");
     }
 };

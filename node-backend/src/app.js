@@ -6,11 +6,25 @@ import chalk from "chalk";
 import path from "path";
 import { createServer } from "http";
 import { fileURLToPath } from "url";
+import pino from "pino";
+import pinoPretty from "pino-pretty";
 import kafkaProducer from "./services/kafkaProducer.js";
 import kafkaConsumer from "./services/kafkaConsumer.js";
 import WebSocketService from "./services/websocketService.js";
+import favicon from "serve-favicon";
 
 // import helmet from "helmet";
+
+const pretty = pinoPretty({
+    colorize: true, 
+    translateTime: true, 
+});
+
+const logger = pino({
+    level: process.env.LOG_LEVEL || "info",
+    timestamp: pino.stdTimeFunctions.isoTime,
+}, pretty);
+logger.info("Logger initialized");
 
 // path
 const __filename = fileURLToPath(import.meta.url);
@@ -35,6 +49,7 @@ WebSocketService.init(server);
 
 
 // static
+app.use(favicon(path.join(__dirname, "..", "public", "favicon.ico")));
 app.use(express.static(path.join(__dirname, "..", "..", "frontend")));
 
 // html routes
@@ -61,7 +76,7 @@ app.get("/signup", (req, res) => {
 // /trade/:pair 
 app.get("/trade/:pair", (req, res) => {
     const { pair } = req.params;
-    console.log("Trading pair:", pair);
+    logger.info("Trading pair:", pair);
     res.sendFile(path.join(__dirname, "..", "..", "frontend", "trade.html"));
 });
 
@@ -86,6 +101,7 @@ app.use("/api/quote", quoteService);
 
 // 404 
 app.use((req, res, next) => {
+    logger.warn({path: req.path}, "Route not found")
     res.status(404).json({
         error: true,
         message: "Route not found"
@@ -95,16 +111,19 @@ app.use((req, res, next) => {
 
 // 500 // Custom error handling middleware
 app.use((err, req, res, next) => {
-    console.error(`Error occurred at path: ${req.path}`);
-    console.error(`Error message: ${err.message}`);
-    console.error(`Error stack: ${err.stack}`);
-    
+    logger.error({
+        err,
+        path: req.path,
+        message: err.message,
+        stack: err.stack
+    }, "An error occurred");
+
     res.status(500).json({
-      error: true,
-      message: process.env.NODE_ENV === "production" 
-      ? "Internal server error" 
-      : err.message,
-      ...(process.env.NODE_ENV !== "production" && { stack: err.stack })
+        error: true,
+        message: process.env.NODE_ENV === "production"
+            ? "Internal server error"
+            : err.message,
+        ...(process.env.NODE_ENV !== "production" && { stack: err.stack })
     });
 });
 
@@ -115,14 +134,14 @@ export default app;
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    logger.info(`Server is running on port ${PORT}`);
 });
 
 // close server gracefully
 process.on("SIGINT", () => {
     WebSocketService.close();
     server.close(() => {
-        console.log("Server closed");
+        logger.info("Server closed");
         process.exit(0);
     });
 });
@@ -168,4 +187,4 @@ app.use(morgan((tokens, req, res) => {
 }));
 
 
-export { app, server };
+export { app, server, logger };

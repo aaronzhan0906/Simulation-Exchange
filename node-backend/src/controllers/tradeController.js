@@ -4,8 +4,7 @@ import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 import WebSocketService from "../services/websocketService.js";
 import { updatePriceData, logOrderBookSnapshot } from "../services/quoteService.js";
-
-
+import { logger } from "../app.js";
 
 
 class TradeController {
@@ -67,7 +66,6 @@ class TradeController {
         } catch(error) {
             console.error("[getOrdersByMarketMaker] error:", error);
             ws.send(JSON.stringify({ type:"error", message: error.message }));
-            throw error;
         }
     }
 
@@ -152,8 +150,8 @@ class TradeController {
             })
 
         } catch(error) {
-            console.error("Error in createOrder:", error);
-            throw error;
+            logging.error("[createOrder] error:", error);
+            ws.send(JSON.stringify({ type:"error", message: error.message }));
         }
     }
 
@@ -229,8 +227,8 @@ class TradeController {
             };
 
             sendOrderUpdateToUser(order.user_id, newOrder);
-            
 
+            // 下面應該沒必要
             ws.send(JSON.stringify({
                 type: "orderCreated",
                 data: {
@@ -250,7 +248,7 @@ class TradeController {
             }));
 
         } catch(error) {
-            console.error(error);
+            logging.error("[createOrderByMarketMaker] error:", error);
             ws.send(JSON.stringify({ type:"error", message: error.message }));
         }
     }
@@ -275,12 +273,16 @@ class TradeController {
         };
     
         try {
-            const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
-    
-            if (!resultOrderData) {
-                console.error("[updateOrderData] No data returned, maybe update data is slower than cancel data");
-                return null; // sometimes cancel data is faster than update data
+            const result= await TradeModel.updateOrderData(updateOrderData);
+            if (!result.success) {
+                logger.warn({
+                    orderId: result.orderId,
+                    message: result.message,
+                })
+                return; // sometimes cancel data is faster than update data
             }
+
+            const resultOrderData = result.data;
     
             // WebSocket 
             const quantity = new Decimal(resultOrderData.quantity);
@@ -305,11 +307,9 @@ class TradeController {
             };
 
             await sendOrderUpdateToUser(resultOrderData.user_id,  newUpdate);
-    
-            return resultOrderData; 
         } catch (error) {
-            console.error("[updateOrderData] error:", error);
-            throw error;
+           logging.error("[updateOrderData] error:", error);
+           ws.send(JSON.stringify({ type:"error", message: error.message }));
         }
     }
 

@@ -222,6 +222,15 @@ class TradeModel {
                 throw new Error(`Order not found: ${updateOrderData.order_id}`);
             }
 
+            if (oldData.status === "CANCELED" || oldData.status === "PARTIALLY_FILLED_CANCELED") {
+                await connection.rollback();
+                return {
+                    success: false,
+                    orderId: oldData.order_id,
+                    message: "Cannot update order with status canceled or partially_filled_canceled",
+                }
+            }
+
             // calculate new order data
             const old = {
                 quantity: new Decimal(oldData.quantity || 0),
@@ -281,11 +290,11 @@ class TradeModel {
             }
 
             await connection.commit();
-            return resultOrderData;
+            return { success: true, data: resultOrderData };
         } catch (error) {
             await connection.rollback();
-            console.error("[updateOrderData(model)] error:", error);
-            throw error;
+            logger.error("[updateOrderData(model)] error:", error);
+            return { success: false, error: error.message };
         } finally {
             // 釋release lock
             await connection.query('SELECT RELEASE_LOCK("trade_lock") as release_result');

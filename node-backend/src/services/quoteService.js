@@ -4,6 +4,7 @@ import Redis from "ioredis";
 import config from "../config/config.js";
 import WebSocketService from "./websocketService.js";
 import schedule from "node-schedule";
+import { logger } from "../app.js"
 // import pool from "../config/database.js";
 
 const router = express.Router();
@@ -19,11 +20,11 @@ const redis = new Redis({
   
   // Add connection listeners
 redis.on("connect", () => {
-    console.log("Successfully connected to Redis");
+    logger.info("Successfully connected to Redis");
 });
   
 redis.on("error", (error) => {
-    console.error("Redis connection error:", error);
+    logger.error("Redis connection error:", error);
 });
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
@@ -87,7 +88,7 @@ async function storePriceData(pair, data) {
         const oneDayAgo = now - 86400000;
         await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, oneDayAgo);
     } catch (error) {
-        console.error(`Error storing price for ${pair}:`, error);
+        logger.error(`Error storing price for ${pair}:`, error);
     }
 }
 
@@ -116,7 +117,7 @@ async function calculate24hChangePercent(pair, currentPrice) {
         return changePercent.toFixed(2);
 
     } catch (error) {
-        console.error(`Error calculating 24h change percent for ${pair}:`, error);
+        logger.error(`Error [calculate24hChangePercent] ${pair}:`, error);
         return "0.00";
     }
 }
@@ -142,7 +143,7 @@ async function storeHourlyData() {
             await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, thirtyDaysAgo);
     
         } catch (error) {
-            console.error(`Error store hourly data for ${pair}:`, error);
+            logger.error(`Error store hourly data for ${pair}:`, error);
         }
     }
 }
@@ -183,10 +184,10 @@ async function get24hHighLow(pair) {
 
         return { high, low };
     } catch (error) {
-        console.error("Error fetching 24h high low:", error);
+        logger.error("Error fetching 24h high low:", error);
         const currentPriceData = latestTickerData[newPair];
         if (!currentPriceData) {
-            console.error(`No current price data for ${newPair}`);
+            logger.error(`No current price data for ${newPair}`);
             return null;
         }
         
@@ -195,7 +196,7 @@ async function get24hHighLow(pair) {
         const high = currentPrice * 1.05;
         const low = currentPrice * 0.95;
         
-        console.log(`Using fallback high-low for ${newPair}: ${high}-${low}`);
+        logger.info(`Using fallback high-low for ${newPair}: ${high}-${low}`);
         return { high, low };
     }
 }
@@ -217,7 +218,7 @@ binanceWS.on("message", (data) => {
 });
 
 binanceWS.on("error", (error) => {
-    console.error("Websocket error:", error);
+    logger.error("Websocket error:", error);
 });
 
 
@@ -233,7 +234,7 @@ router.get("/ticker", (req, res) => {
 
 router.get("/ticker/:pair", async (req, res) => {
     const { pair } = req.params;
-    // console.log("Latest price:", pair);
+    // logger.info("Latest price:", pair);
     const formattedPair = pair.toUpperCase().replace("_", "");
     const latestPrice = latestTickerData[formattedPair];
     res.status(200).json({ ok: true, data: latestPrice });
@@ -249,7 +250,7 @@ export async function logOrderBookSnapshot(symbol, processedData) {
 
 router.get("/orderBook/:pair", async (req, res) => {
     const { pair } = req.params;
-    // console.log("Latest order book snapshot:", pair);
+    // logger.info("Latest order book snapshot:", pair);
     const symbol = pair.split("_")[0]; // xxx_usdt -> xxx
     const orderBookSnapshot = latestOrderBookSnapshot[symbol];
     
@@ -263,7 +264,7 @@ router.get("/orderBook/:pair", async (req, res) => {
 
 router.get("/24hHighAndLow/:pair", async (req, res) => {
     const { pair } = req.params;
-    // console.log("24h high low:", pair);
+    // logger.info("24h high low:", pair);
     const highLow = await get24hHighLow(pair);
     res.status(200).json({ ok: true, data: highLow });
 });
@@ -271,22 +272,22 @@ router.get("/24hHighAndLow/:pair", async (req, res) => {
 
 router.get("/monthlyTrend/:pair", async (req, res) => {
     const { pair } = req.params;
-    // console.log("Monthly trend:", pair);
+    // logger.info("Monthly trend:", pair);
     try {
         const monthlyTrend = await queryMonthlyTrend(pair);
         res.status(200).json({ ok: true, monthlyTrend });
     } catch (error) {
-        console.error("Error fetching monthly trend:", error);
+        logger.error("Error fetching monthly trend:", error);
     }
 });
 
 ///////////////////////// Error handling /////////////////////////
 process.on("uncaughtException", (error) => {
-    console.error("Uncaught Exception:", error);
+    logger.error("Uncaught Exception:", error);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-    console.error("Unhandled Rejection at:", promise, "reason:", reason);
+    logger.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 
 export default router;
