@@ -238,6 +238,7 @@ class TradeModel {
 
             if (newExecutedQuantity.isZero()) {
                 throw new Error("New executed quantity cannot be zero");
+                // 不能只拋出不處理
             }
 
             const newAveragePrice = allTotal.dividedBy(newExecutedQuantity);

@@ -1,3 +1,4 @@
+import "express-async-errors";
 import express from "express";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
@@ -57,6 +58,13 @@ app.get("/signup", (req, res) => {
     res.sendFile(path.join(__dirname, "..", "..", "frontend", "signup.html"));
 });
 
+// /trade/:pair 
+app.get("/trade/:pair", (req, res) => {
+    const { pair } = req.params;
+    console.log("Trading pair:", pair);
+    res.sendFile(path.join(__dirname, "..", "..", "frontend", "trade.html"));
+});
+
 
 // route
 import homeRoute from "./routes/homeRoute.js";
@@ -70,12 +78,6 @@ app.use("/api/wallet", walletRoute);
 app.use("/api/trade", tradeRoute);
 app.use("/api/history", historyRoute);
 
-// /trade/:pair 
-app.get("/trade/:pair", (req, res) => {
-    const { pair } = req.params;
-    console.log("Trading pair:", pair);
-    res.sendFile(path.join(__dirname, "..", "..", "frontend", "trade.html"));
-});
 
 import quoteService from "./services/quoteService.js";
 app.use("/api/quote", quoteService);
@@ -91,12 +93,18 @@ app.use((req, res, next) => {
 });
 
 
-// 500 internal server error
+// 500 // Custom error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error(`Error occurred at path: ${req.path}`);
+    console.error(`Error message: ${err.message}`);
+    console.error(`Error stack: ${err.stack}`);
+    
     res.status(500).json({
       error: true,
-      message: "Internal Server Error"
+      message: process.env.NODE_ENV === "production" 
+      ? "Internal server error" 
+      : err.message,
+      ...(process.env.NODE_ENV !== "production" && { stack: err.stack })
     });
 });
 
