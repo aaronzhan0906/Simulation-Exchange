@@ -57,7 +57,7 @@ class UserController {
         }
     }
 
-    // router.put("/auth", userController.login);
+    // router.post("/auth", userController.login);
     async login(req, res) {
         try{
             const { email, password } = req.body;
@@ -75,10 +75,22 @@ class UserController {
             const accessToken = UserModel.generateAccessToken(user);
             const refreshToken = UserModel.generateRefreshToken(user);
 
+            // clear cookies
+            res.clearCookie("accessToken");
+            res.clearCookie("userId");
+
             res.cookie("accessToken", accessToken, {
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 之後改
                 httpOnly: true, 
                 secure: true, 
+                sameSite: "strict"
+            });
+
+            // give userId to Frontend
+            res.cookie("userId", user.user_id, {
+                maxAge: 30 * 24 * 60 * 60 * 1000, 
+                httpOnly: true,
+                secure: true,
                 sameSite: "strict"
             });
 
@@ -103,6 +115,7 @@ class UserController {
                 await UserModel.removeRefreshToken( userId )
             }
 
+            res.clearCookie("userId");
             res.clearCookie("accessToken");
             res.status(200).json({ "ok": true, message: "Logged out successfully" });
         } catch (error) {

@@ -1,4 +1,3 @@
-import db from "../config/database.js";
 import pool from "../config/database.js";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
@@ -56,7 +55,7 @@ class UserModel {
 
     async getUserByEmail(email) {
         const command = "SELECT user_id, email, password FROM users WHERE email = ?";
-        const result = await db.query(command, [email]);
+        const result = await pool.query(command, [email]);
         return result;
     }
 
@@ -75,9 +74,34 @@ class UserModel {
             { expiresIn: config.jwt.refreshTokenLife }
         )
     }
+    async getRefreshTokenByUserId(userId){
+        try{
+            const [result] = await pool.query(
+                "SELECT refresh_token FROM users WHERE user_id = ?",
+                [userId]
+            );
+            if (result.length > 0 && result[0].refresh_token) {
+                const refreshToken = result[0].refresh_token;
+                
+                try {
+                    jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
+                    return refreshToken;
+                } catch (error) {
+                    if (error instanceof jwt.TokenExpiredError) {
+                        await this.removeRefreshToken(userId);
+                    }
+                    return null;
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error("Error in getRefreshTokenByUserId: ", error);
+            throw error;
+        }
+    }
 
     async removeRefreshToken(userId) {
-        await db.query(
+        await pool.query(
             "UPDATE users SET refresh_token = NULL, refresh_token_expires_at = NULL WHERE user_id = ?",
             [userId]
         );
@@ -85,7 +109,7 @@ class UserModel {
 
     async saveRefreshToken(userId, refreshToken){
         const expiresAt = new Date(Date.now() + 30*24*60*60*1000);
-        await db.query(
+        await pool.query(
             "UPDATE users SET refresh_token = ?, refresh_token_expires_at = ? WHERE user_id = ?",
             [refreshToken, expiresAt, userId]
         );

@@ -47,7 +47,8 @@ class MatchingEngine:
                     "user_id": match["matched_user_id"] if side == "buy" else user_id,
                     "order_id": match["matched_order_id"] if side == "buy" else order_id
                 },
-                "isTaker": True
+                "isTaker": True,
+                "original_price": str(match["input_price"])
             }
 
             matched_order_result = {
@@ -69,7 +70,8 @@ class MatchingEngine:
                     "user_id": match["matched_user_id"] if side == "buy" else user_id,
                     "order_id": match["matched_order_id"] if side == "buy" else order_id
                 },
-                "isTaker": False
+                "isTaker": False,
+                "original_price": str(match["opposite_price"])
             }
 
 
@@ -80,11 +82,10 @@ class MatchingEngine:
         canceled_order = self.order_book.cancel_order(order_id)
 
         if canceled_order is None:
-            # None is simple logic 
             return {
                 "order_id": order_id,
-                "status": "filled",
-                "message": "Order not found or already fully executed"
+                "status": "NOT FOUND",
+                "message": "Order not found."
             }
         
         side, price, current_quantity, original_quantity, order_user_id = canceled_order
@@ -121,22 +122,3 @@ class MatchingEngine:
         
     def get_market_depth(self, levels: int = 10):
         return self.order_book.get_order_book(levels)
-    
-
-
-# 打開前要檢查一下 目前用不到
-            # trade_record = {
-            #     "trade_id": trade_id,
-            #     "timestamp": timestamp,
-            #     "symbol": symbol,
-            #     "price": str(match["executed_price"]),
-            #     "quantity": str(match["trade_quantity"]),
-            #     "buyer": {
-            #         "user_id": user_id if side == "buy" else match["matched_user_id"],
-            #         "order_id": order_id if side == "buy" else match["matched_order_id"]
-            #     },
-            #     "seller": {
-            #         "user_id": match["matched_user_id"] if side == "buy" else user_id,
-            #         "order_id": match["matched_order_id"] if side == "buy" else order_id
-            #     }
-            # }

@@ -6,7 +6,6 @@
     font-optical-sizing: auto;
     box-sizing: border-box;
     letter-spacing: 1px;
-
 }
 
 body {
@@ -346,7 +345,7 @@ select::-ms-expand {
 }
 
 .order-book__bids div > span:nth-child(odd) {
-    color: #259a32; 
+    color: #228f2f; 
 }
 
 
@@ -551,8 +550,12 @@ input:-webkit-autofill:focus {
     transition: all 0.3s ease;
 }
 
-.trade-panel__submit.unauthorized {
-    background-color: #356049;
+.trade-panel__submit.buyUnauthorized {
+    background-color: #56c488a8;
+}
+
+.trade-panel__submit.sellUnauthorized {
+    background-color: #c45656b5;
 }
 
 .trade-panel__submit.buy {
@@ -614,7 +617,8 @@ input:-webkit-autofill:focus {
     font-size: 14px;
 }
 
-table {
+
+.open-orders__table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
@@ -626,18 +630,19 @@ table {
     grid-template-columns: 1.3fr 0.8fr 0.6fr 0.6fr 1fr 1fr 0.8fr 0.8fr 0.4fr;
 }
 
-thead, tbody, tr {
+.open-orders__thead, .open-orders__tbody, .open-orders__tr {
     display: contents;
 }
 
-th  {
+
+.open-orders__th  {
     padding: 12px 5px 7px 5px;
     text-align: left;
     border-bottom: 1px solid #333;
     font-weight: 700;
 }
 
-td {
+.open-orders__td {
     padding: 12px 5px;
     text-align: left;
     border-bottom: 1px solid #333;
@@ -645,14 +650,12 @@ td {
 }
 
 .open-orders__cell--buy {
-    color: #3a9b45; 
+    color: rgb(52, 146 ,63); 
 }
 
 .open-orders__cell--sell {
-    color: #ef483f; 
+    color: rgb(239, 72 ,63); 
 }
-
-
 
 .cancel-btn {
     background-color: transparent;
@@ -722,12 +725,12 @@ td {
 }
 
 
-.recent-trade__item.buy .trade-price {
-    color: #259a32; 
+.recent-trade__item.buy {
+    color: rgba(52, 146, 63, 0.75); 
 }
 
-.recent-trade__item.sell .trade-price {
-    color: #db3a32;
+.recent-trade__item.sell {
+    color: rgba(239, 72 ,63, 0.75);
 }
 
 

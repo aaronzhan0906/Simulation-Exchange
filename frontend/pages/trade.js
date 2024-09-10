@@ -29,6 +29,7 @@ async function initChartHeader() {
     const lowDiv = document.getElementById("chart-header__low");
     const response = await fetch(`/api/quote/24hHighAndLow/${pair}`);
     const responseData = await response.json();
+    console.log("24h high and low:", responseData);
 
     highDiv.firstElementChild.textContent = "24h Highest";
     lowDiv.firstElementChild.textContent = "24h Lowest";
@@ -68,7 +69,9 @@ async function initChart() {
     chart = createChart(chartContainer, {
         layout: {
             background: { type: "solid", color: "rgba(13, 14, 15)" },
-            textColor: "#ffffff",
+            textColor: "#cfcfcf",
+            fontSize: 11,
+            fontFamily: "Roboto, sans-serif",
         },
         grid: {
             vertLines: { color: "rgba(13, 14, 15, 0.5)" },
@@ -77,12 +80,30 @@ async function initChart() {
         rightPriceScale: {
             borderColor: "rgba(13, 14, 15, 0.5)",
         },
-
+        localization: {
+            locale: "en-US",
+        },
+        timeScale: {
+            borderColor: "rgba(0, 41, 82, 0.5)",
+            allowBoldLabels: false,
+            secondsVisible: false,
+            tickMarkFormatter: (time, tickMarkType, locale) => {
+                const date = new Date(time * 1000);
+                date.setHours(date.getHours() + 8); // UTC+8
+                
+                // MM/DD 
+                const month = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+                const day = date.getUTCDate().toString().padStart(2, "0");
+                return `${month}/${day}`;
+                
+            },
+        },
     });
+
 
     lineSeries = chart.addAreaSeries({
         topColor: "rgba(41, 98, 255, 0.56)",
-        bottomColor: "rgba(41, 98, 255, 0.04)",
+        bottomColor: "rgba(33, 84, 224, 0.1)",
         lineColor: "rgba(41, 98, 255, 1)",
         lineWidth: 2,
     });

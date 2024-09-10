@@ -20,6 +20,15 @@ services:
       retries: 5
       start_period: 30s
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+
   node-backend:
     build: 
       context: .
@@ -28,24 +37,33 @@ services:
       - "3000:3000"
     volumes:
       - ./node-backend:/usr/src/app/node-backend
-      - ./public:/usr/src/app/public
+      - ./frontend:/usr/src/app/frontend
       - ./package.json:/usr/src/app/package.json
       - ./package-lock.json:/usr/src/app/package-lock.json
       - /usr/src/app/node_modules
+      - ./wait-for-it.sh:/wait-for-it.sh
     env_file: .env
     environment:
       - NODE_ENV=${NODE_ENV}
       - KAFKA_BROKERS=kafka:9092
-      - WSS_BINANCE_URL=wss://stream.binance.us:9443/stream
+      - WSS_BINANCE_URL=wss://data-stream.binance.vision:9443/stream
       - BINANCE_API_KEY=https://api.binance.us/api/v3/klines
-      - REDIS_HOST=172.31.23.16
-
-
-    command: /bin/sh -c "npm run init-kafka && npm run init-history-price && npm run start:dev"
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: >
+      /bin/sh -c "
+        chmod +x /wait-for-it.sh &&
+        /wait-for-it.sh kafka:9092 -t 45 -- 
+        /wait-for-it.sh redis:6379 -- 
+        npm run init-kafka && 
+        npm run init-history-price && 
+        npm run start:dev
+      "
     depends_on:
       kafka:
         condition: service_healthy
-    
+      redis:
+        condition: service_started
 
   matching-engine:
     build:
@@ -53,10 +71,18 @@ services:
       dockerfile: matching-engine/Dockerfile
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
+      - ./wait-for-it.sh:/wait-for-it.sh 
     environment:
       - KAFKA_BROKERS=kafka:9092
-      - REDIS_HOST=172.31.23.16
-    command: python /usr/src/app/matching-engine/src/main.py
-    depends_on:
-      kafka:
-        condition: service_healthy
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: >
+      /bin/sh -c "
+        chmod +x /wait-for-it.sh &&
+        /wait-for-it.sh kafka:9092 -t 60 -- 
+        /wait-for-it.sh node-backend:3000 -t 60 -- 
+        python /usr/src/app/matching-engine/src/main.py
+      "
+
+volumes:
+  redis-data:

@@ -25,7 +25,6 @@ class HistoryController {
     async getOrderHistory(req, res) {
         const { userId } = req.user;
         const { timeRange } = req.query;
-        console.log(timeRange)
         try {
             const orders = await HistoryModel.getOrderHistory(userId, timeRange);
 

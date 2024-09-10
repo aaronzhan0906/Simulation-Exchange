@@ -23,6 +23,7 @@ class TradeController {
                 type: order.type,
                 price: order.price,
                 quantity: order.quantity,
+                executedQuantity: order.executed_quantity,
                 status: order.status,
                 createdAt: order.created_at
             }));
@@ -30,12 +31,47 @@ class TradeController {
             return res.status(200).json({
                 ok: true,
                 message: "Orders retrieved successfully",
-                orders: formattedOrders});
+                orders: formattedOrders
+            });
         } catch(error) {
-            console.error("getOrders error:", error);
+            console.error("[getOrders] error:", error);
             throw error;
         }
     }
+
+    async getOrdersByMarketMaker(ws){
+        const userId = ws.userId;
+
+        try {
+            const result = await TradeModel.getOrders(userId)
+            const formattedOrders = result.map(order => ({
+                orderId: order.order_id,
+                userId: order.user_id,
+                symbol: order.symbol,
+                side: order.side,
+                type: order.type,
+                price: order.price,
+                quantity: order.quantity,
+                executedQuantity: order.executed_quantity,
+                status: order.status,
+                createdAt: order.created_at
+            }));
+
+            ws.send(JSON.stringify({
+                type: "orders",
+                message: "Orders retrieved successfully",
+                data: {
+                    orders:formattedOrders
+                }
+            }))
+        } catch(error) {
+            console.error("[getOrdersByMarketMaker] error:", error);
+            ws.send(JSON.stringify({ type:"error", message: error.message }));
+            throw error;
+        }
+    }
+
+    
         
     // router.post("/order", TradeController.createOrder);
     async createOrder(req, res){
@@ -46,20 +82,18 @@ class TradeController {
                 return res.status(400).json({ error:true, message:"Missing required fields!" })
             }
 
-        try { 
+        try {
+            let authResult;
             if (side === "buy") {
-                try {
-                    await preBuyAuth(userId, price, quantity);
-                } catch (error) {
-                    return res.status(400).json({ error: true, message: error.message });
-                }
+                authResult = await preBuyAuth(userId, price, quantity);
             } else if (side === "sell") {
-                try {
-                    await preSellAuth(userId, symbol, quantity);
-                } catch (error) {
-                    return res.status(400).json({ error: true, message: error.message });
-                }
+                authResult = await preSellAuth(userId, symbol, quantity);
             } 
+    
+            if (!authResult.success) {
+                console.log("authResult:", authResult);
+                return res.status(400).json({ error: true, message: authResult.message });
+            }
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
@@ -92,70 +126,189 @@ class TradeController {
                 createdAt: order.created_at
             })
             
-
-            res.status(200).json({
-                ok: true,
-                message: "Order created successfully",
-                order: {
+            // sendOrderUpdateToUser
+            const newOrder = {
+                type: "orderUpdate",
+                message: "newOrder",
+                data: {
+                    message: "newOrder",
                     orderId: order.order_id,
-                    userId: order.user_id,
                     symbol: order.symbol,
                     side: order.side,
                     type: order.type,
                     price: order.price,
                     quantity: order.quantity,
+                    executedQuantity: order.executed_quantity,
                     status: order.status,
                     createdAt: order.created_at
                 }
+            };
+
+            sendOrderUpdateToUser(order.user_id, newOrder);
+            
+            res.status(200).json({
+                ok: true,
+                message: "Order created successfully",
             })
 
         } catch(error) {
-            console.error(error);
+            console.error("Error in createOrder:", error);
             throw error;
         }
     }
 
+    
+    // router.post("/marketMaker/order", TradeController.createOrder);
+    async createOrderByMarketMaker(ws, message) {
+        const { symbol, side, type, price, quantity } = message.data;
+        const userId = ws.userId;
+
+        if ( !userId || !symbol || !side || !type || !price || !quantity) {
+            ws.send(JSON.stringify({ type:"error", message: "Missing required fields" }));
+        }
+
+        try { 
+            let authResult;
+            if (side === "buy") {
+                authResult = await preBuyAuth(userId, price, quantity);
+            } else if (side === "sell") {
+                authResult = await preSellAuth(userId, symbol, quantity);
+            } 
+    
+            if (!authResult.success) {
+                ws.send(JSON.stringify({ type: "error", message: authResult.message }));
+                return;
+            }
+
+            // snowflake order_id 
+            const orderId = generateSnowflakeId();
+        
+            const orderIdString = orderId.toString();
+            const order = await TradeModel.createOrder(
+                orderIdString,
+                userId,
+                symbol,
+                side,
+                type,
+                price,
+                quantity,
+                "open"
+            );
+            const topicSymbol = symbol.replace("_usdt","")
+            const topic = `new-order-${topicSymbol}`
+
+        
+            // send order to kafka 
+            await kafkaProducer.sendMessage(topic, {
+                orderId: order.order_id,
+                userId: order.user_id,
+                symbol: order.symbol,
+                side: order.side,
+                type: order.type,
+                price: order.price,
+                quantity: order.quantity,
+                status: order.status,
+                createdAt: order.created_at
+            })
+
+            const newOrder = {
+                type: "orderUpdate",
+                message: "newOrder",
+                data: {
+                    message: "newOrder",
+                    orderId: order.order_id,
+                    symbol: order.symbol,
+                    side: order.side,
+                    type: order.type,
+                    price: order.price,
+                    quantity: order.quantity,
+                    executedQuantity: order.executed_quantity,
+                    status: order.status,
+                    createdAt: order.created_at
+                }
+            };
+
+            sendOrderUpdateToUser(order.user_id, newOrder);
+            
+
+            ws.send(JSON.stringify({
+                type: "orderCreated",
+                data: {
+                    ok: true,
+                    message: "Order created successfully",
+                    order: {
+                        orderId: order.order_id,
+                        symbol: order.symbol,
+                        side: order.side,
+                        type: order.type,
+                        price: order.price,
+                        quantity: order.quantity,
+                        status: order.status,
+                        createdAt: order.created_at
+                    }
+                }
+            }));
+
+        } catch(error) {
+            console.error(error);
+            ws.send(JSON.stringify({ type:"error", message: error.message }));
+        }
+    }
+
+/////////////////////////  UPDATE ORDER  ///////////////////////////
     // WS broadcast order update
-    async updateOrderData(trade_result){
+    async updateOrderData(trade_result) {
         const {
             order_id,
             timestamp,
             executed_quantity,
             executed_price,
             status
-        } = trade_result
-
+        } = trade_result;
+    
         const updateOrderData = {
             order_id,
             executed_quantity: new Decimal(executed_quantity).toString(),
             executed_price: new Decimal(executed_price).toString(),
             status,
             updated_at: timestamp
-        }
-        
-        try {  
+        };
+    
+        try {
             const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
+    
             if (!resultOrderData) {
-                throw new Error("Order not found or update failed"); 
+                console.error("[updateOrderData] No data returned, maybe update data is slower than cancel data");
+                return null; // sometimes cancel data is faster than update data
             }
+    
+            // WebSocket 
+            const quantity = new Decimal(resultOrderData.quantity);
+            const remainingQuantity = new Decimal(resultOrderData.remaining_quantity);
+            const filledQuantity = quantity.minus(remainingQuantity).toString();
 
-            if (resultOrderData.side == "buy") {
-                await TradeModel.increaseAsset(resultOrderData)
-                await TradeModel.decreaseBalance(resultOrderData)
-                await TradeModel.unlockBalance(resultOrderData)
-            } else {
-                await TradeModel.decreaseAsset(resultOrderData)
-                await TradeModel.increaseBalance(resultOrderData)
-                await TradeModel.unlockAsset(resultOrderData)
-            }
-            // websocket broadcast
-            const quantity = new Decimal(resultOrderData.quantity)
-            const remainingQuantity = new Decimal(resultOrderData.remaining_quantity)
-            const filledQuantity = quantity.minus(remainingQuantity).toString()
-            await sendOrderUpdateToUser(resultOrderData, filledQuantity);
-            
+            const newUpdate = {
+                type: "orderUpdate",
+                message: "newUpdate",
+                data: {
+                    message: "newUpdate",
+                    orderId: resultOrderData.order_id,
+                    averagePrice: resultOrderData.average_price,
+                    status: resultOrderData.status,
+                    symbol: resultOrderData.symbol,
+                    side: resultOrderData.side,
+                    price: resultOrderData.price,
+                    quantity: resultOrderData.quantity,
+                    filledQuantity: filledQuantity,
+                    createdAt: resultOrderData.created_at
+                }
+            };
+
+            await sendOrderUpdateToUser(resultOrderData.user_id,  newUpdate);
+    
+            return resultOrderData; 
         } catch (error) {
-            console.error("updateOrderData error:", error);
+            console.error("[updateOrderData] error:", error);
             throw error;
         }
     }
@@ -185,7 +338,7 @@ class TradeController {
                 data: processedData
             }); 
         } catch (error) {
-            console.error("broadcastOrderBookToRoom error:", error);
+            console.error("[broadcastOrderBookToRoom] error:", error);
             throw error;
         }
     }
@@ -198,7 +351,6 @@ class TradeController {
         }
 
         try {
-            
             const roomSymbol = `${symbol}_usdt`
             WebSocketService.broadcastToRoom(roomSymbol,{
                 type: "recentTrade",
@@ -208,66 +360,77 @@ class TradeController {
                     timestamp
                 }});
         } catch (error) {  
-            console.error("broadcastRecentTradeToRoom error:", error);
+            console.error("[broadcastRecentTradeToRoom] error:", error);
             throw error;
         }
     }
 
-
+/////////////////////////  CANCEL ORDER  ///////////////////////////
     // router.patch("/order", TradeController.cancelOrder);
     async cancelOrder(req, res){
         const { orderId, symbol } = req.body;
-        const userId = req.user.userId;
+        const  userId = req.user.userId;
 
         if ( !userId || !orderId || !symbol) {
             return res.status(400).json({ error:true, message:"Missing required fields!" })
         }
 
-        try {
-            const cancelResultPromise = new Promise((resolve, reject) => {
-                const timeoutId = setTimeout(() => {
-                    if (pendingCancelResults.has(orderId)) {
-                        pendingCancelResults.delete(orderId);
-                        reject(new Error("Cancel request timeout"));
-                    }
-                }, 30000);
-    
-                pendingCancelResults.set(orderId, { resolve, reject, timeoutId, timestamp: new Date() });
-            });
+        const localOrderStatus = await TradeModel.checkCancelOrderStatus(orderId);
+        if (localOrderStatus[0].status === "filled") {
+            return res.status(401).json({ error: true, message: "Order has been executed" });
+        }
 
+        try {
             const topicSymbol = symbol.replace("_usdt", "");
             const topic = `cancel-order-${topicSymbol}`
-            console.log("cancelOrder topic:", topic);
             await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
-            const cancelResult = await cancelResultPromise;
             
-            if (cancelResult.status === "filled") {
-                return res.status(401).json({ error:true, message:"Order not found or already fully executed" });
-            } 
+            res.status(200).json({ ok: true, message: "Order cancellation request sent" });
+        } catch(error) {
+            console.error("[cancelOrder] error:", error);
+            throw error;
+        }
+    }
 
-            const updateOrderId = cancelResult.order_id;
-            const updateStatus = cancelResult.status;
-            const updateUpdateAt = cancelResult.timestamp;
-            const updateResult = await TradeModel.cancelOrder(updateOrderId, updateStatus, updateUpdateAt);
-            
-            if (!updateResult) {
-                return res.status(400).json({
-                    error: true,
-                    message: "Unexpected cancellation result",
-                    status: cancelResult.status
-                });
+    async handleCancelResult(cancelResult) {
+        const { order_id: orderId, user_id: userId } = cancelResult;
+        try {
+            if (cancelResult.status === "NOT_FOUND") {
+                const checkStatus = await TradeModel.checkCancelOrderStatus(orderId);
+                if (checkStatus[0].status === "filled") {
+                    console.log(`Order ${orderId} already executed, cannot cancel.`);
+                    return; 
+                }
+                console.log(`Order ${orderId} not found, possibly already cancelled.`);
+                return; 
             }
-
-            // 這邊的邏輯要再順一下，難維護
+    
+            const updateResult = await TradeModel.cancelOrder(orderId, cancelResult.status, cancelResult.timestamp);
+    
+            if (!updateResult) {
+                console.error(`Unexpected cancellation result for order ${orderId}:`, cancelResult.status);
+                return; 
+            }
+    
             if (cancelResult.side === "buy") {
                 await TradeModel.releaseLockedBalance(cancelResult);
             } else {
                 await TradeModel.releaseLockedAsset(cancelResult);
             }
-
+    
             if (updateResult.updateStatus === "CANCELED" || updateResult.updateStatus === "PARTIALLY_FILLED_CANCELED") {
+                const releaseAvailable = {
+                    type: "releaseAvailable",
+                    message: "Order cancelled and released available balance or asset",
+                    data: {
+                        orderId: updateResult.updateOrderId,
+                        status: updateResult.updateStatus,
+                    }
+                };
+
                 const cancelMessage = {
                     type: "orderUpdate",
+                    message: "Order cancelled",
                     data: {
                         orderId: updateResult.updateOrderId,
                         status: updateResult.updateStatus,
@@ -275,35 +438,16 @@ class TradeController {
                 };
 
                 WebSocketService.sendToUser(userId, cancelMessage);
-                return res.status(200).json({
-                    ok: true,
-                    message: "Order cancelled successfully",
-                    orderId: updateResult.updateOrderId,
-                    status: updateResult.updateStatus,
-                    updatedAt: updateResult.updateUpdatedAt
-                });
-            } 
-           
-        } catch(error) {
-            console.error("cancelOrder error:", error);
-            pendingCancelResults.delete(orderId); 
-            if (error.message === "Cancel order request timeout") {
-                return res.status(408).json({ error:true, message:"Cancel order request timeout" });
+                console.log(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
             }
-        }
-    }    
-
-    async processCancelResult(data) {        
-        try {
-            await TradeModel.cancelOrder(data.orderId, data.status);
-            
-            console.log(`Cancel result processed successfully for order: ${data.order_id}`);
-        } catch (error) {
-            console.error(`Error processing cancel result for order ${data.orderId}:`, error);
+        } catch(error) {
+            console.error(`[handleCancelResult] error for order ${orderId}:`, error);
+            throw error;
         }
     }
+    
 
-
+/////////////////////////  TRADE HISTORY  ///////////////////////////
     // consume trade result from kafka
     async createTradeHistory(trade_result){
         const {
@@ -351,60 +495,85 @@ class TradeController {
 
 export default new TradeController();
 
-// pending cancel orders
-export const pendingCancelResults = new Map()
 
 async function preBuyAuth(userId, price, quantity) {
-    const dPrice = new Decimal(price)
-    const dQuantity = new Decimal(quantity)
-    const costAmount = dPrice.times(dQuantity)  
+    const dPrice = new Decimal(price);
+    const dQuantity = new Decimal(quantity);
+    const costAmount = dPrice.times(dQuantity);  
 
     try {
-        const availableBalance = await TradeModel.getAvailableBalanceById(userId)
+        const availableBalance = await TradeModel.getAvailableBalanceById(userId);
         const usableBalance = new Decimal(availableBalance);
         if (usableBalance.lessThan(costAmount)) {
-            throw new Error("Insufficient available balance");
+            return {
+                success: false,
+                message: "INSUFFICIENT AVAILABLE BALANCE"
+            };
         } 
-        await TradeModel.lockBalance(userId, price, quantity)
+        await TradeModel.lockBalance(userId, price, quantity);
+        return { success: true };
     } catch (error) {
         console.error("preBuyAuth error:", error);
-        throw error;
+        return {
+            success: false,
+            message: "An error occurred while processing the buy order"
+        };
     } 
 }
 
 
 async function preSellAuth(userId, symbol, quantity) {
-    const sellQuantity = new Decimal(quantity)
+    const sellQuantity = new Decimal(quantity);
     try {
         const availableQuantity = await TradeModel.getQuantityBySymbolAndUserId(userId, symbol);
-        if (new Decimal(availableQuantity).lessThan(sellQuantity)) {
-            throw new Error("Insufficient available asset");
+        const dAvailableQuantity = new Decimal(availableQuantity);
+        console.log("availableQuantity:", dAvailableQuantity.toString());
+        console.log("sellQuantity:", sellQuantity.toString());
+        if (dAvailableQuantity.lessThan(sellQuantity)) {
+            return {
+                success: false,
+                message: "INSUFFICIENT AVAILABLE ASSET"
+            };
         }
-        await TradeModel.lockAsset(userId, symbol, quantity)
+        await TradeModel.lockAsset(userId, symbol, quantity);
+        return { success: true };
     } catch (error) {
         console.error("preSellAuth error:", error);
-        throw error;
+        return {
+            success: false,
+            message: "An error occurred while processing the sell order"
+        };
     }
 }
 
-async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
+
+
+async function sendOrderUpdateToUser(user_id, orderMessage) {
     try {
-        const message = {
-            type: "orderUpdate",
-            data: {
-                orderId: resultOrderData.order_id,
-                filledQuantity: filledQuantity,
-                averagePrice: resultOrderData.average_price,
-                status: resultOrderData.status,
-                symbol: resultOrderData.symbol,
-                side: resultOrderData.side,
-                price: resultOrderData.price,
-                quantity: resultOrderData.quantity,
-                createdAt: resultOrderData.created_at
-            }
-        };
-        WebSocketService.sendToUser(resultOrderData.user_id, message);
+        WebSocketService.sendToUser(user_id, orderMessage);
     } catch (error) {
         console.error("Error sending order update to user:", error);
     }
 }
+
+// async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
+//     try {
+//         const message = {
+//             type: "orderUpdate",
+//             data: {
+//                 orderId: resultOrderData.order_id,
+//                 filledQuantity: filledQuantity,
+//                 averagePrice: resultOrderData.average_price,
+//                 status: resultOrderData.status,
+//                 symbol: resultOrderData.symbol,
+//                 side: resultOrderData.side,
+//                 price: resultOrderData.price,
+//                 quantity: resultOrderData.quantity,
+//                 createdAt: resultOrderData.created_at
+//             }
+//         };
+//         WebSocketService.sendToUser(resultOrderData.user_id, message);
+//     } catch (error) {
+//         console.error("Error sending order update to user:", error);
+//     }
+// }

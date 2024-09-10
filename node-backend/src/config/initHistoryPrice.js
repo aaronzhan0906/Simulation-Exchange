@@ -11,16 +11,16 @@ const redis = new Redis({
       const delay = Math.min(times * 50, 2000);
       return delay;
     }
-  });
+});
   
-  // Add connection listeners
-  redis.on("connect", () => {
+// Add connection listeners
+redis.on("connect", () => {
     console.log("Successfully connected to Redis");
-  });
+});
   
-  redis.on("error", (error) => {
+redis.on("error", (error) => {
     console.error("Redis connection error:", error);
-  });
+});
 
 // support symbol
 const supportedSymbols = config.supportedSymbols;

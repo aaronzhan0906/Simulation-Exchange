@@ -9,35 +9,35 @@ import schedule from "node-schedule";
 const router = express.Router();
 // Create Redis client
 const redis = new Redis({
-    host: process.env.REDIS_HOST ,
-    port: process.env.REDIS_PORT ,
+    host: process.env.REDIS_HOST || "172.31.23.16",
+    port: process.env.REDIS_PORT || 6379,
     retryStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);
       return delay;
     }
-  });
+});
   
   // Add connection listeners
-  redis.on("connect", () => {
+redis.on("connect", () => {
     console.log("Successfully connected to Redis");
-  });
+});
   
-  redis.on("error", (error) => {
+redis.on("error", (error) => {
     console.error("Redis connection error:", error);
-  });
+});
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = config.supportedSymbols;
 const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join("/");
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
-const binanceWs = new WebSocket(wsUrl);
+const binanceWS = new WebSocket(wsUrl);
 
 let latestTickerData = {}; // for different trading pairs { BNBUSDT: {symbol: 'BNBUSDT' price: '551.10000000',priceChangePercent: '-1.73' }
 // store price at least once every 1s
 
 
-// WebSocket functions //////////////////////////////////////////
+/////////////////////////  WebSocket functions ///////////////////////// 
 function broadcastMessageToAll(type, data) {
     WebSocketService.broadcastToAllSubscribers({ type, data });
 }
@@ -67,7 +67,7 @@ export async function updatePriceData(pair, price) {
 }
 
 
-// Redis functions //////////////////////////////////////////
+/////////////////////////  Redis functions ///////////////////////// 
 async function storePriceData(pair, data) {
     try {
         const now = Date.now(); 
@@ -84,6 +84,8 @@ async function storePriceData(pair, data) {
             JSON.stringify(storedData)
         );
 
+        const oneDayAgo = now - 86400000;
+        await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, oneDayAgo);
     } catch (error) {
         console.error(`Error storing price for ${pair}:`, error);
     }
@@ -120,30 +122,30 @@ async function calculate24hChangePercent(pair, currentPrice) {
 }
 
 async function storeHourlyData() {
-        const now = new Date();
-        now.setUTCMinutes(0, 0, 0);
-        const timestamp = now.toISOString(); 
-        const currentTime = now.getTime();
+    const now = new Date();
+    now.setUTCMinutes(0, 0, 0);
+    const timestamp = now.toISOString(); 
+    const currentTime = now.getTime();
+
+    for (const pair of Object.keys(latestTickerData)) {
+        const currentHourPrice = latestTickerData[pair].price;
+
+        const hourlyData = JSON.stringify({
+            timestamp: timestamp,
+            open: currentHourPrice
+        });
+
+        try {
+            await redis.zadd(`hourly_price_data:${pair}`, currentTime, hourlyData);
+
+            const thirtyDaysAgo = currentTime - 30 * 24 * 60 * 60 * 1000;
+            await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, thirtyDaysAgo);
     
-        for (const pair of Object.keys(latestTickerData)) {
-            const currentHourPrice = latestTickerData[pair].price;
-    
-            const hourlyData = JSON.stringify({
-                timestamp: timestamp,
-                open: currentHourPrice
-            });
-    
-            try {
-                await redis.zadd(`hourly_price_data:${pair}`, currentTime, hourlyData);
-    
-                const thirtyDaysAgo = currentTime - 30 * 24 * 60 * 60 * 1000;
-                await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, thirtyDaysAgo);
-    
-            } catch (error) {
-                console.error(`Error store hourly data for ${pair}:`, error);
-            }
+        } catch (error) {
+            console.error(`Error store hourly data for ${pair}:`, error);
         }
     }
+}
 
 async function cleanupData() {
     const now = Date.now();
@@ -156,11 +158,6 @@ async function cleanupData() {
     }
 }
 
-export async function queryDailyTrend(pair) {
-    const now = Date.now();
-    const dayAgo = now - 86400000;
-    return await redis.zrangebyscore(`recent_price_data:${pair}`, dayAgo, now, "WITHSCORES");
-}
 
 export async function queryMonthlyTrend(pair) {
     const now = Date.now();
@@ -174,20 +171,38 @@ async function get24hHighLow(pair) {
     const dayAgo = now - 86400000;
     try {
         const prices = await redis.zrangebyscore(`recent_price_data:${newPair}`, dayAgo, now);
-        const priceValues = prices.map(p => parseFloat(JSON.parse(p).price));
-        return {
-            high: Math.max(...priceValues),
-            low: Math.min(...priceValues)
-        };
+
+        let high = -Infinity;
+        let low = Infinity;
+
+        for (const priceStr of prices) {
+            const price = parseFloat(JSON.parse(priceStr).price);
+            if (price > high) { high = price; }
+            if (price < low) { low = price; }
+        }
+
+        return { high, low };
     } catch (error) {
         console.error("Error fetching 24h high low:", error);
-        return null;
+        const currentPriceData = latestTickerData[newPair];
+        if (!currentPriceData) {
+            console.error(`No current price data for ${newPair}`);
+            return null;
+        }
+        
+        const currentPrice = parseFloat(currentPriceData.price);
+        
+        const high = currentPrice * 1.05;
+        const low = currentPrice * 0.95;
+        
+        console.log(`Using fallback high-low for ${newPair}: ${high}-${low}`);
+        return { high, low };
     }
 }
 
 
-// Binance websocket events  //////////////////////////////////////////
-binanceWs.on("message", (data) => {
+///////////////////////// Binance websocket events  /////////////////////////
+binanceWS.on("message", (data) => {
     const parsedData = JSON.parse(data);
     const { stream, data: streamData } = parsedData;
 
@@ -201,24 +216,24 @@ binanceWs.on("message", (data) => {
     updatePriceData(pair, streamData.c)
 });
 
-binanceWs.on("error", (error) => {
+binanceWS.on("error", (error) => {
     console.error("Websocket error:", error);
 });
 
 
-// schedule jobs  //////////////////////////////////////////
+/////////////////////////  SCHEDULE JOBS  ///////////////////////// 
 schedule.scheduleJob("0 * * * *", storeHourlyData); // store hourly data every hour
 schedule.scheduleJob("0 0 * * *", cleanupData); // clean up data every day
 
 
-// API routes //////////////////////////////////////////////
+///////////////////////// API ROUTES /////////////////////////
 router.get("/ticker", (req, res) => {
     res.status(200).json({ ok: true, latestTickerData: latestTickerData });
 });
 
 router.get("/ticker/:pair", async (req, res) => {
     const { pair } = req.params;
-    console.log("Latest price:", pair);
+    // console.log("Latest price:", pair);
     const formattedPair = pair.toUpperCase().replace("_", "");
     const latestPrice = latestTickerData[formattedPair];
     res.status(200).json({ ok: true, data: latestPrice });
@@ -234,7 +249,7 @@ export async function logOrderBookSnapshot(symbol, processedData) {
 
 router.get("/orderBook/:pair", async (req, res) => {
     const { pair } = req.params;
-    console.log("Latest order book snapshot:", pair);
+    // console.log("Latest order book snapshot:", pair);
     const symbol = pair.split("_")[0]; // xxx_usdt -> xxx
     const orderBookSnapshot = latestOrderBookSnapshot[symbol];
     
@@ -248,20 +263,15 @@ router.get("/orderBook/:pair", async (req, res) => {
 
 router.get("/24hHighAndLow/:pair", async (req, res) => {
     const { pair } = req.params;
-    console.log("24h high low:", pair);
+    // console.log("24h high low:", pair);
     const highLow = await get24hHighLow(pair);
     res.status(200).json({ ok: true, data: highLow });
 });
 
-router.get("/dailyTrend/:pair", async (req, res) => {
-    const { pair } = req.params;
-    const dailyTrend = await queryDailyTrend(pair);
-    res.status(200).json({ ok: true, dailyTrend });
-});
 
 router.get("/monthlyTrend/:pair", async (req, res) => {
     const { pair } = req.params;
-    console.log("Monthly trend:", pair);
+    // console.log("Monthly trend:", pair);
     try {
         const monthlyTrend = await queryMonthlyTrend(pair);
         res.status(200).json({ ok: true, monthlyTrend });
@@ -270,7 +280,7 @@ router.get("/monthlyTrend/:pair", async (req, res) => {
     }
 });
 
-// Error handling //////////////////////////////////////////
+///////////////////////// Error handling /////////////////////////
 process.on("uncaughtException", (error) => {
     console.error("Uncaught Exception:", error);
 });

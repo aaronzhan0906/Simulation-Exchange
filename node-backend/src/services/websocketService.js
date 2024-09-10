@@ -2,6 +2,7 @@ import { WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import { parse } from "cookie";
+import TradeController from "../controllers/tradeController.js";
 
 class WebSocketService {
     constructor(){
@@ -68,6 +69,7 @@ class WebSocketService {
                         this.subscribeToRoom(ws, data.symbol);
                     }
                     break;
+                    
                 case "unsubscribe":
                     if (data.symbol === "ALL") {
                         this.unsubscribeFromAllSymbols(ws);
@@ -78,7 +80,21 @@ class WebSocketService {
 
                 case "getPersonalData":
                     this.handleAuthenticatedAction(ws, () => {
-                        console.log("Handling getPersonalData for user:", ws.userId);
+                        console.log("WS Handling getPersonalData:", ws.userId);
+                    });
+                    break;
+
+                case "getOrdersByMarketMaker":
+                    this.handleAuthenticatedAction(ws, () => {
+                        console.log("WS Handling getOrdersByMarketMaker:", ws.userId);
+                        TradeController.getOrdersByMarketMaker(ws);
+                    })
+                    break;
+
+                case "createOrderByMarketMaker":
+                    this.handleAuthenticatedAction(ws, () => {
+                        console.log("WS Handling createOrderByMarketMaker:", ws.userId);
+                        TradeController.createOrderByMarketMaker(ws, data);
                     });
                     break;
 
@@ -129,7 +145,7 @@ class WebSocketService {
         }
     }
 
-// SUBSCRIBE //////////////////////////////////////////////////////////////
+/////////////////////////  SUBSCRIBE ///////////////////////// 
     subscribeToAllSymbols(ws){
         this.globalSubscribers.add(ws);
         console.log("Subscribed to all symbols");
@@ -172,7 +188,6 @@ class WebSocketService {
                 }
             });
         }
-        // 移除了對全局訂閱者的廣播
     }
 
     broadcastToAllSubscribers(message) {
@@ -195,7 +210,7 @@ class WebSocketService {
     }
     
 
-// CLEANUP //////////////////////////////////////////////////////////////
+/////////////////////////  CLEANUP ///////////////////////// 
     cleanupConnection(ws) {
         ws.rooms.forEach(symbol => {
             if (this.rooms.has(symbol)) {

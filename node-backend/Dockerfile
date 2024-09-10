@@ -5,6 +5,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 COPY package-lock.json ./
 
+RUN apk add --no-cache bash
 RUN npm install
 
 COPY . .

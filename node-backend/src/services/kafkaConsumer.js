@@ -1,7 +1,7 @@
 import { Kafka } from "kafkajs";
 import config from "../config/config.js";
 import TradeController from "../controllers/tradeController.js";
-import { pendingCancelResults } from "../controllers/tradeController.js";
+
 
 const supportedSymbols = config.supportedSymbols;
 const createKafkaClient = () => new Kafka({
@@ -53,13 +53,8 @@ const handleMessage = async ({ topic, message }) => {
             break;
 
         case "cancel-result":
-            console.log(`(CONSUMER)cancel-result-${symbol}:`, data);
-            const { order_id } = data;
-            if (pendingCancelResults.has(order_id)){
-                const { resolve } = pendingCancelResults.get(order_id); 
-                resolve(data);
-                pendingCancelResults.delete(order_id);
-            }
+            // console.log(`(CONSUMER)cancel-result-${symbol}:`, data);
+            await TradeController.handleCancelResult(data);
             break;
 
         default:

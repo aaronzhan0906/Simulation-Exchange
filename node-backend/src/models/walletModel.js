@@ -36,7 +36,11 @@ class WalletModel {
         const connection = await pool.getConnection();
         try {
             const [[availableAndLocked]] = await connection.query(
-                "SELECT balance, available_balance, locked_balance FROM accounts WHERE user_id = ?",
+                `SELECT 
+                balance, 
+                available_balance, 
+                locked_balance 
+                FROM accounts WHERE user_id = ?`,
                 [userId]
             );
             return availableAndLocked;

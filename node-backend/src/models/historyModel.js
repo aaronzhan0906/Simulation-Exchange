@@ -46,9 +46,7 @@ class HistoryModel {
             }   
 
             query += ` ORDER BY created_at DESC`;
-            console.log(query);
             const [rows] = await connection.query(query, params);
-            console.log(rows);
             return rows;            
         } catch (error) {
             console.error("Error in getOrderHistory:", error);

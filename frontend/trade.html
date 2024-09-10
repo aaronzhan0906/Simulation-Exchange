@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans+TC:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-    <title>Trade</title>
+    <title>Trade | Simu Exchange</title>
     <link rel="stylesheet" href="/css/trade.css">
     <script type="module" src="/pages/trade.js"></script>
     <script type="module">
@@ -82,7 +82,7 @@
                 <button class="trade-panel__tab--sell" id="trade-panel__tab--sell">Sell</button>
             </div>
             <div class="trade-panel__order-type" id="trade-panel__order-type">
-                <select class="orderTypeSelect" id="orderTypeSelect">
+                <select class="trade-panel__type" id="trade-panel__type" >
                     <option value="limit">Limit</option>
                 </select>
             </div>
@@ -101,7 +101,7 @@
                 <button data-value="1">100%</button>
             </div>
             <div class="trade-panel__input-group">
-                <input type="number" placeholder="Total" class="trade-panel__input" id="trade-panel__input--total" pattern="^\d*\.?\d*$" inputmode="decimal">
+                <input type="text" placeholder="Total" class="trade-panel__input" id="trade-panel__input--total">
                 <span class="trade-panel__currency">USDT</span>
             </div>
             <div class="trade-panel__available">
@@ -115,23 +115,23 @@
         <div class="open-orders">
             <div class="open-orders__header">
                 <div id="open-orders-count">Open orders(0)</div>
-                <button class="open-orders__history-btn">History</button>
+                <button id="open-orders__history-btn" class="open-orders__history-btn">History</button>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Pair</th>
-                        <th>Type</th>
-                        <th>Side</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Filled</th>
-                        <th>Status</th>
-                        <th>Cancel</th>
+            <table class="open-orders__table">
+                <thead class="open-orders__thead">
+                    <tr class="open-orders__tr">
+                        <th class="open-orders__th">Time</th>
+                        <th class="open-orders__th">Pair</th>
+                        <th class="open-orders__th">Type</th>
+                        <th class="open-orders__th">Side</th>
+                        <th class="open-orders__th">Price</th>
+                        <th class="open-orders__th">Quantity</th>
+                        <th class="open-orders__th">Filled</th>
+                        <th class="open-orders__th">Status</th>
+                        <th class="open-orders__th">Cancel</th>
                     </tr>
                 </thead>
-                <tbody id="open-orders__tbody">
+                <tbody id="open-orders__tbody" class="open-orders__tbody">
 
                 </tbody>
             </table>
