@@ -11,6 +11,7 @@ import pinoPretty from "pino-pretty";
 import kafkaProducer from "./services/kafkaProducer.js";
 import kafkaConsumer from "./services/kafkaConsumer.js";
 import WebSocketService from "./services/websocketService.js";
+import MarketMakerService from "./services/marketMakerService.js";
 import favicon from "serve-favicon";
 
 // import helmet from "helmet";
@@ -136,6 +137,8 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT}`);
 });
+
+MarketMakerService.startPeriodicCleanup();
 
 // close server gracefully
 process.on("SIGINT", () => {

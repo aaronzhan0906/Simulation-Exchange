@@ -228,7 +228,6 @@ class TradeController {
 
             sendOrderUpdateToUser(order.user_id, newOrder);
 
-            // 下面應該沒必要
             ws.send(JSON.stringify({
                 type: "orderCreated",
                 data: {
@@ -546,8 +545,6 @@ async function preSellAuth(userId, symbol, quantity) {
     try {
         const availableQuantity = await TradeModel.getQuantityBySymbolAndUserId(userId, symbol);
         const dAvailableQuantity = new Decimal(availableQuantity);
-        console.log("availableQuantity:", dAvailableQuantity.toString());
-        console.log("sellQuantity:", sellQuantity.toString());
         if (dAvailableQuantity.lessThan(sellQuantity)) {
             return {
                 success: false,
