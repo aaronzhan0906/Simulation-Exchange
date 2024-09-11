@@ -476,7 +476,7 @@ class TradeModel {
     }
 
 ///////////////////////// MARKET MAKER //////////////////////////
-async deleteMarketMakerUselessOrders(){
+async deleteMarketMakerOrdersRegularly(){
     const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
@@ -492,7 +492,7 @@ async deleteMarketMakerUselessOrders(){
             logger.info(`Deleted ${result.affectedRows} old orders`);
         } catch {
             await connection.rollback();
-            this.logError("deleteOldOrders", error);
+            this.logError("deleteMarketMakerOrdersRegularly", error);
         } finally {
             connection.release();
         }
@@ -500,7 +500,7 @@ async deleteMarketMakerUselessOrders(){
 
     startPeriodicCleanup() {
         setInterval(() => {
-            this.deleteOldOrders("23", ["CANCELED", "filled", "PARTIALLY_FILLED_CANCELED"]);
+            this.deleteMarketMakerOrdersRegularly(`${process.env.MARKET_MAKER_ID}`, ["CANCELED", "filled", "PARTIALLY_FILLED_CANCELED"]);
         }, 10 * 60 * 1000); 
     }
 
