@@ -475,6 +475,36 @@ class TradeModel {
         );
     }
 
+///////////////////////// MARKET MAKER //////////////////////////
+async deleteMarketMakerUselessOrders(){
+    const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            const [result] = await connection.query(
+                `DELETE FROM orders 
+                WHERE user_id = ? 
+                AND status IN (?, ?, ?)`,
+                [`${process.env.MARKET_MAKER_ID}`, "CANCELED", "filled", "PARTIALLY_FILLED_CANCELED"]
+            );
+
+            await connection.commit();
+            logger.info(`Deleted ${result.affectedRows} old orders`);
+        } catch {
+            await connection.rollback();
+            this.logError("deleteOldOrders", error);
+        } finally {
+            connection.release();
+        }
+    }
+
+    startPeriodicCleanup() {
+        setInterval(() => {
+            this.deleteOldOrders("23", ["CANCELED", "filled", "PARTIALLY_FILLED_CANCELED"]);
+        }, 10 * 60 * 1000); 
+    }
+
+
 }
 
 export default new TradeModel();
