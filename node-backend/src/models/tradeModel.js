@@ -294,7 +294,7 @@ class TradeModel {
             return { success: true, data: resultOrderData };
         } catch (error) {
             await connection.rollback();
-            logger.error("[updateOrderData(model)] 297:", { error : error});
+            logger.error("[updateOrderData(model)] 297:", { error : error });
             return { success: false, error: error.message || "Already CANCELED and rollback" };
         } finally {
             // 釋release lock

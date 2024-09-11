@@ -1,4 +1,5 @@
 import pool from "../config/database.js";
+import { logger } from "../app.js";
 
 
 
@@ -10,10 +11,19 @@ class HomeModel {
                 `select * from symbols`
             );
             
-            // return symbols array
-            return symbols;
+            return symbols; // return symbols array
         } catch (error) {
-            console.error("Error in getSymbols:", error);
+            const errorDetails = {
+                message: error.message,
+                stack: error.stack,
+                code: error.code,
+                errno: error.errno,
+                sql: error.sql,
+                sqlState: error.sqlState,
+                sqlMessage: error.sqlMessage
+            };
+
+            logger.error(`[getSymbols] ${JSON.stringify(errorDetails, null, 2)}`);
             throw error;
         } finally {
             connection.release();

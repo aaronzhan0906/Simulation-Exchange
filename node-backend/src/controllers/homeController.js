@@ -1,3 +1,4 @@
+import e from "express";
 import HomeModel from "../models/homeModel.js";
 
 class HomeController {
@@ -15,8 +16,9 @@ class HomeController {
                 }))
             });
         } catch(error) {
-            console.error("HomeController.getSymbols", error);
-
+            const errorMessage = `[getSymbols]: ${error.message}`;
+            logger.error(errorMessage)
+            throw error;
         };
     }
 }

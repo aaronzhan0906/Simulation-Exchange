@@ -16,8 +16,8 @@ class HistoryController {
                 }))
             });
         } catch(error) {
-            console.error("HomeController.getSymbols", error);
-
+            const errorMessage = `[getSymbols]: ${error.message}`;
+            logger.error(errorMessage)
         };
     }
 
@@ -44,7 +44,8 @@ class HistoryController {
                 }))
             })
         } catch(error) {
-            console.error("HistoryController.getOrderHistory", error);
+            const errorMessage = `[getOrderHistory]: ${error.message}`;
+            logger.error(errorMessage)
         }
     }
 
