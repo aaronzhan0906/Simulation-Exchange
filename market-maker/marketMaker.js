@@ -545,9 +545,9 @@ async function main(){
         await marketMaker.login(`${process.env.MARKET_MAKER_EMAIL}`, `${process.env.MARKET_MAKER_PASSWORD}`);
         if (marketMaker.cookies.accessToken) {
             console.log("Market Maker logged in successfully");
-            // await marketMaker.cancelAllOrders();
-
+            
             await marketMaker.connect();
+            await marketMaker.cancelAllOrders();
             marketMaker.startMarketMaker();
             await new Promise(() => {});
         }
