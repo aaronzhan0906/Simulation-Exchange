@@ -51,13 +51,17 @@ class MarketMaker {
         this.eventEmitter = new EventEmitter();
         this.isInitializing = false;
         this.lastInitializeTime = 0;
-        this.initializeInterval = 5000;
+        this.initializeInterval = 2100;
 
         // ordersCache
         this.ordersCache = null;
         this.ordersCacheTime = 0;
         this.ordersCacheTTL = 500;
         console.log("MarketMaker instance created");
+
+        // cancel order 
+        this.cancellingOrders = new Set();
+        setInterval(() => this.cleanCancellingOrders(), 60000)
     }
 
 ///////////////////////// WS FUNCTIONS /////////////////////////
@@ -183,7 +187,7 @@ class MarketMaker {
         return new Promise((resolve, reject) => {
             const now = Date.now();
             if (this.ordersCache && now - this.ordersCacheTime < this.ordersCacheTTL) {
-                console.log("使用快取訂單數據");
+                // console.log("使用快取訂單數據");
                 resolve(this.ordersCache);
                 return;
             }
@@ -202,7 +206,7 @@ class MarketMaker {
 
                 setTimeout(() => {
                     reject(new Error("獲取訂單超時"));
-                }, 5000);
+                }, 15000);
             } catch (error) {
                 console.error("[getOrders] error:", error);
                 reject(error);
@@ -231,6 +235,7 @@ class MarketMaker {
             }
         };
         this.sendMessage(message);
+        console.log(`＋＋＋＋＋創建新訂單: ${symbol}, ${side}, ${price}, ${quantity}`);
     }
 
     handleOrderCreated(orderData) {
@@ -255,30 +260,42 @@ class MarketMaker {
     }
 
     async cancelOrder(orderId, symbol) {
-        
+        if (this.cancellingOrders.has(orderId)){
+            console.log(`訂單 ${orderId} 已經在取消過程中`);
+            return;
+        }
+
+        try {
+            const message = {
+                action: "cancelOrderByMarketMaker",
+                data: {
+                    orderId,
+                    symbol
+                }
+            };
+            this.sendMessage(message)
+            this.cancellingOrders.add(orderId, Date.now());
+            console.log(`～～～～～Cancelling order: ${orderId} for ${symbol}`);
+
+            setTimeout(() => {
+                this.cancellingOrders.delete(orderId);
+            }, 60000); 
+        } catch(error) {
+            console.error(`[cancelOrder] 錯誤: ${error}`);
+            this.cancellingOrders.delete(orderId);
+            return;
+        }
     } 
 
-    async cancelOrder(orderId, symbol) {
-        // 轉換成 WS
-        try {
-            console.log(`～～～～～Cancelling order: ${orderId} for ${symbol}`);
-            const response = await this.axiosInstance.patch(`${this.url}/api/trade/order`, {
-                    orderId, symbol
-                }, {
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Cookie": `accessToken=${this.cookies.accessToken}`
-                    }
-                });
-            return response.data;
-        } catch (error) {
-            console.error(
-                (error.response && error.response.status === 401) 
-                  ? "[createOrder] error: order has been executed" 
-                  : `[createOrder] error: ${error}` 
-            );
+    cleanCancellingOrders() {
+        const now = Date.now();
+        for (const [orderId, timestamp] of this.cancellingOrders){
+            if (now -timestamp > 30000) {
+                this.cancellingOrders.delete(orderId);
+            }
         }
     }
+
 
     async cancelAllOrders() {
         try {
@@ -374,9 +391,17 @@ class MarketMaker {
         const allOrders = await this.getOrders();
         const totalOrderCount = allOrders.length;
 
-        if (totalOrderCount > MAX_ORDER * 12) {
-            console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 12}，執行初始化`);
+        if (totalOrderCount > MAX_ORDER * 13.5) {
+            console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 13.5}，執行初始化並暫停系統`);
+            await this.handleExcessOrders();
+            return; 
+        }
+
+        if (totalOrderCount > MAX_ORDER * 11) {
+            console.log(`訂單總數（${totalOrderCount}）超過 ${MAX_ORDER * 11}，執行初始化`);
             await this.initializeMarketMaker();
+            console.log("return")
+            return;
         }
 
         
@@ -418,7 +443,6 @@ class MarketMaker {
         }
     
         if (Object.keys(this.orders[baseOrderKey]).length < MAX_ORDER) {
-            console.log(`＋＋＋＋＋創建新訂單: ${symbol}, ${side}, ${price}, ${quantity}`);
             await this.createOrder(symbol, side, "limit", price, quantity);
         } else {
             console.log(`${baseOrderKey} 已達到最大訂單數 ${MAX_ORDER}，不創建新訂單`);
@@ -429,14 +453,14 @@ class MarketMaker {
 
 ///////////////////////// INITIALIZE MARKET MAKER /////////////////////////
     async initializeMarketMaker() {
+
         if (this.isInitializing) {
             console.log("初始化已在進行中，跳過本次初始化");
             return;
         }
-
-        const currentTime = Date.now();
-        // if (currentTime - this.lastInitializeTime < 1000) {
-        //     console.log(`距離上次初始化時間不足 ${this.initializeInterval / 1000} 秒，跳過本次初始化`);
+        // const currentTime = Date.now();
+        // if (this.isInitializing || currentTime - this.lastInitializeTime < this.initializeInterval) {
+        //     console.log(`初始化已在進行中或距離上次初始化時間不足 ${this.initializeInterval / 1000} 秒，跳過本次初始化`);
         //     return;
         // }
 
@@ -471,7 +495,7 @@ class MarketMaker {
                 console.log(`${key}: ${Object.keys(orders).length} 個訂單`);
             }
 
-            this.lastInitializeTime = currentTime;
+            // this.lastInitializeTime = currentTime;
         } catch (error) {
             console.error("[initializeMarketMaker] error: ", error);
         } finally {
@@ -482,6 +506,21 @@ class MarketMaker {
             this.isInitializing = false
         }
     } 
+
+    async handleExcessOrders() {
+        try {
+            await this.initializeMarketMaker();
+            console.log("初始化完成，系統將暫停 5 秒");
+            
+
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            console.log("系統恢復運行");
+    
+            this.clearOrdersCache();
+        } catch (error) {
+            console.error("[handleExcessOrders] error:", error);
+        }
+    }
 
     async startMarketMaker(){
         console.log("Starting market maker");
@@ -575,5 +614,27 @@ main();
     //                 await this.cancelOrder(order.orderId, formattedSymbol);
     //             }
     //         }
+    //     }
+    // }
+
+    // async cancelOrder(orderId, symbol) {
+    //     // 轉換成 WS
+    //     try {
+    //         console.log(`～～～～～Cancelling order: ${orderId} for ${symbol}`);
+    //         const response = await this.axiosInstance.patch(`${this.url}/api/trade/order`, {
+    //                 orderId, symbol
+    //             }, {
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                     "Cookie": `accessToken=${this.cookies.accessToken}`
+    //                 }
+    //             });
+    //         return response.data;
+    //     } catch (error) {
+    //         console.error(
+    //             (error.response && error.response.status === 401) 
+    //               ? "[createOrder] error: order has been executed" 
+    //               : `[createOrder] error: ${error}` 
+    //         );
     //     }
     // }

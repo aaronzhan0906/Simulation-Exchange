@@ -150,7 +150,8 @@ class TradeController {
             })
 
         } catch(error) {
-            logger.error("[createOrder] error:", error);
+            const errorMessage = `[createOrder] error: ${error}`
+            logger.error(errorMessage);
         }
     }
 
@@ -247,7 +248,8 @@ class TradeController {
             }));
 
         } catch(error) {
-            logger.error("[createOrderByMarketMaker] error:", error);
+            const errorMessage = `[createOrderByMarketMaker] error: ${error}`
+            logger.error(errorMessage);
             ws.send(JSON.stringify({ type:"error", message: error.message }));
         }
     }
@@ -274,9 +276,8 @@ class TradeController {
         try {
             const result = await TradeModel.updateOrderData(updateOrderData);
             if (!result.success) {
-                logger.warn({
-                    result: result,
-                })
+                const warnMessage = result
+                logger.warn(warnMessage)
                 return; // sometimes cancel data is faster than update data
             }
 
@@ -306,8 +307,8 @@ class TradeController {
 
             await sendOrderUpdateToUser(resultOrderData.user_id,  newUpdate);
         } catch (error) {
-           logger.error("[updateOrderData(controller)] error:", error);
-           console.error("[updateOrderData(controller)] error:", error);
+            const errorMessage = `[updateOrderData(controller)] error: ${error}`
+            logger.error(errorMessage);
         }
     }
 
@@ -390,6 +391,33 @@ class TradeController {
         }
     }
 
+    async cancelOrderByMarketMaker(ws, message) {
+        const { orderId, symbol } = message.data;
+        const userId = ws.userId;
+
+        if ( !userId || !orderId || !symbol) {
+            ws.send(JSON.stringify({ type: "error", message: "Missing required fields!" }));
+        }
+
+        try {
+            const localOrderStatus = await TradeModel.checkCancelOrderStatus(orderId);
+            if (localOrderStatus[0].status === "filled") {
+                ws.send(JSON.stringify({ type: "error", message: "Order cancellation request sent" }));
+                return;
+            }
+
+            const topicSymbol = symbol.replace("_usdt", "")
+            const topic = `cancel-order-${topicSymbol}`
+            await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
+
+        } catch (error) {
+            const errorMessage = `[cancelOrderByMarketMaker] error:, ${error}`
+            logger.error(errorMessage);
+            ws.send(JSON.stringify({ type: "error", message: error.message }));
+        }
+
+    }
+
     async handleCancelResult(cancelResult) {
         const { order_id: orderId, user_id: userId } = cancelResult;
         try {
@@ -430,7 +458,8 @@ class TradeController {
                 console.log(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
             }
         } catch(error) {
-            logger.error(`[handleCancelResult] error for order ${orderId}:`, error.sqlMessage);
+            const errorMessage = `[handleCancelResult] error for order ${orderId}: error.sqlMessage`  
+            logger.error(errorMessage);
             ws.send(JSON.stringify({ type:"error", message: error.message }));
             return;
         }

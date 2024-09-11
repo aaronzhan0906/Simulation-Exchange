@@ -98,6 +98,13 @@ class WebSocketService {
                     });
                     break;
 
+                case "cancelOrderByMarketMaker":
+                    this.handleAuthenticatedAction(ws, () => {
+                        console.log("WS Handling cancelOrderByMarketMaker")
+                        TradeController.cancelOrderByMarketMaker(ws, data)
+                    })
+                    break;
+
 
                 default:
                     console.log("Unknown action:", data.action);

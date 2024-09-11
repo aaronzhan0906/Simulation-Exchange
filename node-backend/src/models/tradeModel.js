@@ -1,9 +1,25 @@
 import pool from "../config/database.js";
 import Decimal from 'decimal.js';
 import { logger } from "../app.js";
+import { formatErrorDetails } from "../utils/formattedError.js";
+
 
 class TradeModel {
 ///////////////////// GET ORDERS //////////////////////////
+    logError(methodName, error) {
+        const errorDetails = {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            errno: error.errno,
+            sql: error.sql,
+            sqlState: error.sqlState,
+            sqlMessage: error.sqlMessage
+        };
+        logger.error(`[${methodName}] Error:\n${formatErrorDetails(errorDetails)}`);
+    }
+
+
     async getOrders(userId) {
         const connection = await pool.getConnection();
 
@@ -18,7 +34,7 @@ class TradeModel {
             
             return result;
         } catch(error) {
-            console.error("[getOrders] error:", error);
+            this.logError("getOrders", error);
             throw error
         } finally {
             connection.release();
@@ -66,7 +82,7 @@ class TradeModel {
             if (result.affectedRows > 0) {
                 return { updateOrderId, updateStatus, updateUpdatedAt };}
         } catch (error) {
-            console.error("[cancelOrder(model)] Error:", error);
+            this.logError("cancelOrder", error);
             throw error;
         }
     }
@@ -90,7 +106,7 @@ class TradeModel {
         }
 
     } catch (error) {
-        console.error("Error in [releaseLockedBalance]:", error);
+        this.logError("releaseLockedBalance", error);
         throw error;
         }
     }
@@ -111,7 +127,7 @@ class TradeModel {
                 return true;
             }
         } catch (error) {
-            console.error("Error in [releaseLockedAsset]:", error);
+            this.logError("releaseLockedAsset", error);
             throw error;
         }
     }
@@ -125,7 +141,7 @@ class TradeModel {
             );
             return result;
         } catch (error) {
-            console.error("Error in [checkCancelOrder]:", error);
+            this.logError("checkCancelOrderStatus", error);
             throw error;
         }
     }
@@ -145,7 +161,7 @@ class TradeModel {
                 tradeData.buyer_user_id, tradeData.buyer_order_id, tradeData.seller_user_id, tradeData.seller_order_id
             ]);
         } catch (error) {
-            console.error("[createTradeHistory(model)] error:", error);
+            this.logError("createTradeHistory", error);
             throw error;
         }
     }
@@ -248,7 +264,6 @@ class TradeModel {
 
             if (newExecutedQuantity.isZero()) {
                 throw new Error("New executed quantity cannot be zero");
-                // 不能只拋出不處理
             }
 
             const newAveragePrice = allTotal.dividedBy(newExecutedQuantity);
@@ -293,8 +308,8 @@ class TradeModel {
             await connection.commit();
             return { success: true, data: resultOrderData };
         } catch (error) {
-            await connection.rollback();
-            logger.error("[updateOrderData(model)] 297:", { error : error });
+            await connection.rollback(); // 
+            this.logError("updateOrderData(model)", error);
             return { success: false, error: error.message || "Already CANCELED and rollback" };
         } finally {
             // 釋release lock

@@ -1,5 +1,5 @@
 import pool from "../config/database.js";
-import { formatErrorDetails } from "../utils/errorUtils.js";
+import { formatErrorDetails } from "../utils/formattedError.js";
 
 class WalletModel {
     logError(methodName, error) {
