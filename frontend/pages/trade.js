@@ -7,6 +7,7 @@ let chart;
 let lineSeries;
 let lastDataPoint = null;
 let lastUpdateHour = -1; // for 30d chart refresh only once per hour
+let historicalData = [];
 
 
 // CHART HEADER ////////////////////////////////////////////////////
@@ -29,7 +30,6 @@ async function initChartHeader() {
     const lowDiv = document.getElementById("chart-header__low");
     const response = await fetch(`/api/quote/24hHighAndLow/${pair}`);
     const responseData = await response.json();
-    console.log("24h high and low:", responseData);
 
     highDiv.firstElementChild.textContent = "24h Highest";
     lowDiv.firstElementChild.textContent = "24h Lowest";
@@ -60,13 +60,28 @@ async function fetchHistoricalData() {
             value: parseFloat(priceData.open) 
         });
     }
-    return processedData.sort((a, b) => a.time - b.time);
+    historicalData = processedData.sort((a, b) => a.time - b.time);
+    return historicalData;
 }
 
+function resizeChart() {
+    if (chart) {
+        const chartContainer = document.getElementById("chart-container");
+        const newWidth = chartContainer.clientWidth;
+        chart.applyOptions({ width: newWidth });
+        
+        lineSeries.setData(historicalData);
+        
+        chart.timeScale().fitContent();
+    }
+}
 
 async function initChart() {
     const chartContainer = document.getElementById("chart-container");
+    const containerWidth = chartContainer.clientWidth;
+
     chart = createChart(chartContainer, {
+        width: containerWidth,
         layout: {
             background: { type: "solid", color: "rgba(13, 14, 15)" },
             textColor: "#cfcfcf",
@@ -144,6 +159,10 @@ function updateChart(price) {
         lastDataPoint.value = parseFloat(price);
         lineSeries.update(lastDataPoint);
     }
+
+    window.addEventListener("resize", () => {
+        resizeChart()
+    });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

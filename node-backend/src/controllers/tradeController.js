@@ -75,7 +75,6 @@ class TradeController {
     async createOrder(req, res){
         const { symbol, side, type, price, quantity } = req.body;
             const userId = req.user.userId;
-
             if ( !userId || !symbol || !side || !type || !price || !quantity) {
                 return res.status(400).json({ error:true, message:"Missing required fields!" })
             }
@@ -95,7 +94,6 @@ class TradeController {
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
-      
             const orderIdString = orderId.toString();
             const order = await TradeModel.createOrder(
                 orderIdString,
