@@ -9,7 +9,7 @@ import { EventEmitter } from "events";
 
 dotenv.config();
 console.log("Environment variables loaded");
-const MAX_ORDER = 10;
+const MAX_ORDER = 7;
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = process.env.SUPPORTED_SYMBOLS.split(",").map(symbol => symbol.trim());
