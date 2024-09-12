@@ -19,12 +19,12 @@ class WalletWebSocket {
 
     onOpen() {
         console.log("WebSocket connected");
-        this.subscribeToAssets();
+        this.subscribeToAssetsEvery3s();
     }
 
-    subscribeToAssets(){
+    subscribeToAssetsEvery3s(){
         this.assets.forEach(asset => {
-            const symbol = `${asset}_usdt`; 
+            const symbol = `${asset}_usdt_3s`; 
             this.ws.send(JSON.stringify({ action: "subscribe", symbol }));
         })
     }
@@ -40,7 +40,8 @@ class WalletWebSocket {
                 console.log(`Successfully subscribed to ${message.symbol}`);
                 break;
 
-            case "ticker":
+            case "ticker_3s":
+                console.log("Received ticker_3s message", message);
                 this.emitPriceUpdate(message)
                 break;
         }

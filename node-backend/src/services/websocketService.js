@@ -65,7 +65,7 @@ class WebSocketService {
                 case "subscribe":
                     if (data.symbol === "ALL") {
                         this.subscribeToAllSymbols(ws);
-                    }  else {
+                    } else {
                         this.subscribeToRoom(ws, data.symbol);
                     }
                     break;
@@ -166,6 +166,8 @@ class WebSocketService {
     }
 
     subscribeToRoom(ws, symbol){
+        console.log("Rooms:", symbol)
+
         if(!this.rooms.has(symbol)){
             this.rooms.set(symbol, new Set());
         }

@@ -2,8 +2,10 @@ import { initializeHeader } from "../components/headerUI.js";
 import { checkLoginStatus } from "../utils/auth.js";
 import walletWebSocket from "../services/walletWS.js";
 
-
-
+let assets = [];
+let usdtBalance = new Decimal(0);
+let assetElements = new Map();
+let lastUpdateTime = 0;
 
 // BALANCE OVERVIEW // ( and balance )
 async function initBalanceOverview () {
@@ -28,9 +30,9 @@ async function initBalanceOverview () {
         const data = await response.json();
         
         if (response.ok){
-            const available = new Decimal(data.available || 0); // if no balance or 0, return 0
-            const locked = new Decimal(data.locked || 0); // if no balance or 0, return 0
-            const balance = new Decimal(data.balance || 0); // if no balance or 0, return 0
+            const available = new Decimal(data.available ?? 0); // if no balance or 0, return 0
+            const locked = new Decimal(data.locked ?? 0); // if no balance or 0, return 0
+            const balance = new Decimal(data.balance ?? 0); // if no balance or 0, return 0
 
             assetItemAmount.textContent = `${balance.toFixed(2)} USDT`
             assetItemAvailable.textContent = `${available.toFixed(2)} USDT`
@@ -48,67 +50,41 @@ async function initBalanceOverview () {
 // MY ASSETS //
 async function initAssets() { 
     try {
-        const usdtBalance = await initBalanceOverview();
+        usdtBalance = await initBalanceOverview();
 
-        const assetsResponse = await fetch("/api/wallet/assetsAndSymbols");   // Fetch asset list
+        const assetsResponse = await fetch("/api/wallet/assetsAndSymbols");
         const assetsData = await assetsResponse.json();
  
-        const tickerResponse = await fetch("/api/quote/ticker");        // Fetch latest ticker data
+        const tickerResponse = await fetch("/api/quote/ticker");
         const tickerData = await tickerResponse.json();
 
         const assetListContainer = document.getElementById("asset-list__container");
-        const assetElements = new Map(); // { symbol: { priceDiv, changeDiv } } to subscribe room
+        assetElements = new Map();
 
-        let totalAssetValue = new Decimal(usdtBalance);
-
-        assetsData.assets.forEach(asset => {
-            const ticker = tickerData.latestTickerData[`${asset.symbol.toUpperCase()}USDT`]; // xxx -> XXXUSDT to get ticker data
-
-            const amount = new Decimal(asset.amount || 0); 
-            if (amount.isZero()) return; 
-
-            const recentPrice = new Decimal(ticker.price || 0);
-
-            const assetValue = amount.times(recentPrice)
-
-            totalAssetValue = assetValue.plus(totalAssetValue);
-        
-            const combinedData = {
+        assets = assetsData.assets.map(asset => {
+            const ticker = tickerData.latestTickerData[`${asset.symbol.toUpperCase()}USDT`];
+            return {
                 ...asset,
-                currentPrice: ticker.price,
-                priceChangePercent: ticker.priceChangePercent,  
-            }
+                currentPrice: new Decimal(ticker.price ?? 0),
+                priceChangePercent: new Decimal(ticker.priceChangePercent ?? 0)
+            };
+        }).filter(asset => !new Decimal(asset.amount ?? 0).isZero());
 
-            const { assetItem, priceDiv, changeDiv } = createAssetElement(combinedData);
+        assets.forEach(asset => {
+            const { assetItem, priceDiv, changeDiv } = createAssetElement(asset);
             assetListContainer.appendChild(assetItem);
             assetElements.set(asset.symbol.toLowerCase(), { priceDiv, changeDiv });
-
-
-            // Update UI with latest ticker data
-            if (ticker) {
-                priceDiv.textContent = `${new Decimal(ticker.price).toFixed(2) || 0} USDT`;
-                changeDiv.textContent = `${new Decimal(ticker.priceChangePercent).toFixed(2) || 0}%`;
-            }
         });
-
-        const profitValue = totalAssetValue.minus(new Decimal(10000)).div(new Decimal(10000));
-
-        // Update total asset and profit/less
-        updateTotalAsset(totalAssetValue);
-        updateTotalProfit(profitValue);
 
         // Initialize WebSocket connection
-        walletWebSocket.init(assetsData.assets.map(asset => asset.symbol));
-        document.addEventListener("priceUpdate", (event) => {
-            const { symbol, price, priceChangePercent } = event.detail;
-            const baseSymbol = symbol.slice(0, -4).toLowerCase();
-            const elements = assetElements.get(baseSymbol);
-            if (elements) {
-                elements.priceDiv.textContent = `${price.toFixed(2)} USDT`;
-                elements.changeDiv.textContent = `${priceChangePercent.toFixed(2)}%`;
-                updatePriceChangeStyle(elements.changeDiv, priceChangePercent);
-            }
-        });
+        walletWebSocket.init(assets.map(asset => asset.symbol));
+        document.addEventListener("priceUpdate", handlePriceUpdate);
+
+        // Initial calculation
+        calculateTotalAssetAndProfit();
+
+        // Set up interval for updating data every 3 seconds
+        setInterval(updateAllData, 3000);
     } catch (error) {
         console.error("Error in initAssets():", error);
     }
@@ -138,31 +114,31 @@ function createAssetElement(asset) {
     // amount
     const amountDiv = document.createElement("div");
     amountDiv.classList.add("asset-item__amount");
-    amountDiv.textContent = `${new Decimal(asset.amount || 0).toFixed(5)} ${(asset.symbol).toUpperCase()}`;
+    amountDiv.textContent = `${new Decimal(asset.amount ?? 0).toFixed(5)} ${(asset.symbol).toUpperCase()}`;
     assetItem.appendChild(amountDiv);
 
     // available 
     const availableDiv = document.createElement("div");
     availableDiv.classList.add("asset-item__available");
-    availableDiv.textContent = `${new Decimal(asset.availableQuantity || 0).toFixed(5)} ${(asset.symbol).toUpperCase()}`;
+    availableDiv.textContent = `${new Decimal(asset.availableQuantity ?? 0).toFixed(5)} ${(asset.symbol).toUpperCase()}`;
     assetItem.appendChild(availableDiv);
 
     // average-cost 
     const avgCostDiv = document.createElement("div");
     avgCostDiv.classList.add("asset-item__average-cost");
-    avgCostDiv.textContent = `${new Decimal(asset.averagePrice || 0).toFixed(2)} USDT`;
+    avgCostDiv.textContent = `${new Decimal(asset.averagePrice ?? 0).toFixed(2)} USDT`;
     assetItem.appendChild(avgCostDiv);
 
     // price 
     const priceDiv = document.createElement("div");
     priceDiv.classList.add("asset-item__price");
-    priceDiv.textContent = `${new Decimal(asset.currentPrice || 0).toFixed(2)} USDT`;
+    priceDiv.textContent = `${new Decimal(asset.currentPrice ?? 0).toFixed(2)} USDT`;
     assetItem.appendChild(priceDiv); 
 
     // change 
     const changeDiv = document.createElement("div");
     changeDiv.classList.add("asset-item__change");
-    changeDiv.textContent = `${new Decimal(asset.priceChangePercent || 0).toFixed(2)}%`;
+    changeDiv.textContent = `${new Decimal(asset.priceChangePercent ?? 0).toFixed(2)}%`;
     updatePriceChangeStyle(changeDiv, asset.priceChangePercent);
     assetItem.appendChild(changeDiv);
 
@@ -181,6 +157,33 @@ function createAssetElement(asset) {
     return { assetItem, priceDiv, changeDiv };
 }
 
+function handlePriceUpdate(event) {
+    const { symbol, price, priceChangePercent } = event.detail;
+    const baseSymbol = symbol.slice(0, -4).toLowerCase();
+    const elements = assetElements.get(baseSymbol);
+    if (elements) {
+        const asset = assets.find(a => a.symbol.toLowerCase() === baseSymbol);
+        if (asset) {
+            asset.currentPrice = new Decimal(price);
+            asset.priceChangePercent = new Decimal(priceChangePercent);
+        }
+    }
+}
+
+function updateAllData() {
+    assets.forEach(asset => {
+        const elements = assetElements.get(asset.symbol.toLowerCase());
+        if (elements) {
+            elements.priceDiv.textContent = `${asset.currentPrice.toFixed(2)} USDT`;
+            elements.changeDiv.textContent = `${asset.priceChangePercent.toFixed(2)}%`;
+            updatePriceChangeStyle(elements.changeDiv, asset.priceChangePercent);
+        }
+    });
+
+    calculateTotalAssetAndProfit();
+}
+
+
 function updatePriceChangeStyle(element, priceChangePercent) {
     if (priceChangePercent >= 0) {
         element.classList.remove("negative");
@@ -191,6 +194,21 @@ function updatePriceChangeStyle(element, priceChangePercent) {
     }
 }
 
+function calculateTotalAssetAndProfit() {
+    let totalAssetValue = new Decimal(usdtBalance);
+
+    assets.forEach(asset => {
+        const amount = new Decimal(asset.amount ?? 0);
+        const assetValue = amount.times(asset.currentPrice);
+        totalAssetValue = totalAssetValue.plus(assetValue);
+    });
+
+    const profitValue = totalAssetValue.minus(new Decimal(10000)).div(new Decimal(10000));
+
+    updateTotalAsset(totalAssetValue);
+    updateTotalProfit(profitValue);
+}
+
 function updateTotalAsset(totalAsset) {
     const balanceValueTotal = document.getElementById("balance-value__total");
     balanceValueTotal.textContent = `${totalAsset.toFixed(2)} USDT`;
@@ -198,23 +216,23 @@ function updateTotalAsset(totalAsset) {
 
 function updateTotalProfit(totalProfit) {
     const balanceValueProfit = document.getElementById("balance-value__profit");
-    const roundedProfit = Math.ceil(totalProfit * 100) / 100; // round to 2 decimal places
-    console.log("totalProfit", totalProfit);
+    const roundedProfit = totalProfit.times(100).toDecimalPlaces(2);
     
-    if (totalProfit.greaterThan(0)) {
-        balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
+    if (totalProfit.isPositive()) {
+        balanceValueProfit.textContent = `${roundedProfit.toString()} %`;
         balanceValueProfit.classList.add("positive");
         balanceValueProfit.classList.remove("negative");
-    } else if (totalProfit.lessThan(0)) {
-        balanceValueProfit.textContent = `- ${roundedProfit.toFixed(2)} %`;
+    } else if (totalProfit.isNegative()) {
+        balanceValueProfit.textContent = `${roundedProfit.absoluteValue().toString()} %`;
         balanceValueProfit.classList.remove("positive");
         balanceValueProfit.classList.add("negative");
     } else {
-        balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
+        balanceValueProfit.textContent = `0.00 %`;
         balanceValueProfit.classList.remove("positive");
         balanceValueProfit.classList.remove("negative");
     }
 }
+
 
 document.addEventListener("DOMContentLoaded", async () => {
     initializeHeader();

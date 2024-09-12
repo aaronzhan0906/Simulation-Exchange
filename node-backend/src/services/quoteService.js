@@ -36,7 +36,7 @@ const binanceWS = new WebSocket(wsUrl);
 
 let latestTickerData = {}; // for different trading pairs { BNBUSDT: {symbol: 'BNBUSDT' price: '551.10000000',priceChangePercent: '-1.73' }
 // store price at least once every 1s
-
+let lastBroadcastTime = {};
 
 /////////////////////////  WebSocket functions ///////////////////////// 
 function broadcastMessageToAll(type, data) {
@@ -46,6 +46,15 @@ function broadcastMessageToAll(type, data) {
 function broadcastToRoom(symbol, data) {
     const roomSymbol = symbol.slice(0, -4).toLowerCase() + "_usdt";
     WebSocketService.broadcastToRoom(roomSymbol, { type: "ticker", ...data }); 
+}
+
+function broadcastToRoomEvery3s(symbol, data) {
+    const roomSymbol = symbol.slice(0, -4).toLowerCase() + "_usdt_3s";
+    const now = Date.now();
+    if (!lastBroadcastTime[symbol] || now - lastBroadcastTime[symbol] >= 3000) {
+        WebSocketService.broadcastToRoom(roomSymbol, { type: "ticker_3s", ...data });
+        lastBroadcastTime[symbol] = now;
+    }
 }
 
 export async function updatePriceData(pair, price) {
@@ -62,6 +71,7 @@ export async function updatePriceData(pair, price) {
 
     broadcastMessageToAll("ticker", updatedData);
     broadcastToRoom(formattedPair, updatedData); // broadcastToRoom will convert pair to xxx_usdt
+    broadcastToRoomEvery3s(formattedPair, updatedData);
 
     // store every time
     await storePriceData(formattedPair, updatedData);
