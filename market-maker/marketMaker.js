@@ -183,35 +183,48 @@ class MarketMaker {
     //     }
     // }
 
-    async getOrders(){
-        return new Promise((resolve, reject) => {
-            const now = Date.now();
-            if (this.ordersCache && now - this.ordersCacheTime < this.ordersCacheTTL) {
-                // console.log("使用快取訂單數據");
-                resolve(this.ordersCache);
-                return;
-            }
-
-            try {
-                const message = {
-                    action: "getOrdersByMarketMaker",
-                };
-                this.sendMessage(message);
-                
-                this.eventEmitter.once("ordersReceived", (orders) => {
-                    this.ordersCache = orders;
-                    this.ordersCacheTime = Date.now();
-                    resolve(orders);
-                });
-
-                setTimeout(() => {
-                    reject(new Error("獲取訂單超時"));
-                }, 15000);
-            } catch (error) {
-                console.error("[getOrders] error:", error);
-                reject(error);
-            }
-        });
+    async getOrders() {
+        const pause = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const attemptGetOrders = () => {
+            return new Promise((resolve, reject) => {
+                const now = Date.now();
+                if (this.ordersCache && now - this.ordersCacheTime < this.ordersCacheTTL) {
+                    // console.log("使用快取訂單數據");
+                    resolve(this.ordersCache);
+                    return;
+                }
+    
+                try {
+                    const message = {
+                        action: "getOrdersByMarketMaker",
+                    };
+                    this.sendMessage(message);
+    
+                    const timeoutId = setTimeout(() => {
+                        this.eventEmitter.removeAllListeners("ordersReceived");
+                        reject(new Error("獲取訂單超時"));
+                    }, 15000);
+    
+                    this.eventEmitter.once("ordersReceived", (orders) => {
+                        clearTimeout(timeoutId);
+                        this.ordersCache = orders;
+                        this.ordersCacheTime = Date.now();
+                        resolve(orders);
+                    });
+                } catch (error) {
+                    console.error("[getOrders] error:", error);
+                    reject(error);
+                }
+            });
+        };
+    
+        try {
+            return await attemptGetOrders();
+        } catch (error) {
+            console.error("獲取訂單失敗，系統將暫停10秒:", error);
+            await pause(10000);
+            throw error; 
+        }
     }
 
     handleOrdersData(ordersData) {
