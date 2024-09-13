@@ -67,7 +67,8 @@ class TradeModel {
         const updateStatus = status;
         const updateUpdatedAt = updatedAt;
         if (updateStatus === "NOT FOUND") {
-            console.log(`Order ${updateOrderId} not found in matching engine`);
+            const warningMessage = `Order ${updateOrderId} not found in matching engine`;
+            logging.waring(warningMessage);
             return
         }
 

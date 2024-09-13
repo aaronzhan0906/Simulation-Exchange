@@ -63,8 +63,7 @@ const handleMessage = async ({ topic, message }) => {
                 logger.warn({ topic: topic }, "Received message from unknown topic");
         } 
     } catch (error) {
-        logger.error({ error: error.message, topic }, "Error processing Kafka message");
-        console.log(error);
+        logger.error(`Error processing Kafka message ${error}`);
     }
 };
 

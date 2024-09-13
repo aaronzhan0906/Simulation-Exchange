@@ -33,7 +33,7 @@ class TradeController {
                 orders: formattedOrders
             });
         } catch(error) {
-            console.error("[getOrders] error:", error);
+            logging.error(`[getOrders] error: ${error}`);
             throw error;
         }
     }
@@ -64,7 +64,7 @@ class TradeController {
                 }
             }))
         } catch(error) {
-            console.error("[getOrdersByMarketMaker] error:", error);
+            logging.error(`[getOrdersByMarketMaker] error: ${error}`);
             ws.send(JSON.stringify({ type:"error", message: error.message }));
         }
     }
@@ -88,7 +88,7 @@ class TradeController {
             } 
     
             if (!authResult.success) {
-                console.log("authResult:", authResult);
+                logging.error(`authResult: ${authResult}`);
                 return res.status(400).json({ error: true, message: authResult.message });
             }
 
@@ -334,7 +334,7 @@ class TradeController {
                 data: processedData
             }); 
         } catch (error) {
-            console.error("[broadcastOrderBookToRoom] error:", error);
+            logging.error(`[broadcastOrderBookToRoom] error: ${error}`);
             throw error;
         }
     }
@@ -356,7 +356,7 @@ class TradeController {
                     timestamp
                 }});
         } catch (error) {  
-            console.error("[broadcastRecentTradeToRoom] error:", error);
+            logging.error(`[broadcastRecentTradeToRoom] error: ${error}`);
             throw error;
         }
     }
@@ -383,7 +383,7 @@ class TradeController {
             
             res.status(200).json({ ok: true, message: "Order cancellation request sent" });
         } catch(error) {
-            console.error("[cancelOrder] error:", error);
+            logging.error( `[cancelOrder] error: ${error}`);
             throw error;
         }
     }
@@ -421,17 +421,18 @@ class TradeController {
             if (cancelResult.status === "NOT_FOUND") {
                 const checkStatus = await TradeModel.checkCancelOrderStatus(orderId);
                 if (checkStatus[0].status === "filled") {
-                    console.log(`Order ${orderId} already executed, cannot cancel.`);
+                    logging.warning(`Order ${orderId} already executed, cannot cancel.`);
                     return; 
                 }
-                console.log(`Order ${orderId} not found, possibly already cancelled.`);
+                logging.warning(`Order ${orderId} not found, possibly already cancelled.`);
                 return; 
             }
     
             const updateResult = await TradeModel.cancelOrder(orderId, cancelResult.status, cancelResult.timestamp);
     
             if (!updateResult) {
-                console.error(`Unexpected cancellation result for order ${orderId}:`, cancelResult.status);
+                warningMessage = `[handleCancelResult] Unexpected cancellation result for order ${orderId}: ${cancelResult.status} `;
+                logger.warn(warningMessage);
                 return; 
             }
     
@@ -452,12 +453,11 @@ class TradeController {
                 };
 
                 WebSocketService.sendToUser(userId, cancelMessage);
-                console.log(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
+                logging.info(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
             }
         } catch(error) {
-            const errorMessage = `[handleCancelResult] error for order ${orderId}: error.sqlMessage`  
+            const errorMessage = `[handleCancelResult] error for order ${orderId}: ${error.sqlMessage}`  
             logger.error(errorMessage);
-            ws.send(JSON.stringify({ type:"error", message: error.message }));
             return;
         }
     }
@@ -496,11 +496,10 @@ class TradeController {
 
         try {
             const result = await TradeModel.createTradeHistory(tradeData)
-            if (result) console.log("Trade history created.")
             const formattedSymbol = symbol.toUpperCase().replace("_", "");
             updatePriceData(formattedSymbol, executed_price);
         } catch(error) {
-            console.error("[createTradeHistory(controller)] error:", error);
+            logging.error(`[createTradeHistory(controller)] error: ${error}`);
             return;
         }
     }
@@ -529,7 +528,7 @@ async function preBuyAuth(userId, price, quantity) {
         await TradeModel.lockBalance(userId, price, quantity);
         return { success: true };
     } catch (error) {
-        console.error("preBuyAuth error:", error);
+        logging.error(`preBuyAuth error: ${error}`);
         return {
             success: false,
             message: "An error occurred while processing the buy order"
@@ -552,7 +551,7 @@ async function preSellAuth(userId, symbol, quantity) {
         await TradeModel.lockAsset(userId, symbol, quantity);
         return { success: true };
     } catch (error) {
-        console.error("preSellAuth error:", error);
+        logging.error(`preSellAuth error: ${error}`);
         return {
             success: false,
             message: "An error occurred while processing the sell order"
@@ -566,7 +565,7 @@ async function sendOrderUpdateToUser(user_id, orderMessage) {
     try {
         WebSocketService.sendToUser(user_id, orderMessage);
     } catch (error) {
-        console.error("Error sending order update to user:", error);
+        logging.error(`Error sending order update to user: ${error}`);
     }
 }
 

@@ -560,7 +560,7 @@ async function main(){
             console.log("Market Maker logged in successfully");
             
             await marketMaker.connect();
-            await marketMaker.cancelAllOrders();
+            // await marketMaker.cancelAllOrders();
             marketMaker.startMarketMaker();
             await new Promise(() => {});
         }
