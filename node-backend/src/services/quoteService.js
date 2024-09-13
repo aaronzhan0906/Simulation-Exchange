@@ -98,7 +98,7 @@ async function storePriceData(pair, data) {
         const oneDayAgo = now - 86400000;
         await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, oneDayAgo);
     } catch (error) {
-        logger.error(`Error storing price for ${pair}:`, error);
+        logger.error(`Error storing price for ${pair}: ${error}`);
     }
 }
 
@@ -153,7 +153,7 @@ async function storeHourlyData() {
             await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, thirtyDaysAgo);
     
         } catch (error) {
-            logger.error(`Error store hourly data for ${pair}:`, error);
+            logger.error(`Error store hourly data for ${pair}: ${error}`);
         }
     }
 }
@@ -228,7 +228,7 @@ binanceWS.on("message", (data) => {
 });
 
 binanceWS.on("error", (error) => {
-    logger.error("Websocket error:", error);
+    logger.error(`[binanceWS.on] ${error}`);
 });
 
 

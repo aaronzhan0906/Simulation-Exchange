@@ -2,6 +2,7 @@ import pool from "../config/database.js";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import bcrypt from "bcryptjs";
+import { logger } from "../app.js";
 
 class UserModel {
     async checkEmailExist(email) {
@@ -16,7 +17,7 @@ class UserModel {
                 return true;
             }
         } catch(error) {
-            console.error("Error in checkEmailExist: ", error);
+            logger.error(`Error in checkEmailExist: ${error}`);
             throw error
         } finally {
             connection.release();
@@ -46,7 +47,7 @@ class UserModel {
             return { user_id: userId };
         } catch(error) {
             await connection.rollback();
-            console.error("Error in createUserWithInitialFunds: ", error);
+            logger.error(`Error in createUserWithInitialFunds: ${error}`);
             throw error
         } finally {
             connection.release();
@@ -54,9 +55,14 @@ class UserModel {
     };
 
     async getUserByEmail(email) {
-        const command = "SELECT user_id, email, password FROM users WHERE email = ?";
+        try {
+            const command = "SELECT user_id, email, password FROM users WHERE email = ?";
         const result = await pool.query(command, [email]);
         return result;
+        } catch (error) {
+            logger.error(`[getUserByEmail]: ${error}`);
+            throw error;
+        }
     }
 
     generateAccessToken(user) {
@@ -95,24 +101,38 @@ class UserModel {
             }
             return null;
         } catch (error) {
-            console.error("Error in getRefreshTokenByUserId: ", error);
+            logger.error(`[getRefreshTokenByUserId]: ${error}`);
             throw error;
         }
     }
 
     async removeRefreshToken(userId) {
-        await pool.query(
-            "UPDATE users SET refresh_token = NULL, refresh_token_expires_at = NULL WHERE user_id = ?",
-            [userId]
-        );
+        try{
+            await pool.query(
+                `UPDATE users 
+                SET refresh_token = NULL 
+                WHERE user_id = ?`,
+                [userId]
+            );
+        } catch {
+            logger.error(`[removeRefreshToken]: ${error}`);
+            throw error;
+        }
     }
 
     async saveRefreshToken(userId, refreshToken){
-        const expiresAt = new Date(Date.now() + 30*24*60*60*1000);
-        await pool.query(
-            "UPDATE users SET refresh_token = ?, refresh_token_expires_at = ? WHERE user_id = ?",
-            [refreshToken, expiresAt, userId]
-        );
+        try {
+            await pool.query(
+                `UPDATE users 
+                SET refresh_token = ?
+                WHERE user_id = ?`,
+                [refreshToken, userId]
+            );
+        } catch {
+            logger.error(`[saveRefreshToken]: ${error}`);
+            throw error;
+        }
+        
     }
 }
 

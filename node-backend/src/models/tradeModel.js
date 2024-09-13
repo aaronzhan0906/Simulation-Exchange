@@ -336,7 +336,7 @@ class TradeModel {
             }
         
         } catch (error) {
-            console.error(`[decreaseBalance] Error: ${error.message}`);
+            logger.error(`[decreaseBalance] Error: ${error}`);
             throw error;
         }
     }
@@ -354,7 +354,7 @@ class TradeModel {
                 throw new Error(`Failed to increase balance for user ${updateUserId}`);
             }
         } catch (error) {
-            console.error(`[increaseBalance] Error: ${error.message}`);
+            logger.error(`[increaseBalance] Error: ${error}`);
             throw error;
         }
     }
@@ -377,7 +377,7 @@ class TradeModel {
                 throw new Error(`Failed to unlock balance for user ${updateUserId}`);
             }
         } catch (error) {
-            console.error(`[unlockBalance] Error: ${error.message}`);
+            logger.error(`[unlockBalance] Error: ${error}`);
             throw error;
         }
     }
@@ -429,7 +429,7 @@ class TradeModel {
                 );
             }
         } catch (error) {
-            console.error(`Error in increaseAsset for user ${updateUserId}, symbol ${updateSymbol}:`, error);
+            logger.error(`Error in increaseAsset for user ${updateUserId}, symbol ${updateSymbol} Error:${error}`);
             throw error;
         }
     }

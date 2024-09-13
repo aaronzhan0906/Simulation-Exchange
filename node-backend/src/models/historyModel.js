@@ -2,6 +2,7 @@ import pool from "../config/database.js";
 import { logger } from "../app.js";
 import { formatErrorDetails } from "../utils/formattedError.js";
 
+
 class HistoryModel {
     async getSymbols() {
         const connection = await pool.getConnection();

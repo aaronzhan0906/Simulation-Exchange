@@ -2,6 +2,7 @@ import config from "../config/config.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs"; 
 import UserModel from "../models/userModel.js";
+import { logger } from "../app.js";
 
 class UserController {
     // router.post("/signup", userController.register);
@@ -16,7 +17,7 @@ class UserController {
             await UserModel.createUserWithInitialFunds({ email, password });
                 return res.status(201).json({ ok: true, message: "User registered successfully" });
         } catch(error) {
-            console.error(error);
+            logger.error(`[register] ${error}`);
         }
     }
 
@@ -52,8 +53,7 @@ class UserController {
                 return res.status(401).json({ error: true, message: "Invalid refresh token" });
             }
         } catch (error) {
-            console.error(error);
-
+            logger.error(`[getInfo] ${error}`);
         }
     }
 
@@ -80,7 +80,7 @@ class UserController {
             res.clearCookie("userId");
 
             res.cookie("accessToken", accessToken, {
-                maxAge: 7 * 24 * 60 * 60 * 1000, // 之後改
+                maxAge: 7 * 24 * 60 * 60 * 1000, 
                 httpOnly: true, 
                 secure: true, 
                 sameSite: "strict"
@@ -102,7 +102,7 @@ class UserController {
 
             res.status(200).json({ "ok": true, message: "User logged in successfully", loginProof: loginProof });
         } catch (error) {
-            console.error(error);
+            logger.error(`[login] ${error}`);
         }
     }
 
@@ -119,7 +119,7 @@ class UserController {
             res.clearCookie("accessToken");
             res.status(200).json({ "ok": true, message: "Logged out successfully" });
         } catch (error) {
-            console.error(error);
+            logger.error(`[logout] ${error}`);
         }
     }
 }
