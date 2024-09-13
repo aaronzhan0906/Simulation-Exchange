@@ -88,7 +88,6 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
     await kafka_client.produce_result(f"order-book-snapshot-{symbol}", order_book_snapshot)
     logging.info("========================")
     logging.info(f"Sent 'order-book-snapshot-{symbol}': {order_book_snapshot}")
-    logging.info("========================")
 
 # Function to handel order cancellation
 async def handle_cancel_order(cancel_request, matching_engine, kafka_client, order_book):
@@ -107,7 +106,6 @@ async def handle_cancel_order(cancel_request, matching_engine, kafka_client, ord
     await kafka_client.produce_result(f"order-book-snapshot-{symbol}", order_book_snapshot)
     logging.info("========================")
     logging.info(f"Sent 'order-book-snapshot-{symbol}': {order_book_snapshot}")
-    logging.info("========================")
 
 # Function to periodically send order book snapshots
 async def send_order_book_every_two_seconds(symbol, order_book, kafka_client):
