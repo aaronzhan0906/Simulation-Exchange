@@ -466,7 +466,7 @@ class TradeController {
     // consume trade result from kafka
     async createTradeHistory(trade_result){
         const {
-            trade_id: originalTradeId,
+            trade_id,
             timestamp,
             symbol,
             side,
@@ -477,7 +477,7 @@ class TradeController {
         } = trade_result
 
         const user_id = side === "buy" ? buyer.user_id : seller.user_id;
-        const trade_id = side === "buy" ? `b${originalTradeId}` : `s${originalTradeId}`
+        // const trade_id = side === "buy" ? `b${originalTradeId}` : `s${originalTradeId}`
 
         const tradeData = {
             user_id,
@@ -494,7 +494,7 @@ class TradeController {
         };
 
         try {
-            const result = await TradeModel.createTradeHistory(tradeData)
+            await TradeModel.createTradeHistory(tradeData)
             const formattedSymbol = symbol.toUpperCase().replace("_", "");
             updatePriceData(formattedSymbol, executed_price);
         } catch(error) {

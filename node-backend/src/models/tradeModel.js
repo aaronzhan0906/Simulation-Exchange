@@ -68,7 +68,7 @@ class TradeModel {
         const updateUpdatedAt = updatedAt;
         if (updateStatus === "NOT FOUND") {
             const warningMessage = `Order ${updateOrderId} not found in matching engine`;
-            logging.waring(warningMessage);
+            logger.warn(warningMessage);
             return
         }
 
@@ -310,7 +310,7 @@ class TradeModel {
             return { success: true, data: resultOrderData };
         } catch (error) {
             await connection.rollback(); // 
-            this.logError("updateOrderData(model)", error);
+            this.logError(`updateOrderData(model) ${error}` );
             return { success: false, error: error.message || "Already CANCELED and rollback" };
         } finally {
             // 釋release lock
