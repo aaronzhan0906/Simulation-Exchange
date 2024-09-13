@@ -3,105 +3,21 @@ services:
     image: bitnami/kafka:latest
     ports:
       - "9092:9092"
-      - "9093:9093"
+      - "29092:29092"
     environment:
       - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker 
+      - KAFKA_CFG_LISTENERS=INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093  #不同的地方
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL #不同的地方
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-      - KAFKA_CFG_CONNECTIONS_MAX_IDLE_MS=600000
-      - KAFKA_CFG_REQUEST_TIMEOUT_MS=60000
-      - KAFKA_CFG_HEARTBEAT_INTERVAL_MS=60000
-      - KAFKA_CFG_MAX_POLL_INTERVAL_MS=600000
-      - KAFKA_CFG_SESSION_TIMEOUT_MS=300000
-      - KAFKA_CFG_GROUP_MIN_SESSION_TIMEOUT_MS=6000
-      - KAFKA_CFG_GROUP_MAX_SESSION_TIMEOUT_MS=300000
-      - KAFKA_CFG_LOG_RETENTION_HOURS=72
-      - KAFKA_CFG_LOG_RETENTION_BYTES=1073741824
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    restart: unless-stopped
-    networks:
-      default:
-        aliases:
-          - kafka
-    volumes:
-      - kafka_data:/bitnami/kafka
-
-  redis:
-    image: redis:latest
-    ports:
-      - "6380:6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes
-
-
-  node-backend:
-    build: 
-      context: .
-      dockerfile: node-backend/Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./node-backend:/usr/src/app/node-backend
-      - ./frontend:/usr/src/app/frontend
-      - ./package.json:/usr/src/app/package.json
-      - ./package-lock.json:/usr/src/app/package-lock.json
-      - /usr/src/app/node_modules
-      - ./wait-for-it.sh:/wait-for-it.sh
-    env_file: .env
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - KAFKA_BROKERS=kafka:9092
-      - WSS_BINANCE_URL=wss://data-stream.binance.vision:9443/stream
-      - BINANCE_API_KEY=https://api.binance.us/api/v3/klines
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - LOG_LEVEL=debug
-    command: >
-      /bin/sh -c "
-        chmod +x /wait-for-it.sh &&
-        /wait-for-it.sh kafka:9092 -t 45 -- 
-        /wait-for-it.sh redis:6379 -- 
-        npm run init-kafka && 
-        npm run init-history-price && 
-        npm run start:dev
-      "
-    depends_on:
-      kafka:
-        condition: service_healthy
-      redis:
-        condition: service_started
-
-  matching-engine:
-    build:
-      context: .
-      dockerfile: matching-engine/Dockerfile
-    volumes:
-      - ./matching-engine:/usr/src/app/matching-engine
-      - ./wait-for-it.sh:/wait-for-it.sh 
-    environment:
-      - KAFKA_BROKERS=kafka:9092
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    command: >
-      /bin/sh -c "
-        chmod +x /wait-for-it.sh &&
-        /wait-for-it.sh kafka:9092 -t 60 -- 
-        /wait-for-it.sh node-backend:3000 -t 60 -- 
-        python /usr/src/app/matching-engine/src/main.py
-      "
-
-volumes:
-  redis-data:
-  kafka_data:
