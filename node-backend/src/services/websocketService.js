@@ -25,7 +25,7 @@ class WebSocketService {
             
             ws.on("message", (message) => {
                 try {
-                    logger.info(`Received ${message}`);
+                    // logger.info(`Received ${message}`);
                     this.handleMessage(ws, message);
                 } catch (error) {
                     logger.error(`Error handling message: ${error}`);
@@ -87,7 +87,7 @@ class WebSocketService {
 
                 case "getOrdersByMarketMaker":
                     this.handleAuthenticatedAction(ws, () => {
-                        logger.info(`WS Handling getOrdersByMarketMaker: ${ws.userId}`);
+                        logger.info(`WS Handling getOrdersByMarketMaker: ${ws.userId} ${message}`);
                         TradeController.getOrdersByMarketMaker(ws);
                     })
                     break;

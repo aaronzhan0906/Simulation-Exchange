@@ -211,6 +211,8 @@ function initTabsAndSubmit() {
     const submitButton = document.getElementById("trade-panel__submit");
     const availablePrice = document.getElementById("trade-panel__available-price");
     const availableAsset = document.getElementById("trade-panel__available-asset");
+    const quantityInput = document.getElementById("trade-panel__input--quantity");
+    const totalInput = document.getElementById("trade-panel__input--total")
 
     function updateDisplayAvailable(isBuyMode){
         availablePrice.style.display = isBuyMode ? "block" : "none";
@@ -236,6 +238,9 @@ function initTabsAndSubmit() {
         submitButton.classList.add("buy");
         submitButton.classList.remove("sell");
         submitButton.textContent = `Buy ${baseAsset.toUpperCase()}`;
+        quantityInput.value = "";
+        totalInput.value = "";
+        hideButtonTooltip() // hide tooltip
         
         if (isLoggedIn) {
             submitButton.classList.add("buy");
@@ -253,6 +258,10 @@ function initTabsAndSubmit() {
         buyButton.classList.remove("active");
         submitButton.classList.add("sell");
         submitButton.classList.remove("buy");
+        quantityInput.value = "";
+        totalInput.value = "";
+        hideButtonTooltip() // hide tooltip
+
         submitButton.textContent = `Sell ${baseAsset.toUpperCase()}`;        
         if (isLoggedIn) {
             submitButton.classList.add("sell");
@@ -264,6 +273,10 @@ function initTabsAndSubmit() {
         updateDisplayAvailable(false);
         clearActiveButtons();
     });
+}
+
+function hideButtonTooltip() {
+    tooltipHandler.hide();
 }
 
 
@@ -666,9 +679,6 @@ async function cancelOrder(orderId) {
     }
 }
 
-function updateAvailableBalanceAfterCancel() {
-
-}
 
 // OPEN ORDERS // update open orders count 
 function updateOpenOrdersCount() {

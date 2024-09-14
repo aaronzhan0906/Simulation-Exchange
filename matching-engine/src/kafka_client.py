@@ -6,7 +6,7 @@ from decimal import Decimal
 from dotenv import load_dotenv
 import logging
 import traceback
-from aiokafka.errors import KafkaError
+from aiokafka.errors import KafkaError, KafkaConnectionError, NodeNotReadyError, RequestTimedOutError
 
 
 load_dotenv()
@@ -56,25 +56,26 @@ class KafkaClient:
                 )
                 await self.producer.start()
 
-                logging.info("Successfully connected to Kafka")
+                logging.info("成功連接到 Kafka")
                 return
+            except NodeNotReadyError as nre:
+                logging.error(f"Kafka 節點未就緒 (嘗試 {attempt + 1}/{max_retries}): {str(nre)}")
+            except RequestTimedOutError as rte:
+                logging.error(f"Kafka 請求超時 (嘗試 {attempt + 1}/{max_retries}): {str(rte)}")
+            except KafkaConnectionError as kce:
+                logging.error(f"Kafka 連接錯誤 (嘗試 {attempt + 1}/{max_retries}): {str(kce)}")
             except KafkaError as ke:
-                if "NodeNotReadyError" in str(ke):
-                    logging.error(f"Kafka node not ready (attempt {attempt + 1}/{max_retries}): {str(ke)}")
-                elif "RequestTimedOutError" in str(ke):
-                    logging.error(f"Request to Kafka timed out (attempt {attempt + 1}/{max_retries}): {str(ke)}")
-                else:
-                    logging.error(f"Kafka Error during setup (attempt {attempt + 1}/{max_retries}): {str(ke)}")
-                logging.debug(traceback.format_exc())
+                logging.error(f"Kafka 錯誤 (嘗試 {attempt + 1}/{max_retries}): {str(ke)}")
             except Exception as e:
-                logging.error(f"Unexpected error during setup (attempt {attempt + 1}/{max_retries}): {str(e)}")
-                logging.debug(traceback.format_exc())
+                logging.error(f"設置過程中發生意外錯誤 (嘗試 {attempt + 1}/{max_retries}): {str(e)}")
+            
+            logging.debug(traceback.format_exc())
             
             if attempt < max_retries - 1:
-                logging.info(f"Retrying in {retry_delay} seconds...")
+                logging.info(f"{retry_delay} 秒後重試...")
                 await asyncio.sleep(retry_delay)
             else:
-                logging.error("Max retries reached. Failing to set up Kafka client.")
+                logging.error("達到最大重試次數。無法設置 Kafka 客戶端。")
                 raise
     
     async def connect(self):
@@ -83,27 +84,32 @@ class KafkaClient:
                 await self.setup()
                 return
             except Exception as e:
-                logging.error(f"Failed to connect to Kafka: {str(e)}")
-                logging.info("Retrying connection in 10 seconds...")
+                logging.error(f"連接到 Kafka 失敗: {str(e)}")
+                logging.info("10 秒後重試連接...")
                 await asyncio.sleep(10)
     
     # Continuously consume messages from subscribed topics
     async def consume_messages(self):
-        while True:
+        while self.should_run:
             try:
                 async for msg in self.consumer:
                     if msg.topic in self.topic_handlers:
                         try:
                             await self.topic_handlers[msg.topic](msg.value)
                         except Exception as handler_error:
-                            logging.error(f"Error in topic handler for {msg.topic}: {str(handler_error)}")
+                            logging.error(f"{msg.topic} 的主題處理器發生錯誤: {str(handler_error)}")
                             logging.debug(traceback.format_exc())
+            except KafkaConnectionError as kce:
+                logging.error(f"Kafka 連接錯誤: {str(kce)}")
+                await self.reconnect()
+            except RequestTimedOutError as rte:
+                logging.error(f"Kafka 請求超時: {str(rte)}")
+                await self.reconnect()
             except KafkaError as ke:
-                logging.error(f"Kafka Error in consume_messages: {str(ke)}")
-                logging.debug(traceback.format_exc())
+                logging.error(f"Kafka 錯誤: {str(ke)}")
                 await self.reconnect()
             except Exception as e:
-                logging.error(f"Unexpected error in consume_messages: {str(e)}")
+                logging.error(f"消費消息時發生意外錯誤: {str(e)}")
                 logging.debug(traceback.format_exc())
                 await self.reconnect()
 
@@ -117,18 +123,23 @@ class KafkaClient:
         for attempt in range(max_retries):
             try:
                 await self.producer.send(topic, data)
+                logging.info(f"Sent {topic}")
                 return
+            except KafkaConnectionError as kce:
+                logging.error(f"發送消息時發生 Kafka 連接錯誤 (嘗試 {attempt + 1}/{max_retries}): {str(kce)}")
+            except RequestTimedOutError as rte:
+                logging.error(f"發送消息時請求超時 (嘗試 {attempt + 1}/{max_retries}): {str(rte)}")
             except KafkaError as ke:
-                logging.error(f"Kafka Error in produce_result (attempt {attempt + 1}/{max_retries}): {str(ke)}")
-                logging.debug(traceback.format_exc())
+                logging.error(f"發送消息時發生 Kafka 錯誤 (嘗試 {attempt + 1}/{max_retries}): {str(ke)}")
             except Exception as e:
-                logging.error(f"Unexpected error in produce_result (attempt {attempt + 1}/{max_retries}): {str(e)}")
-                logging.debug(traceback.format_exc())
+                logging.error(f"發送消息時發生意外錯誤 (嘗試 {attempt + 1}/{max_retries}): {str(e)}")
+            
+            logging.debug(traceback.format_exc())
             
             if attempt < max_retries - 1:
-                await asyncio.sleep(1)  # 等待一秒後重試
+                await asyncio.sleep(1)
         
-        logging.error(f"Failed to produce message to topic {topic} after {max_retries} attempts")
+        logging.error(f"在 {max_retries} 次嘗試後無法將消息發送到主題 {topic}")
 
     async def close(self):
         try:
@@ -136,10 +147,12 @@ class KafkaClient:
                 await self.consumer.stop()
             if self.producer:
                 await self.producer.stop()
-            logging.info("Kafka client closed successfully")
+            logging.info("Kafka 客戶端成功關閉")
+        except KafkaError as ke:
+            logging.error(f"關閉 Kafka 客戶端時發生 Kafka 錯誤: {str(ke)}")
         except Exception as e:
-            logging.error(f"Error while closing Kafka client: {str(e)}")
-            logging.debug(traceback.format_exc())
+            logging.error(f"關閉 Kafka 客戶端時發生意外錯誤: {str(e)}")
+        logging.debug(traceback.format_exc())
 
     def add_topic_handler(self, topic, handler):
         self.topic_handlers[topic] = handler

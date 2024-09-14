@@ -421,17 +421,17 @@ class TradeController {
             if (cancelResult.status === "NOT_FOUND") {
                 const checkStatus = await TradeModel.checkCancelOrderStatus(orderId);
                 if (checkStatus[0].status === "filled") {
-                    logger.warning(`Order ${orderId} already executed, cannot cancel.`);
+                    logger.warn(`Order ${orderId} already executed, cannot cancel.`);
                     return; 
                 }
-                logger.warning(`Order ${orderId} not found, possibly already cancelled.`);
+                logger.warn(`Order ${orderId} not found, possibly already cancelled.`);
                 return; 
             }
     
             const updateResult = await TradeModel.cancelOrder(orderId, cancelResult.status, cancelResult.timestamp);
     
             if (!updateResult) {
-                warningMessage = `[handleCancelResult] Unexpected cancellation result for order ${orderId}: ${cancelResult.status} `;
+                const warningMessage = `[handleCancelResult 434] Unexpected cancellation result for order ${orderId}: ${cancelResult.status} `;
                 logger.warn(warningMessage);
                 return; 
             }

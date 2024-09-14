@@ -9,7 +9,7 @@ import { EventEmitter } from "events";
 
 dotenv.config();
 console.log("Environment variables loaded");
-const MAX_ORDER = 7;
+const MAX_ORDER = 5;
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = process.env.SUPPORTED_SYMBOLS.split(",").map(symbol => symbol.trim());
@@ -560,7 +560,7 @@ async function main(){
             console.log("Market Maker logged in successfully");
             
             await marketMaker.connect();
-            // await marketMaker.cancelAllOrders();
+            await marketMaker.cancelAllOrders();
             marketMaker.startMarketMaker();
             await new Promise(() => {});
         }

@@ -35,6 +35,7 @@ const subscribeToTopics = async (consumer) => {
 };
 
 const handleMessage = async ({ topic, message }) => {
+    logger.info(`${topic}`);
     try {
         const data = JSON.parse(message.value.toString());
         const topicParts = topic.split("-");
@@ -43,14 +44,14 @@ const handleMessage = async ({ topic, message }) => {
 
         switch (topicType) {
             case "trade-result":
-                logger.info({ message: `(CONSUMER)trade-result-${symbol}`, orderId: data.order_id });
+                // logger.info({ message: `(CONSUMER)trade-result-${symbol}`, orderId: data.order_id });
                 await TradeController.createTradeHistory(data);
                 await TradeController.updateOrderData(data);
                 await TradeController.broadcastRecentTradeToRoom(data, symbol);
                 break;
 
             case "order-book-snapshot":
-                // console.log(`(CONSUMER)order-book-snapshot-${symbol}`, data);
+                // logger.info(`(CONSUMER)order-book-snapshot-${symbol}`);
                 await TradeController.broadcastOrderBookToRoom(data, symbol);
                 break;
 
