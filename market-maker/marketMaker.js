@@ -140,7 +140,7 @@ class MarketMaker {
         if (this.ws && this.ws.readyState === 1) {
             this.ws.send(JSON.stringify(message));
         } else {
-            console.error("WebSocket is not open");
+            console.error(`[sendMessage] error ${message}`);
         }
     }
 
@@ -185,6 +185,9 @@ class MarketMaker {
 
     async getOrders() {
         const pause = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const maxRetries = 5;
+        const retryDelay = 10000;
+
         const attemptGetOrders = () => {
             return new Promise((resolve, reject) => {
                 const now = Date.now();
@@ -218,12 +221,19 @@ class MarketMaker {
             });
         };
     
-        try {
-            return await attemptGetOrders();
-        } catch (error) {
-            console.error("獲取訂單失敗，系統將暫停10秒:", error);
-            await pause(10000);
-            throw error; 
+        for (let attempt = 1; attempt <= maxRetries; attempt++){
+            try {
+                return await attemptGetOrders();
+            } catch (error) {
+                console.error(`獲取訂單失敗，嘗試 ${attempt}/${maxRetries}:`, error);
+                if (attempt < maxRetries) {
+                    console.log(`系統將暫停${retryDelay / 1000}秒後重試...`);
+                    await pause(retryDelay);
+                } else {
+                    console.error("重試都失敗，準備重啟系統");
+                    throw new Error("重啟系統");
+                }
+            }
         }
     }
 
@@ -553,19 +563,22 @@ class MarketMaker {
 
 async function main(){
     console.log("Starting main function");
-    const marketMaker = new MarketMaker();
-    try {
-        await marketMaker.login(`${process.env.MARKET_MAKER_EMAIL}`, `${process.env.MARKET_MAKER_PASSWORD}`);
-        if (marketMaker.cookies.accessToken) {
-            console.log("Market Maker logged in successfully");
-            
-            await marketMaker.connect();
-            await marketMaker.cancelAllOrders();
-            marketMaker.startMarketMaker();
-            await new Promise(() => {});
+    
+    while(true){
+        try {
+            const marketMaker = new MarketMaker();
+            await marketMaker.login(`${process.env.MARKET_MAKER_EMAIL}`, `${process.env.MARKET_MAKER_PASSWORD}`);
+            if (marketMaker.cookies.accessToken) {
+                console.log("Market Maker logged in successfully");
+                
+                await marketMaker.connect();
+                await marketMaker.startMarketMaker();
+            }
+        } catch (error) {
+            console.error("[Main] error: ", error);
+            console.log("系統將在 10 秒後重新啟動...");
+            await new Promise(resolve => setTimeout(resolve, 10000));
         }
-    } catch (error) {
-        console.error("[Main] error: ", error);
     }
 }
 

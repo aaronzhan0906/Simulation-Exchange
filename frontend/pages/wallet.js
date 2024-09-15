@@ -218,12 +218,12 @@ function updateTotalProfit(totalProfit) {
     const balanceValueProfit = document.getElementById("balance-value__profit");
     const roundedProfit = totalProfit.times(100).toDecimalPlaces(2);
     
-    if (totalProfit.isPositive()) {
-        balanceValueProfit.textContent = `${roundedProfit.toString()} %`;
+    if (totalProfit.greaterThan(0)) {
+        balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
         balanceValueProfit.classList.add("positive");
         balanceValueProfit.classList.remove("negative");
-    } else if (totalProfit.isNegative()) {
-        balanceValueProfit.textContent = `${roundedProfit.absoluteValue().toString()} %`;
+    } else if (totalProfit.lessThan(0)) {
+        balanceValueProfit.textContent = `- ${roundedProfit.toFixed(2)} %`;
         balanceValueProfit.classList.remove("positive");
         balanceValueProfit.classList.add("negative");
     } else {
