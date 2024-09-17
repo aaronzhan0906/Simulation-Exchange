@@ -23,7 +23,8 @@ services:
       - KAFKA_CFG_GROUP_MAX_SESSION_TIMEOUT_MS=300000
       - KAFKA_CFG_LOG_RETENTION_HOURS=12
       - KAFKA_CFG_LOG_RETENTION_BYTES=1073741824
-      - KAFKA_JVM_PERFORMANCE_OPTS="-Xms512M -Xmx1.5G -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent"
+      - KAFKA_HEAP_OPTS=-Xms512M -Xmx1.5G
+      - KAFKA_JVM_PERFORMANCE_OPTS=-XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent
 
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
