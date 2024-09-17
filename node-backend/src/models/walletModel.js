@@ -1,6 +1,20 @@
 import pool from "../config/database.js";
+import { formatErrorDetails } from "../utils/formattedError.js";
 
 class WalletModel {
+    logError(methodName, error) {
+        const errorDetails = {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            errno: error.errno,
+            sql: error.sql,
+            sqlState: error.sqlState,
+            sqlMessage: error.sqlMessage
+        };
+        logger.error(`[${methodName}] Error:\n${formatErrorDetails(errorDetails)}`);
+    }
+
     async getBalanceById(userId) {
         const connection = await pool.getConnection();
         try {  
@@ -9,7 +23,7 @@ class WalletModel {
             [userId]);
             return balance;
         } catch (error) {
-            console.error("Error in getBalanceById:", error);
+            this.logError("getBalanceById", error);
             throw error;
         } finally {
             connection.release();
@@ -25,7 +39,7 @@ class WalletModel {
             );
             return available;
         } catch (error) {
-            console.error("Error in getAvailableBalanceById:", error);
+            this.logError("getAvailableBalanceById", error);
             throw error;
         } finally {
             connection.release();
@@ -45,7 +59,7 @@ class WalletModel {
             );
             return availableAndLocked;
         } catch (error) {
-            console.error("Error in getBalanceOverView:", error);
+            this.logError("getBalanceOverView", error);
             throw error;
         } finally {
             connection.release();
@@ -70,7 +84,7 @@ class WalletModel {
             );
             return rows;
         } catch (error) {
-            console.error("Error in getAssetsAndSymbols:", error);
+            this.logError("getAssetsAndSymbols", error);
             throw error;
         } finally {
             connection.release();
@@ -86,7 +100,7 @@ class WalletModel {
             );
             return [rows];
         } catch (error) {
-            console.error("Error in getAssetsById:", error);
+            this.logError("getAssetsById", error);
             throw error;
         } finally {
             connection.release();
@@ -106,7 +120,7 @@ class WalletModel {
 
             return availableAmount;
         } catch (error) {
-            console.error("Error in getAvailableAmountOfSymbol:", error);
+            this.logError("getAvailableAmountOfSymbol", error);
             throw error;
         } finally {
             connection.release();

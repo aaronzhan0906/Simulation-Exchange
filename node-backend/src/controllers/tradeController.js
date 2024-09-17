@@ -4,8 +4,7 @@ import kafkaProducer from "../services/kafkaProducer.js";
 import { generateSnowflakeId } from "../utils/snowflake.js"
 import WebSocketService from "../services/websocketService.js";
 import { updatePriceData, logOrderBookSnapshot } from "../services/quoteService.js";
-
-
+import { logger } from "../app.js";
 
 
 class TradeController {
@@ -34,7 +33,7 @@ class TradeController {
                 orders: formattedOrders
             });
         } catch(error) {
-            console.error("[getOrders] error:", error);
+            logger.error(`[getOrders] error: ${error}`);
             throw error;
         }
     }
@@ -65,9 +64,8 @@ class TradeController {
                 }
             }))
         } catch(error) {
-            console.error("[getOrdersByMarketMaker] error:", error);
+            logger.error(`[getOrdersByMarketMaker] error: ${error}`);
             ws.send(JSON.stringify({ type:"error", message: error.message }));
-            throw error;
         }
     }
 
@@ -77,7 +75,6 @@ class TradeController {
     async createOrder(req, res){
         const { symbol, side, type, price, quantity } = req.body;
             const userId = req.user.userId;
-
             if ( !userId || !symbol || !side || !type || !price || !quantity) {
                 return res.status(400).json({ error:true, message:"Missing required fields!" })
             }
@@ -91,13 +88,12 @@ class TradeController {
             } 
     
             if (!authResult.success) {
-                console.log("authResult:", authResult);
+                logger.error(`authResult: ${authResult}`);
                 return res.status(400).json({ error: true, message: authResult.message });
             }
 
             // snowflake order_id 
             const orderId = generateSnowflakeId();
-      
             const orderIdString = orderId.toString();
             const order = await TradeModel.createOrder(
                 orderIdString,
@@ -152,8 +148,8 @@ class TradeController {
             })
 
         } catch(error) {
-            console.error("Error in createOrder:", error);
-            throw error;
+            const errorMessage = `[createOrder] error: ${error}`
+            logger.error(errorMessage);
         }
     }
 
@@ -229,7 +225,6 @@ class TradeController {
             };
 
             sendOrderUpdateToUser(order.user_id, newOrder);
-            
 
             ws.send(JSON.stringify({
                 type: "orderCreated",
@@ -250,7 +245,8 @@ class TradeController {
             }));
 
         } catch(error) {
-            console.error(error);
+            const errorMessage = `[createOrderByMarketMaker] error: ${error}`
+            logger.error(errorMessage);
             ws.send(JSON.stringify({ type:"error", message: error.message }));
         }
     }
@@ -275,12 +271,14 @@ class TradeController {
         };
     
         try {
-            const resultOrderData = await TradeModel.updateOrderData(updateOrderData);
-    
-            if (!resultOrderData) {
-                console.error("[updateOrderData] No data returned, maybe update data is slower than cancel data");
-                return null; // sometimes cancel data is faster than update data
+            const result = await TradeModel.updateOrderData(updateOrderData);
+            if (!result.success) {
+                const warnMessage = result
+                logger.warn(warnMessage)
+                return; // sometimes cancel data is faster than update data
             }
+
+            const resultOrderData = result.data;
     
             // WebSocket 
             const quantity = new Decimal(resultOrderData.quantity);
@@ -305,11 +303,9 @@ class TradeController {
             };
 
             await sendOrderUpdateToUser(resultOrderData.user_id,  newUpdate);
-    
-            return resultOrderData; 
         } catch (error) {
-            console.error("[updateOrderData] error:", error);
-            throw error;
+            const errorMessage = `[updateOrderData(controller)] error: ${error}`
+            logger.error(errorMessage);
         }
     }
 
@@ -338,7 +334,7 @@ class TradeController {
                 data: processedData
             }); 
         } catch (error) {
-            console.error("[broadcastOrderBookToRoom] error:", error);
+            logger.error(`[broadcastOrderBookToRoom] error: ${error}`);
             throw error;
         }
     }
@@ -360,7 +356,7 @@ class TradeController {
                     timestamp
                 }});
         } catch (error) {  
-            console.error("[broadcastRecentTradeToRoom] error:", error);
+            logger.error(`[broadcastRecentTradeToRoom] error: ${error}`);
             throw error;
         }
     }
@@ -387,9 +383,36 @@ class TradeController {
             
             res.status(200).json({ ok: true, message: "Order cancellation request sent" });
         } catch(error) {
-            console.error("[cancelOrder] error:", error);
+            logger.error( `[cancelOrder] error: ${error}`);
             throw error;
         }
+    }
+
+    async cancelOrderByMarketMaker(ws, message) {
+        const { orderId, symbol } = message.data;
+        const userId = ws.userId;
+
+        if ( !userId || !orderId || !symbol) {
+            ws.send(JSON.stringify({ type: "error", message: "Missing required fields!" }));
+        }
+
+        try {
+            const localOrderStatus = await TradeModel.checkCancelOrderStatus(orderId);
+            if (localOrderStatus[0].status === "filled") {
+                ws.send(JSON.stringify({ type: "error", message: "Order cancellation request sent" }));
+                return;
+            }
+
+            const topicSymbol = symbol.replace("_usdt", "")
+            const topic = `cancel-order-${topicSymbol}`
+            await kafkaProducer.sendMessage(topic, { orderId, userId, symbol });
+
+        } catch (error) {
+            const errorMessage = `[cancelOrderByMarketMaker] error:, ${error}`
+            logger.error(errorMessage);
+            ws.send(JSON.stringify({ type: "error", message: error.message }));
+        }
+
     }
 
     async handleCancelResult(cancelResult) {
@@ -398,17 +421,18 @@ class TradeController {
             if (cancelResult.status === "NOT_FOUND") {
                 const checkStatus = await TradeModel.checkCancelOrderStatus(orderId);
                 if (checkStatus[0].status === "filled") {
-                    console.log(`Order ${orderId} already executed, cannot cancel.`);
+                    logger.warn(`Order ${orderId} already executed, cannot cancel.`);
                     return; 
                 }
-                console.log(`Order ${orderId} not found, possibly already cancelled.`);
+                logger.warn(`Order ${orderId} not found, possibly already cancelled.`);
                 return; 
             }
     
             const updateResult = await TradeModel.cancelOrder(orderId, cancelResult.status, cancelResult.timestamp);
     
             if (!updateResult) {
-                console.error(`Unexpected cancellation result for order ${orderId}:`, cancelResult.status);
+                const warningMessage = `[handleCancelResult 434] Unexpected cancellation result for order ${orderId}: ${cancelResult.status} `;
+                logger.warn(warningMessage);
                 return; 
             }
     
@@ -419,15 +443,6 @@ class TradeController {
             }
     
             if (updateResult.updateStatus === "CANCELED" || updateResult.updateStatus === "PARTIALLY_FILLED_CANCELED") {
-                const releaseAvailable = {
-                    type: "releaseAvailable",
-                    message: "Order cancelled and released available balance or asset",
-                    data: {
-                        orderId: updateResult.updateOrderId,
-                        status: updateResult.updateStatus,
-                    }
-                };
-
                 const cancelMessage = {
                     type: "orderUpdate",
                     message: "Order cancelled",
@@ -438,11 +453,11 @@ class TradeController {
                 };
 
                 WebSocketService.sendToUser(userId, cancelMessage);
-                console.log(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
+                logger.info(`Order ${orderId} cancelled successfully. Status: ${updateResult.updateStatus}`);
             }
         } catch(error) {
-            console.error(`[handleCancelResult] error for order ${orderId}:`, error);
-            throw error;
+            logger.error(`[handleCancelResult] error for order ${orderId}: ${error})`);
+            return;
         }
     }
     
@@ -451,7 +466,7 @@ class TradeController {
     // consume trade result from kafka
     async createTradeHistory(trade_result){
         const {
-            trade_id: originalTradeId,
+            trade_id,
             timestamp,
             symbol,
             side,
@@ -462,7 +477,7 @@ class TradeController {
         } = trade_result
 
         const user_id = side === "buy" ? buyer.user_id : seller.user_id;
-        const trade_id = side === "buy" ? `b${originalTradeId}` : `s${originalTradeId}`
+        // const trade_id = side === "buy" ? `b${originalTradeId}` : `s${originalTradeId}`
 
         const tradeData = {
             user_id,
@@ -479,13 +494,12 @@ class TradeController {
         };
 
         try {
-            const result = await TradeModel.createTradeHistory(tradeData)
-            if (result) console.log("Trade history created.")
+            await TradeModel.createTradeHistory(tradeData)
             const formattedSymbol = symbol.toUpperCase().replace("_", "");
             updatePriceData(formattedSymbol, executed_price);
         } catch(error) {
-            console.error("createTradeHistory error, error:", error);
-            throw error;
+            logger.error(`[createTradeHistory(controller)] error: ${error}`);
+            return;
         }
     }
 
@@ -513,7 +527,7 @@ async function preBuyAuth(userId, price, quantity) {
         await TradeModel.lockBalance(userId, price, quantity);
         return { success: true };
     } catch (error) {
-        console.error("preBuyAuth error:", error);
+        logger.error(`preBuyAuth error: ${error}`);
         return {
             success: false,
             message: "An error occurred while processing the buy order"
@@ -527,8 +541,6 @@ async function preSellAuth(userId, symbol, quantity) {
     try {
         const availableQuantity = await TradeModel.getQuantityBySymbolAndUserId(userId, symbol);
         const dAvailableQuantity = new Decimal(availableQuantity);
-        console.log("availableQuantity:", dAvailableQuantity.toString());
-        console.log("sellQuantity:", sellQuantity.toString());
         if (dAvailableQuantity.lessThan(sellQuantity)) {
             return {
                 success: false,
@@ -538,7 +550,7 @@ async function preSellAuth(userId, symbol, quantity) {
         await TradeModel.lockAsset(userId, symbol, quantity);
         return { success: true };
     } catch (error) {
-        console.error("preSellAuth error:", error);
+        logger.error(`preSellAuth error: ${error}`);
         return {
             success: false,
             message: "An error occurred while processing the sell order"
@@ -552,7 +564,7 @@ async function sendOrderUpdateToUser(user_id, orderMessage) {
     try {
         WebSocketService.sendToUser(user_id, orderMessage);
     } catch (error) {
-        console.error("Error sending order update to user:", error);
+        logger.error(`Error sending order update to user: ${error}`);
     }
 }
 

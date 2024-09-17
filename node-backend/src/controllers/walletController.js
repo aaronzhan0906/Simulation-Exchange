@@ -1,6 +1,6 @@
 import WalletModel from "../models/walletModel.js";
 import Decimal from "decimal.js";
-
+import { logger } from "../app.js";
 
 
 class WalletController {
@@ -10,7 +10,7 @@ class WalletController {
             const result = await WalletModel.getAvailableBalanceById(req.user.userId);
             res.status(200).json({ "ok": true, "available": result["available_balance"] });
         } catch(error) {
-            console.error("Failed to get available:", error);
+            logger.error(`[getAvailable] ${error}`);
         }
     }
 
@@ -23,7 +23,7 @@ class WalletController {
             const deLocked = new Decimal(locked_balance).toFixed(2);
             res.status(200).json({ "ok": true, "balance": deBalance, "available": deAvailable, "locked": deLocked });
         } catch(error) {
-            console.error("Failed to get available and locked:", error);
+            logger.error(`[getBalanceOverView] ${error}`);
         }
     }
  
@@ -40,7 +40,7 @@ class WalletController {
                 }))
             });
         } catch(error) {
-            console.error("Failed to get assets:", error);
+            logger.error(`[getAssets] ${error}`);
         }
     }
 
@@ -54,7 +54,7 @@ class WalletController {
                 "amount": amountOfSymbol
             });
         } catch(error) {
-            console.error("Failed to get amount of symbol:", error);
+            logger.error(`[getAvailableAmount] ${error}`);
         }
     }
 
@@ -74,7 +74,7 @@ class WalletController {
                 }))
             });
         } catch(error) {
-            console.error("Failed to get assets:", error);
+            logger.error(`[getAssetsAndSymbols] ${error}`);
         }
     }
 

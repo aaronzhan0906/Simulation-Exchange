@@ -1,4 +1,6 @@
 import pool from "../config/database.js";
+import { logger } from "../app.js";
+import { formatErrorDetails } from "../utils/formattedError.js";
 
 
 class HistoryModel {
@@ -12,7 +14,17 @@ class HistoryModel {
             // return symbols array
             return symbols;
         } catch (error) {
-            console.error("Error in getSymbols:", error);
+            const errorDetails = {
+                message: error.message,
+                stack: error.stack,
+                code: error.code,
+                errno: error.errno,
+                sql: error.sql,
+                sqlState: error.sqlState,
+                sqlMessage: error.sqlMessage
+            };
+            
+            logger.error(`[getSymbols] Error:\n${formatErrorDetails(errorDetails)}`);
             throw error;
         } finally {
             connection.release();
@@ -45,11 +57,21 @@ class HistoryModel {
                     break;
             }   
 
-            query += ` ORDER BY created_at DESC`;
+            query += `ORDER BY created_at DESC`;
             const [rows] = await connection.query(query, params);
             return rows;            
         } catch (error) {
-            console.error("Error in getOrderHistory:", error);
+            const errorDetails = {
+                message: error.message,
+                stack: error.stack,
+                code: error.code,
+                errno: error.errno,
+                sql: error.sql,
+                sqlState: error.sqlState,
+                sqlMessage: error.sqlMessage
+            };
+            
+            logger.error(`[getOrderHistory] Error:\n${formatErrorDetails(errorDetails)}`);
             throw error;
         } finally {
             connection.release();
@@ -75,7 +97,17 @@ class HistoryModel {
             );
             return rows;
         } catch (error) {
-            console.error("Error in getTransactionsById:", error);
+            const errorDetails = {
+                message: error.message,
+                stack: error.stack,
+                code: error.code,
+                errno: error.errno,
+                sql: error.sql,
+                sqlState: error.sqlState,
+                sqlMessage: error.sqlMessage
+            };
+            
+            logger.error(`[getTransactionsById] Error:\n${formatErrorDetails(errorDetails)}`);
             throw error;
         } finally {
             connection.release();

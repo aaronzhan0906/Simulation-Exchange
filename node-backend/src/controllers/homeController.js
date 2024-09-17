@@ -1,4 +1,5 @@
 import HomeModel from "../models/homeModel.js";
+import { logger } from "../app.js";
 
 class HomeController {
     async getSymbols(req, res) {
@@ -15,8 +16,8 @@ class HomeController {
                 }))
             });
         } catch(error) {
-            console.error("HomeController.getSymbols", error);
-
+            logger.error(`[getSymbols]: ${error}`)
+            throw error;
         };
     }
 }

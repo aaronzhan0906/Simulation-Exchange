@@ -22,14 +22,15 @@ class MatchingEngine:
 
         for match in self.order_book.match_order(order):
             # trade 
-            trade_id = str(next(self.snowflake_generator))
+            trade_id_taker = str(next(self.snowflake_generator))
+            trade_id_maker = str(next(self.snowflake_generator))
             timestamp = datetime.now(timezone.utc).isoformat()
             
 
 
             # input order
             input_order_result = {
-                "trade_id": trade_id,
+                "trade_id": trade_id_taker,
                 "timestamp": timestamp,
                 "order_id": order_id,
                 "matched_order_id": match["matched_order_id"],
@@ -52,7 +53,7 @@ class MatchingEngine:
             }
 
             matched_order_result = {
-                "trade_id": trade_id,
+                "trade_id": trade_id_maker,
                 "timestamp": timestamp,
                 "order_id": match["matched_order_id"],
                 "matched_order_id": order_id,

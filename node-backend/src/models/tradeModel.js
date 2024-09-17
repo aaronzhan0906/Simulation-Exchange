@@ -1,8 +1,25 @@
 import pool from "../config/database.js";
 import Decimal from 'decimal.js';
+import { logger } from "../app.js";
+import { formatErrorDetails } from "../utils/formattedError.js";
+
 
 class TradeModel {
 ///////////////////// GET ORDERS //////////////////////////
+    logError(methodName, error) {
+        const errorDetails = {
+            message: error.message,
+            stack: error.stack,
+            code: error.code,
+            errno: error.errno,
+            sql: error.sql,
+            sqlState: error.sqlState,
+            sqlMessage: error.sqlMessage
+        };
+        logger.error(`[${methodName}] Error:\n${formatErrorDetails(errorDetails)}`);
+    }
+
+
     async getOrders(userId) {
         const connection = await pool.getConnection();
 
@@ -17,7 +34,7 @@ class TradeModel {
             
             return result;
         } catch(error) {
-            console.error("[getOrders] error:", error);
+            this.logError("getOrders", error);
             throw error
         } finally {
             connection.release();
@@ -50,7 +67,8 @@ class TradeModel {
         const updateStatus = status;
         const updateUpdatedAt = updatedAt;
         if (updateStatus === "NOT FOUND") {
-            console.log(`Order ${updateOrderId} not found in matching engine`);
+            const warningMessage = `Order ${updateOrderId} not found in matching engine`;
+            logger.warn(warningMessage);
             return
         }
 
@@ -65,7 +83,7 @@ class TradeModel {
             if (result.affectedRows > 0) {
                 return { updateOrderId, updateStatus, updateUpdatedAt };}
         } catch (error) {
-            console.error("[cancelOrder(model)] Error:", error);
+            this.logError("cancelOrder", error);
             throw error;
         }
     }
@@ -89,7 +107,7 @@ class TradeModel {
         }
 
     } catch (error) {
-        console.error("Error in [releaseLockedBalance]:", error);
+        this.logError("releaseLockedBalance", error);
         throw error;
         }
     }
@@ -110,7 +128,7 @@ class TradeModel {
                 return true;
             }
         } catch (error) {
-            console.error("Error in [releaseLockedAsset]:", error);
+            this.logError("releaseLockedAsset", error);
             throw error;
         }
     }
@@ -124,7 +142,7 @@ class TradeModel {
             );
             return result;
         } catch (error) {
-            console.error("Error in [checkCancelOrder]:", error);
+            this.logError("checkCancelOrderStatus", error);
             throw error;
         }
     }
@@ -144,7 +162,7 @@ class TradeModel {
                 tradeData.buyer_user_id, tradeData.buyer_order_id, tradeData.seller_user_id, tradeData.seller_order_id
             ]);
         } catch (error) {
-            console.error("Error in [createTradeHistory]:", error);
+            this.logError("createTradeHistory", error);
             throw error;
         }
     }
@@ -222,6 +240,15 @@ class TradeModel {
                 throw new Error(`Order not found: ${updateOrderData.order_id}`);
             }
 
+            if (oldData.status === "CANCELED" || oldData.status === "PARTIALLY_FILLED_CANCELED") {
+                await connection.rollback();
+                return {
+                    success: false,
+                    orderId: oldData.order_id,
+                    message: "Cannot update order with status CANCELED or PARTIALLY_FILLED_CANCELED",
+                }
+            }
+
             // calculate new order data
             const old = {
                 quantity: new Decimal(oldData.quantity || 0),
@@ -238,7 +265,6 @@ class TradeModel {
 
             if (newExecutedQuantity.isZero()) {
                 throw new Error("New executed quantity cannot be zero");
-                // 不能只拋出不處理
             }
 
             const newAveragePrice = allTotal.dividedBy(newExecutedQuantity);
@@ -281,11 +307,11 @@ class TradeModel {
             }
 
             await connection.commit();
-            return resultOrderData;
+            return { success: true, data: resultOrderData };
         } catch (error) {
-            await connection.rollback();
-            console.error("[updateOrderData(model)] error:", error);
-            throw error;
+            await connection.rollback(); // 
+            this.logError(`updateOrderData(model) ${error}` );
+            return { success: false, error: error.message || "Already CANCELED and rollback" };
         } finally {
             // 釋release lock
             await connection.query('SELECT RELEASE_LOCK("trade_lock") as release_result');
@@ -310,7 +336,7 @@ class TradeModel {
             }
         
         } catch (error) {
-            console.error(`[decreaseBalance] Error: ${error.message}`);
+            logger.error(`[decreaseBalance] Error: ${error}`);
             throw error;
         }
     }
@@ -328,7 +354,7 @@ class TradeModel {
                 throw new Error(`Failed to increase balance for user ${updateUserId}`);
             }
         } catch (error) {
-            console.error(`[increaseBalance] Error: ${error.message}`);
+            logger.error(`[increaseBalance] Error: ${error}`);
             throw error;
         }
     }
@@ -351,7 +377,7 @@ class TradeModel {
                 throw new Error(`Failed to unlock balance for user ${updateUserId}`);
             }
         } catch (error) {
-            console.error(`[unlockBalance] Error: ${error.message}`);
+            logger.error(`[unlockBalance] Error: ${error}`);
             throw error;
         }
     }
@@ -403,7 +429,7 @@ class TradeModel {
                 );
             }
         } catch (error) {
-            console.error(`Error in increaseAsset for user ${updateUserId}, symbol ${updateSymbol}:`, error);
+            logger.error(`Error in increaseAsset for user ${updateUserId}, symbol ${updateSymbol} Error:${error}`);
             throw error;
         }
     }

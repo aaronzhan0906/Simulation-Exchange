@@ -3,6 +3,7 @@ services:
     image: bitnami/kafka:latest
     ports:
       - "9092:9092"
+      - "9093:9093"
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -12,13 +13,29 @@ services:
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+      - KAFKA_CFG_CONNECTIONS_MAX_IDLE_MS=600000
+      - KAFKA_CFG_REQUEST_TIMEOUT_MS=60000
+      - KAFKA_CFG_HEARTBEAT_INTERVAL_MS=60000
+      - KAFKA_CFG_MAX_POLL_INTERVAL_MS=600000
+      - KAFKA_CFG_SESSION_TIMEOUT_MS=300000
+      - KAFKA_CFG_GROUP_MIN_SESSION_TIMEOUT_MS=6000
+      - KAFKA_CFG_GROUP_MAX_SESSION_TIMEOUT_MS=300000
+      - KAFKA_CFG_LOG_RETENTION_HOURS=12
+      - KAFKA_CFG_LOG_RETENTION_BYTES=1073741824
+      - KAFKA_JVM_PERFORMANCE_OPTS="-Xms512M -Xmx1.5G -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent"
+
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - kafka
 
   redis:
     image: redis:latest
@@ -50,10 +67,11 @@ services:
       - BINANCE_API_KEY=https://api.binance.us/api/v3/klines
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - LOG_LEVEL=debug
     command: >
       /bin/sh -c "
         chmod +x /wait-for-it.sh &&
-        /wait-for-it.sh kafka:9092 -t 45 -- 
+        /wait-for-it.sh kafka:9092 -t 60 -- 
         /wait-for-it.sh redis:6379 -- 
         npm run init-kafka && 
         npm run init-history-price && 
@@ -80,7 +98,7 @@ services:
       /bin/sh -c "
         chmod +x /wait-for-it.sh &&
         /wait-for-it.sh kafka:9092 -t 60 -- 
-        /wait-for-it.sh node-backend:3000 -t 60 -- 
+        /wait-for-it.sh node-backend:3000 -t 90 -- 
         python /usr/src/app/matching-engine/src/main.py
       "
 

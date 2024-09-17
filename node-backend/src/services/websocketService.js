@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import { parse } from "cookie";
 import TradeController from "../controllers/tradeController.js";
+import { logger } from "../app.js"
 
 class WebSocketService {
     constructor(){
@@ -16,7 +17,7 @@ class WebSocketService {
         this.wss = new WebSocketServer({ server });
 
         this.wss.on("connection", (ws, req) => {
-            console.log(`New WebSocket connection from ${req.socket.remoteAddress}`);
+            logger.info(`New WebSocket connection from ${req.socket.remoteAddress}`);
 
             ws.isAlive = true;
             ws.rooms = new Set();
@@ -24,10 +25,10 @@ class WebSocketService {
             
             ws.on("message", (message) => {
                 try {
-                    console.log("Received", message.toString());
+                    // logger.info(`Received ${message}`);
                     this.handleMessage(ws, message);
                 } catch (error) {
-                    console.error("Error handling message:", error);
+                    logger.error(`Error handling message: ${error}`);
                     ws.send(JSON.stringify({type: "error", message: "Server error occurred"}));
                 }
             });
@@ -44,7 +45,7 @@ class WebSocketService {
         });
 
         this.wss.on("error", (error) => {
-            console.error("WebSocket server error:", error);
+            logger.info(`WebSocket server error: ${error}`);
         });
 
         // Ping clients every 30 seconds
@@ -65,7 +66,7 @@ class WebSocketService {
                 case "subscribe":
                     if (data.symbol === "ALL") {
                         this.subscribeToAllSymbols(ws);
-                    }  else {
+                    } else {
                         this.subscribeToRoom(ws, data.symbol);
                     }
                     break;
@@ -80,30 +81,37 @@ class WebSocketService {
 
                 case "getPersonalData":
                     this.handleAuthenticatedAction(ws, () => {
-                        console.log("WS Handling getPersonalData:", ws.userId);
+                        logger.info(`WS Handling getPersonalData: ${ws.userId}`);
                     });
                     break;
 
                 case "getOrdersByMarketMaker":
                     this.handleAuthenticatedAction(ws, () => {
-                        console.log("WS Handling getOrdersByMarketMaker:", ws.userId);
+                        logger.info(`WS Handling getOrdersByMarketMaker: ${ws.userId} ${message}`);
                         TradeController.getOrdersByMarketMaker(ws);
                     })
                     break;
 
                 case "createOrderByMarketMaker":
                     this.handleAuthenticatedAction(ws, () => {
-                        console.log("WS Handling createOrderByMarketMaker:", ws.userId);
+                        logger.info(`WS Handling createOrderByMarketMaker: ${ws.userId}`);
                         TradeController.createOrderByMarketMaker(ws, data);
                     });
                     break;
 
+                case "cancelOrderByMarketMaker":
+                    this.handleAuthenticatedAction(ws, () => {
+                        logger.info(`WS Handling cancelOrderByMarketMaker ${ws.userId})`)
+                        TradeController.cancelOrderByMarketMaker(ws, data)
+                    })
+                    break;
+
 
                 default:
-                    console.log("Unknown action:", data.action);
+                    logger.warning(`Unknown action: ${data.action}`);
             }
         } catch (error) {
-            console.error("WS handleMessage error:", error);
+            logger.error(`WS handleMessage error: ${error}`);
         }
     }
 
@@ -137,7 +145,7 @@ class WebSocketService {
                 }
                 this.userSockets.get(userId).add(ws);
             } catch (error) {
-                console.error("Invalid token:", error);
+                logger.error(`Invalid token: ${error}`);
                 ws.isAuthenticated = false;
             }
         } else {
@@ -148,13 +156,13 @@ class WebSocketService {
 /////////////////////////  SUBSCRIBE ///////////////////////// 
     subscribeToAllSymbols(ws){
         this.globalSubscribers.add(ws);
-        console.log("Subscribed to all symbols");
+        logger.info("Subscribed to all symbols");
         ws.send(JSON.stringify({type: "subscribed", symbol: "ALL"}));
     }
 
     unsubscribeFromAllSymbols(ws) {
         this.globalSubscribers.delete(ws);
-        console.log("Unsubscribed from all symbols");
+        logger.info("Unsubscribed from all symbols");
         ws.send(JSON.stringify({type: "unsubscribed", symbol: "ALL"}));
     }
 
@@ -164,7 +172,7 @@ class WebSocketService {
         }
         this.rooms.get(symbol).add(ws);
         ws.rooms.add(symbol);
-        console.log(`Subscribed to room ${symbol}`);
+        logger.info(`Subscribed to room ${symbol}`);
         ws.send(JSON.stringify({type: "subscribed", symbol}));      
     }
 
@@ -176,7 +184,7 @@ class WebSocketService {
             }
         }
         ws.rooms.delete(symbol);
-        console.log(`Unsubscribed from ${symbol}`);
+        logger.info(`Unsubscribed from ${symbol}`);
         ws.send(JSON.stringify({type: "unsubscribed", symbol}));
     }
 
@@ -229,7 +237,7 @@ class WebSocketService {
         }
 
         this.globalSubscribers.delete(ws);
-        console.log("Cleaned up disconnected WebSocket");
+        logger.info("Cleaned up disconnected WebSocket");
     }
 
 

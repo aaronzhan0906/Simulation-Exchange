@@ -1,4 +1,5 @@
 asyncio
+colorama
 
 # Kafka client
 aiokafka==0.11.0

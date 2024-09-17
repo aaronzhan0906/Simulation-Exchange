@@ -1,4 +1,5 @@
 import HistoryModel from "../models/historyModel.js";
+import { logger } from "../app.js";
 
 class HistoryController {
     // router.get("/symbols", HistoryController.getSymbols); 
@@ -16,8 +17,7 @@ class HistoryController {
                 }))
             });
         } catch(error) {
-            console.error("HomeController.getSymbols", error);
-
+            logger.error(`[getSymbols(history)]: ${error}`)
         };
     }
 
@@ -44,7 +44,7 @@ class HistoryController {
                 }))
             })
         } catch(error) {
-            console.error("HistoryController.getOrderHistory", error);
+            logger.error(`[getOrderHistory]: ${error}`)
         }
     }
 
