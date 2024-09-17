@@ -563,22 +563,19 @@ class MarketMaker {
 
 async function main(){
     console.log("Starting main function");
-    
-    while(true){
-        try {
-            const marketMaker = new MarketMaker();
-            await marketMaker.login(`${process.env.MARKET_MAKER_EMAIL}`, `${process.env.MARKET_MAKER_PASSWORD}`);
-            if (marketMaker.cookies.accessToken) {
-                console.log("Market Maker logged in successfully");
-                
-                await marketMaker.connect();
-                await marketMaker.startMarketMaker();
-            }
-        } catch (error) {
-            console.error("[Main] error: ", error);
-            console.log("系統將在 10 秒後重新啟動...");
-            await new Promise(resolve => setTimeout(resolve, 10000));
+    const marketMaker = new MarketMaker();
+    try {
+        await marketMaker.login(`${process.env.MARKET_MAKER_EMAIL}`, `${process.env.MARKET_MAKER_PASSWORD}`);
+        if (marketMaker.cookies.accessToken) {
+            console.log("Market Maker logged in successfully");
+            
+            await marketMaker.connect();
+            // await marketMaker.cancelAllOrders();
+            marketMaker.startMarketMaker();
+            await new Promise(() => {});
         }
+    } catch (error) {
+        console.error("[Main] error: ", error);
     }
 }
 
