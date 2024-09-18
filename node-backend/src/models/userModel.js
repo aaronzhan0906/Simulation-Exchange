@@ -57,7 +57,7 @@ class UserModel {
     async getUserByEmail(email) {
         try {
             const command = "SELECT user_id, email, password FROM users WHERE email = ?";
-        const result = await pool.query(command, [email]);
+            const result = await pool.query(command, [email]);
         return result;
         } catch (error) {
             logger.error(`[getUserByEmail]: ${error}`);
@@ -82,7 +82,7 @@ class UserModel {
     }
     async getRefreshTokenByUserId(userId){
         try{
-            const [result] = await pool.query(
+            const result = await pool.query(
                 "SELECT refresh_token FROM users WHERE user_id = ?",
                 [userId]
             );
@@ -99,7 +99,7 @@ class UserModel {
                     return null;
                 }
             }
-            return null;
+            return result;
         } catch (error) {
             logger.error(`[getRefreshTokenByUserId]: ${error}`);
             throw error;
@@ -107,14 +107,14 @@ class UserModel {
     }
 
     async removeRefreshToken(userId) {
-        try{
+        try { 
             await pool.query(
                 `UPDATE users 
                 SET refresh_token = NULL 
                 WHERE user_id = ?`,
                 [userId]
             );
-        } catch {
+        } catch(error) {
             logger.error(`[removeRefreshToken]: ${error}`);
             throw error;
         }

@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import UserModel from "../models/userModel.js";
+import { logger } from "../app.js";
+
 
 async function authenticateToken(req, res, next) {
     try {
@@ -15,16 +17,17 @@ async function authenticateToken(req, res, next) {
                 // keep going to check refresh token
             }
         }
-        const { userId } = req.cookies.userId;
+        const { userId } = req.cookies;
         
         const refreshToken = await UserModel.getRefreshTokenByUserId(userId);
         if (refreshToken) {
             try {
                 const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
-                const newAccessToken = UserModel.generateAccessToken({ userId, email });
+                const user = { user_id: userId, email: email }; // need to wrap in user
+                const newAccessToken = UserModel.generateAccessToken(user);
 
                 res.cookie("accessToken", newAccessToken, {
-                    maxAge: 15 * 60 * 1000,
+                    maxAge: 24 * 60 * 60 * 1000,
                     httpOnly: true,
                     secure: true,
                     sameSite: "strict"
@@ -51,21 +54,13 @@ async function authenticateToken(req, res, next) {
         }
 
 
-        return res.status(401).json({ error: true, message: "Unauthorized" });
+        return res.status(401).json({ error: true, message: "Your login session has expired" });
     } catch (error) {
-        console.error("Error in authenticateToken: ", error);
+        logger.error(`[authenticateToken]: ${error}`);
         return res.status(403).json({ error: true, message: "Invalid access token" });
     }
 }
  
-
-function generateLongLivedToken (userId, role) {
-    return jwt.sign(
-        { userId, role },
-        config.jwt.accessTokenSecret,
-        { expiresIn: "3m" }
-    );
-}
 
 
 

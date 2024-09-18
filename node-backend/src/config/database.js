@@ -7,7 +7,7 @@ const poolConfig = {
     user: config.database.user,
     password: config.database.password,
     database: config.database.database,    
-    connectionLimit: 55, // RDS t3.micro max 60
+    connectionLimit: 59, // RDS t3.micro max 60
     queueLimit: 0,
     waitForConnections: true,
     enableKeepAlive: true,

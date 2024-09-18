@@ -223,7 +223,7 @@ function updateTotalProfit(totalProfit) {
         balanceValueProfit.classList.add("positive");
         balanceValueProfit.classList.remove("negative");
     } else if (totalProfit.lessThan(0)) {
-        balanceValueProfit.textContent = `- ${roundedProfit.toFixed(2)} %`;
+        balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
         balanceValueProfit.classList.remove("positive");
         balanceValueProfit.classList.add("negative");
     } else {

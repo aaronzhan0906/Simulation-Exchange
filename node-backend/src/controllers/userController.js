@@ -38,11 +38,11 @@ class UserController {
 
             try {
                 const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
-                // create new access token
-                const newAccessToken = UserModel.generateAccessToken({ userId, email });
+                const user = { user_id: userId, email: email };
+                const newAccessToken = UserModel.generateAccessToken({ user });
             
             res.cookie("accessToken", newAccessToken, {
-                maxAge: 15 * 60 * 1000, 
+                maxAge: 24 * 60 * 60 * 1000, 
                 httpOnly: true, 
                 secure: true, 
                 sameSite: "strict"
@@ -50,7 +50,7 @@ class UserController {
 
             return res.status(200).json({ ok: true, message: "New access token issued", user: { userId, email } });
             } catch (error) {
-                return res.status(401).json({ error: true, message: "Invalid refresh token" });
+                return res.status(401).json({ error: true, message: "Your login session has expired" });
             }
         } catch (error) {
             logger.error(`[getInfo] ${error}`);
@@ -80,7 +80,7 @@ class UserController {
             res.clearCookie("userId");
 
             res.cookie("accessToken", accessToken, {
-                maxAge: 7 * 24 * 60 * 60 * 1000, 
+                maxAge: 24 * 60 * 60 * 1000, 
                 httpOnly: true, 
                 secure: true, 
                 sameSite: "strict"

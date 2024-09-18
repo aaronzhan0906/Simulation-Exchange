@@ -35,7 +35,7 @@ const subscribeToTopics = async (consumer) => {
 };
 
 const handleMessage = async ({ topic, message }) => {
-    logger.info(`${topic}`);
+    // logger.info(`${topic}`);
     try {
         const data = JSON.parse(message.value.toString());
         const topicParts = topic.split("-");
