@@ -27,7 +27,8 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 * History Page
     * Provides real-time view of open orders.
     * Allows viewing and filtering of historical order records.
-<br>
+<br
+   
 ## Architecture
 <img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/013a2143-19a2-4b55-a1d8-fe77b8973e7c">
 <br>
