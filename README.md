@@ -7,7 +7,6 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 <img width="100%" alt="SIMU-image" src="https://github.com/user-attachments/assets/61d0298c-316d-4a2a-b667-936a7bb9d06d">
 
 
-
 ## Features
 * Each user receives 10,000 USDT in simulated funds after registration.
 * Automated market maker system creates simulated buy and sell orders based on real-time prices.
@@ -28,27 +27,23 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 * History Page
     * Provides real-time view of open orders.
     * Allows viewing and filtering of historical order records.
-    
 <br>
 
 ## Techniques Highlights
-
 * Built the backend system using **Node.js / Express** as the core framework.
-* Utilized **Kafka** as a low-latency message queue for real-time data processing.
+* Utilized **Kafka** for real-time data processing with multiple topics for different data streams.
 * **Python** was employed for the matching engine to handle order matching logic.
-* Developed the market-making algorithm using **Node.js** and automated its operation with **PM2**.
-* Data is stored in **RDS / MySQL**, normalized to 3NF/2NF, with indexing to enhance query performance and foreign key constraints to maintain data integrity.
+* Developed the market-making strategy using **Node.js** and automated its operation with **PM2**.
+* **RDS / MySQL** stores normalized (3NF/2NF) data. Indexing optimizes queries; foreign keys ensure integrity.
 * **Redis** is used for storing historical data, real-time data, and order books, optimizing read/write speeds.
 * Implemented **WebSocket** with rooms for targeted real-time data and trade result pushing.
 * Implemented containerized deployment using **Docker-Compose** and deployed on **EC2**.
 * **S3** and **CloudFront** are utilized for image storage and distribution.
-* Integrated with the Binance API to retrieve real-time market data and 30 days of historical data.
-
+* Integrated with the Binance API for real-time market data and 30 days of historical data.
 <br>
 
 ## Architecture
 <img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/013a2143-19a2-4b55-a1d8-fe77b8973e7c">
-
 <br>
 
 ## Backend Technique
@@ -65,21 +60,16 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 - Route 53
 - S3
 - CloudFront
-
 #### Containerization
 - Docker
 - Docker-compose
-
 #### Authentication and Authorization 
 - JWT
-
 #### Infrastructure
 - Nginx
 - SSL(CertBot)
 - pm2
 - npm
-
-
 #### Third-Party API
 - Binance API
 <br>
