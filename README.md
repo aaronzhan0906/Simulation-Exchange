@@ -115,5 +115,6 @@ Find the best price, execute the trade if matched, otherwise enter the order boo
 | Delete | O(1) |
 
 <sub>n: Number of price levels</sub>
+<br>
 <sub>m: Number of orders at a single price level</sub>
 <br>
