@@ -91,7 +91,8 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 
 ## Matching Mechanism of Matching Engine
 Find the best price, execute the trade if matched, otherwise enter the order book.
-<img width="100%" alt="SIMU-ME flow chart" src="https://github.com/user-attachments/assets/373e087d-6086-4d99-856f-73653eb6ff29">
+<img width="100%" alt="SIMU-ME flow chart" src="https://github.com/user-attachments/assets/fce19d59-4222-4d10-831d-8f8e32cef761">
+
 <br>
 
 ## Datastructure of Matching Engine
