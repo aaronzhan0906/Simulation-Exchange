@@ -95,7 +95,7 @@ Find the best price, execute the trade if matched, otherwise enter the order boo
 
 <br>
 
-## Datastructure of Matching Engine
+## Data Structure of Matching Engine
 * **SortedDict**
     * Automatically sorts a dictionary based on price.
     * Retrieve the minimum/maximum price in O(1).
