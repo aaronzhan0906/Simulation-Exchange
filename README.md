@@ -28,6 +28,9 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
     * Provides real-time view of open orders.
     * Allows viewing and filtering of historical order records.
 <br>
+## Architecture
+<img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/013a2143-19a2-4b55-a1d8-fe77b8973e7c">
+<br>
 
 ## Techniques Highlights
 * Built the backend system using **Node.js / Express** as the core framework.
@@ -42,9 +45,6 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 * Integrated with the Binance API for real-time market data and 30 days of historical data.
 <br>
 
-## Architecture
-<img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/013a2143-19a2-4b55-a1d8-fe77b8973e7c">
-<br>
 
 ## Backend Technique
 #### Backend
