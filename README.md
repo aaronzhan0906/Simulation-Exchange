@@ -38,7 +38,7 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 * Utilized **Kafka** for real-time data processing with multiple topics for different data streams.
 * **Python** was employed for the matching engine to handle order matching logic.
 * Developed the market-making strategy using **Node.js** and automated its operation with **PM2**.
-* **RDS / MySQL** stores normalized (3NF/2NF) data. Indexing optimizes queries; foreign keys ensure integrity.
+* **RDS / MySQL** stores normalized (3NF) data. Indexing optimizes queries; foreign keys ensure integrity.
 * **Redis** is used for storing historical data, real-time data, and order books, optimizing read/write speeds.
 * Implemented **WebSocket** with rooms for targeted real-time data and trade result pushing.
 * Implemented containerized deployment using **Docker-Compose** and deployed on **EC2**.
