@@ -30,7 +30,8 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 <br
    
 ## Architecture
-<img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/013a2143-19a2-4b55-a1d8-fe77b8973e7c">
+<img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/645971e7-2cb9-4d10-a043-a7e11986b30f">
+
 <br>
 
 ## Techniques Highlights
