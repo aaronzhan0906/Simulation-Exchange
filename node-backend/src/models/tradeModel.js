@@ -311,7 +311,7 @@ class TradeModel {
         } catch (error) {
             await connection.rollback(); // 
             this.logError(`updateOrderData(model) ${error}` );
-            return { success: false, error: error.message || "Already CANCELED and rollback" };
+            return { success: false, message: error.message || "Already CANCELED and rollback" };
         } finally {
             // 釋release lock
             await connection.query('SELECT RELEASE_LOCK("trade_lock") as release_result');

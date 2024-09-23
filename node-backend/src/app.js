@@ -50,7 +50,7 @@ WebSocketService.init(server);
 
 
 // static
-app.use(favicon(path.join(__dirname, "..", "public", "favicon.ico")));
+app.use(favicon(path.join(__dirname, "..", "public", "simu.svg")));
 app.use(express.static(path.join(__dirname, "..", "..", "frontend")));
 
 // html routes
