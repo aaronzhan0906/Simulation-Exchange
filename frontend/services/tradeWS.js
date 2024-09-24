@@ -29,7 +29,7 @@ class TradeWebSocket {
 
     // if open orders 
     requestPersonalData(){
-        console.log("Requesting open data");
+        console.log("Requesting personal data");
         if (this.ws && this.ws.readyState === 1) {
             this.ws.send(JSON.stringify({ action: "getPersonalData" }));
             this.retryCount = 0;  
@@ -42,12 +42,12 @@ class TradeWebSocket {
     retryRequestOpenData() {
         if (this.retryCount < this.maxRetries) {
             this.retryCount++;
-            console.log(`Attempting to request open data again, retry ${this.retryCount}`);
+            console.log(`Attempting to request personal data again, retry ${this.retryCount}`);
             setTimeout(() => {
                 this.requestPersonalData();
             }, this.retryInterval * this.retryCount);  // Increase wait time with each retry
         } else {
-            console.error("Reached maximum retry limit. Unable to request open data.");
+            console.error("Reached maximum retry limit. Unable to request personal data.");
         }
     }
 

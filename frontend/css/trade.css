@@ -379,7 +379,7 @@ select::-ms-expand {
 }
 
 .order-book__price.negative {
-    color: #db3a32;
+    color: #dd382f;
 }
 
 
@@ -730,7 +730,7 @@ input:-webkit-autofill:focus {
 }
 
 .recent-trade__item.sell {
-    color: rgba(239, 72 ,63, 0.75);
+    color: rgba(239, 72, 63, 0.71);
 }
 
 

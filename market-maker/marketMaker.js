@@ -426,7 +426,7 @@ class MarketMaker {
                 const dOrderPrice = new Decimal(orderPrice || 0);
                 const priceDifference = dOrderPrice.minus(dCurrentPrice);
                 const maxDifference = Decimal.sqrt(dCurrentPrice.div(45));
-            
+                console.log(`訂單 ${orderId} 狀態: ${orderStatus}, 現價: ${currentPrice}, 訂單價: ${orderPrice}, 差價: ${priceDifference}`);
                 if ((orderStatus === "open" || orderStatus === "partially_filled")
                     && orderSide === "buy" 
                     && (dOrderPrice.minus(dCurrentPrice).abs().greaterThan(maxDifference) || priceDifference.greaterThan(0))) {

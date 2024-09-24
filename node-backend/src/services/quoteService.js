@@ -255,17 +255,17 @@ let latestOrderBookSnapshot = {};
 
 export async function logOrderBookSnapshot(symbol, processedData) {
     latestOrderBookSnapshot[symbol] = processedData;
+    // console.log("latestOrderBookSnapshot", latestOrderBookSnapshot);
     return latestOrderBookSnapshot[symbol];
 }
 
 router.get("/orderBook/:pair", async (req, res) => {
     const { pair } = req.params;
-    // logger.info("Latest order book snapshot:", pair);
+    logger.info(`Latest order book snapshot: ${pair}`);
     const symbol = pair.split("_")[0]; // xxx_usdt -> xxx
     const orderBookSnapshot = latestOrderBookSnapshot[symbol];
-    
     if (!orderBookSnapshot) {
-        return res.status(400).json({ ok: false, error: "No Data" });
+        return res.status(400).json({ error: false, error: "No Data" });
     }
     
     res.status(200).json({ ok: true, data: orderBookSnapshot });

@@ -67,7 +67,7 @@ async function getOpenOrders(){
             }
         }
     } catch (error) {
-        console.error("Fail to get open orders or symbols:", error);
+        console.error("[getOpenOrders] error:", error);
     }
 }
 
