@@ -119,11 +119,11 @@ class KafkaClient:
         await self.connect()
 
     async def produce_result(self, topic, data):
-        max_retries = 3
+        max_retries = 5
         for attempt in range(max_retries):
             try:
                 await self.producer.send(topic, data)
-                logging.info(f"Sent {topic}")
+                # logging.info(f"Sent {topic}")
                 return
             except KafkaConnectionError as kce:
                 logging.error(f"發送消息時發生 Kafka 連接錯誤 (嘗試 {attempt + 1}/{max_retries}): {str(kce)}")

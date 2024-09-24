@@ -9,7 +9,7 @@ import { EventEmitter } from "events";
 
 dotenv.config();
 console.log("Environment variables loaded");
-const MAX_ORDER = 5;
+const MAX_ORDER = 6;
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
 const supportedSymbols = process.env.SUPPORTED_SYMBOLS.split(",").map(symbol => symbol.trim());
@@ -168,20 +168,6 @@ class MarketMaker {
             throw error;
         }
     }
-
-    // async getOrders(){
-    //     try{
-    //         const response = await this.axiosInstance.get(`${this.url}/api/trade/order`,{
-    //             headers: {
-    //                 Cookie: `accessToken=${this.cookies.accessToken}`
-    //             }
-    //         });
-    //         return response.data.orders || [];
-    //     } catch (error) {
-    //         console.error("[getOrders] error:", error);
-    //         return [];
-    //     }
-    // }
 
     async getOrders() {
         const pause = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -481,11 +467,6 @@ class MarketMaker {
             console.log("初始化已在進行中，跳過本次初始化");
             return;
         }
-        // const currentTime = Date.now();
-        // if (this.isInitializing || currentTime - this.lastInitializeTime < this.initializeInterval) {
-        //     console.log(`初始化已在進行中或距離上次初始化時間不足 ${this.initializeInterval / 1000} 秒，跳過本次初始化`);
-        //     return;
-        // }
 
         this.isInitializing = true;
         console.log("開始初始化市場造市者");
@@ -550,15 +531,13 @@ class MarketMaker {
         await this.initializeMarketMaker();
         setInterval(() => {
             this.adjustMarketMakerOrders();
-        }, 1000);
+        }, 2000);
 
         setInterval(() => {
             console.log("定期清理（初始化）訂單");
             this.initializeMarketMaker();
         }, 30000);
     }
-
-
 }
 
 async function main(){
@@ -580,84 +559,3 @@ async function main(){
 }
 
 main();
-
-
- // async getOrderDetails(orderId) {
-    //     try {
-    //         const orders = await this.getOrders();
-    //         const order = orders.find(order => order.orderId === orderId);
-    //         if (order) {
-    //             return {
-    //                 orderStatus: order.status,
-    //                 orderSide: order.side,
-    //                 orderPrice: order.price
-    //             };
-    //         } else {
-    //             return { status: "NOT_FOUND", side: null, price: null };
-    //         }
-    //     } catch (error) {
-    //         console.error("[getOrderStatus] error: ", error);
-    //         return { status: "ERROR", side: null, price: null };
-    //     }
-    // }
-
-    // async createOrder(symbol, side, type, price, quantity){
-    //     try {
-    //         const response = await this.axiosInstance.post(`${this.url}/api/trade/marketMaker/order`, 
-    //             { symbol, side, type, price, quantity }, {
-    //                 headers: {
-    //                     "Content-Type": "application/json",
-    //                     "Cookie": `accessToken=${this.cookies.accessToken}`
-    //                 }
-    //             });
-    //         return response.data;
-    //     } catch (error) {
-    //         console.error("[createOrder] error:", error);
-    //     }
-    // }
-
-
-    // async cleanUpOrders(){
-    //     for (const symbol of supportedSymbols) {
-    //         const pair = `${symbol.toUpperCase()}USDT`;
-    //         const formattedSymbol = `${symbol}_usdt`;
-    //         const currentPrice = latestTickerData[pair]?.price;
-    //         if (!currentPrice) continue;
-
-    //         const allOrders = await this.getOrders();
-    //         const symbolOrders = allOrders.filter(order => order.symbol === formattedSymbol);
-
-    //         const buyOrders = symbolOrders.filter(order => order.side === "buy").sort((a, b) => b.price - a.price);
-    //         const sellOrders = symbolOrders.filter(order => order.side === "sell").sort((a, b) => a.price - b.price);
-
-    //         const ordersToKeep = new Set([...buyOrders.slice(0, MAX_ORDER), ...sellOrders.slice(0, MAX_ORDER)].map(order => order.orderId));
-
-    //         for (const order of symbolOrders) {
-    //             if(!ordersToKeep.has(order.orderId)){
-    //                 await this.cancelOrder(order.orderId, formattedSymbol);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // async cancelOrder(orderId, symbol) {
-    //     // 轉換成 WS
-    //     try {
-    //         console.log(`～～～～～Cancelling order: ${orderId} for ${symbol}`);
-    //         const response = await this.axiosInstance.patch(`${this.url}/api/trade/order`, {
-    //                 orderId, symbol
-    //             }, {
-    //                 headers: {
-    //                     "Content-Type": "application/json",
-    //                     "Cookie": `accessToken=${this.cookies.accessToken}`
-    //                 }
-    //             });
-    //         return response.data;
-    //     } catch (error) {
-    //         console.error(
-    //             (error.response && error.response.status === 401) 
-    //               ? "[createOrder] error: order has been executed" 
-    //               : `[createOrder] error: ${error}` 
-    //         );
-    //     }
-    // }
