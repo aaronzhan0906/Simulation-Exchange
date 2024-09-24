@@ -346,7 +346,7 @@ function quickSelectButtonAndInputHandler() {
             tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
             submitButton.disabled = true;
         } else {
-            tooltipHandler.hide();
+            hideButtonTooltip()
             submitButton.disabled = false;
         }
     
@@ -377,9 +377,6 @@ function quickSelectButtonAndInputHandler() {
         tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
     }
     
-    function hideButtonTooltip() {
-        tooltipHandler.hide();
-    }
 
     // CALCULATE AND UPDATE
     function calculateAndUpdate(changedInput) {
@@ -444,7 +441,7 @@ function quickSelectButtonAndInputHandler() {
         });
 
         input.addEventListener("blur", () => {
-            tooltipHandler.hide();
+            hideButtonTooltip()
         });
 
         input.addEventListener("keydown", function(event) { // Prevent arrow keys from changing input value
@@ -598,20 +595,21 @@ async function handleOrderUpdate(event) {
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
     if (!orderRow) return;
-
+    
     const cells = orderRow.getElementsByTagName("td");
     const symbol = cells[1].textContent.split("/")[0];
     const cancelBtn = orderRow.children[8].querySelector("button");
     const filledQuantityCell = cells[6];
     const statusCell = cells[7];
 
-    // for different page cancel order (trade / history)
     try {
         if (orderData.status === "CANCELED" || orderData.status === "PARTIALLY_FILLED_CANCELED") {
             orderRow.remove();
         } else {
             if (orderData.status === "filled") { // No Remove if filled for UX
                 cancelBtn.remove();
+                const orderType = cells[3].textContent.toLowerCase(); // to make filled successfully clearly
+                statusCell.classList.add(orderType === "buy" ? "open-orders__cell--buy" : "open-orders__cell--sell");
             }
 
             if (orderData.filledQuantity !== undefined) {

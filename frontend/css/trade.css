@@ -222,13 +222,13 @@ select::-ms-expand {
     color: #b4b4b4;
 }
 
-.chart-header__price.positive {
+/* .chart-header__price.positive {
     color: #259a32;
 }
 
 .chart-header__price.negative {
     color: #db3a32;
-}
+} */
 
 
 

@@ -43,8 +43,13 @@ function setActiveTab(activeTab) {
 }
 
 async function getOpenOrders(){
+    const table = document.getElementById("history__table");
+
     generatePairOptions(globalSymbols);
-    if (!checkLoginStatus()) return;
+    if (!checkLoginStatus()) {
+        renderOpenOrdersTable(null, table);
+        return;
+    }
 
     try {
         const [orderResponse, symbolResponse] = await Promise.all([
@@ -58,8 +63,6 @@ async function getOpenOrders(){
         if (orderResponse.ok && symbolResponse.ok) {
             globalSymbols = symbolData.data.map(item => item.symbolName);
 
-
-            const table = document.getElementById("history__table");
             renderOpenOrdersTable(orderData, table);
             if (orderData.orders.length > 0) {
                 startListeningForOrderUpdate();
@@ -72,7 +75,12 @@ async function getOpenOrders(){
 }
 
 async function fetchOrderHistory() {
-    if (!checkLoginStatus()) return;
+    const table = document.getElementById("history__table");
+
+    if (!checkLoginStatus()) {
+        renderOrderHistoryTable(null, table);
+        return;
+    }
 
     const timeRangeSelect = document.querySelector('.filter-select[data-filter="Time"]');
     const timeRange = timeRangeSelect ? timeRangeSelect.value : "today";
@@ -81,7 +89,6 @@ async function fetchOrderHistory() {
         const response = await fetch(`${API_ENDPOINTS.orderHistory}?timeRange=${timeRange}`);
         const responseData = await response.json();
         if (response.ok) {
-            const table = document.getElementById("history__table");
             renderOrderHistoryTable(responseData.data, table);
             filterOrderHistoryTable(); // Apply filters again
         } else {
@@ -294,8 +301,6 @@ function filterOrderHistoryTable(event) {
 function renderOpenOrdersTable(openOrdersData, table){
     table.innerHTML = "";
 
-    if (!checkLoginStatus()) return;
-
     // create table header
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -312,6 +317,8 @@ function renderOpenOrdersTable(openOrdersData, table){
     const tbody = document.createElement("tbody");
     tbody.id = "open-orders__tbody";
     table.appendChild(tbody);
+
+    if (!checkLoginStatus()) return; // If not logged in, return
     openOrdersData.orders.forEach(order => {
         addOpenOrderRow(order);
     })
@@ -414,7 +421,7 @@ async function cancelOrder(orderId) {
 ///////////////////////// ORDER HISTORY /////////////////////////
 function renderOrderHistoryTable(orderHistoryData, table) {
     table.innerHTML = "";
-    console.log("orderHistoryData:", orderHistoryData);
+    // console.log("orderHistoryData:", orderHistoryData);
 
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -431,7 +438,7 @@ function renderOrderHistoryTable(orderHistoryData, table) {
     const tbody = document.createElement("tbody");
     table.appendChild(tbody);
 
-    if (!checkLoginStatus()) return;
+    if (!checkLoginStatus()) return; // If not logged in, return
 
     orderHistoryData.forEach(order => {
         const row = document.createElement("tr");
