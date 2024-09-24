@@ -44,8 +44,7 @@ function setActiveTab(activeTab) {
 
 async function getOpenOrders(){
     generatePairOptions(globalSymbols);
-    const isLoggedIn = checkLoginStatus();
-    if (!isLoggedIn) return;
+    if (!checkLoginStatus()) return;
 
     try {
         const [orderResponse, symbolResponse] = await Promise.all([
@@ -73,6 +72,8 @@ async function getOpenOrders(){
 }
 
 async function fetchOrderHistory() {
+    if (!checkLoginStatus()) return;
+
     const timeRangeSelect = document.querySelector('.filter-select[data-filter="Time"]');
     const timeRange = timeRangeSelect ? timeRangeSelect.value : "today";
 
@@ -293,10 +294,8 @@ function filterOrderHistoryTable(event) {
 function renderOpenOrdersTable(openOrdersData, table){
     table.innerHTML = "";
 
-    const isLoggedIn = checkLoginStatus();
-    if(!isLoggedIn){
-        return;
-    }
+    if (!checkLoginStatus()) return;
+
     // create table header
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -416,10 +415,6 @@ async function cancelOrder(orderId) {
 function renderOrderHistoryTable(orderHistoryData, table) {
     table.innerHTML = "";
     console.log("orderHistoryData:", orderHistoryData);
-    const isLoggedIn = checkLoginStatus();
-    if(!isLoggedIn){
-        return;
-    }
 
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -432,8 +427,12 @@ function renderOrderHistoryTable(orderHistoryData, table) {
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
+
     const tbody = document.createElement("tbody");
     table.appendChild(tbody);
+
+    if (!checkLoginStatus()) return;
+
     orderHistoryData.forEach(order => {
         const row = document.createElement("tr");
         const [base, quoteCurrency] = order.symbol.toUpperCase().split("_");
@@ -495,7 +494,11 @@ function handleStatusName(status) {
 
 document.addEventListener("DOMContentLoaded",async () => {
     initializeHeader();
-    HistoryWebSocket.init();
+
+    if (checkLoginStatus()) {
+        HistoryWebSocket.init();
+    }
+
     await initTabActive();
     await getOpenOrders();
 });

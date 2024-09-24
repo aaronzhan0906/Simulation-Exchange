@@ -265,7 +265,7 @@ router.get("/orderBook/:pair", async (req, res) => {
     const orderBookSnapshot = latestOrderBookSnapshot[symbol];
     
     if (!orderBookSnapshot) {
-        return res.status(401).json({ ok: false, error: "No Data" });
+        return res.status(400).json({ ok: false, error: "No Data" });
     }
     
     res.status(200).json({ ok: true, data: orderBookSnapshot });

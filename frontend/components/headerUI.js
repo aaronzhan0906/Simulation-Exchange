@@ -105,8 +105,7 @@ const logout = async () => {
 
         if (response.ok) {
             localStorage.removeItem("isLogin");
-            updateHeaderUI();
-            location.href = "/"; 
+            location.reload();
         } else {
             const errorData = await response.json();
             console.error("Logout failed:", errorData.message);

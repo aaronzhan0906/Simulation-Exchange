@@ -83,7 +83,7 @@ async function initChart() {
     chart = createChart(chartContainer, {
         width: containerWidth,
         layout: {
-            background: { type: "solid", color: "rgba(13, 14, 15)" },
+            background: { type: "solid", color: "#0d0f10" },
             textColor: "#cfcfcf",
             fontSize: 11,
             fontFamily: "Roboto, sans-serif",
@@ -168,11 +168,11 @@ function updateChart(price) {
 document.addEventListener("DOMContentLoaded", async () => {
     tradeWebSocket.init();
     initChartHeader();
-    await initChart(); 
+    initChart(); 
     initTradePanel();
     initializeHeader();    
     document.addEventListener("recentPrice", (event) => {
         const price = event.detail.price;
         updateChart(price);
     });
-});
+})

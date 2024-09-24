@@ -52,6 +52,8 @@ async function initBalanceOverview () {
 async function initAssets() { 
     try {
         usdtBalance = await initBalanceOverview();
+        
+        if (!checkLoginStatus()) return;
 
         const assetsResponse = await fetch("/api/wallet/assetsAndSymbols");
         const assetsData = await assetsResponse.json();
