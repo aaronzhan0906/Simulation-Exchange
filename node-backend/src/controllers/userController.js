@@ -11,11 +11,16 @@ class UserController {
             const { email, password } = req.body;
             const checkEmailExist = await UserModel.checkEmailExist(email);
             if (checkEmailExist) {
-                return res.status(400).json({ "error": true, message: "Email already exists" });};
+                return res.status(400).json({ error: true, message: "Email already exists" });
+            };
 
+            const result = await UserModel.createUserWithInitialFunds({ email, password });
 
-            await UserModel.createUserWithInitialFunds({ email, password });
+            if (result.success) {
                 return res.status(201).json({ ok: true, message: "User registered successfully" });
+            } else {
+                return res.status(400).json({ error: true, message: "Failed to register user", details: result.error });
+            }
         } catch(error) {
             logger.error(`[register] ${error}`);
         }
@@ -62,16 +67,16 @@ class UserController {
         try{
             const { email, password } = req.body;
             const userInfo = await UserModel.getUserByEmail(email);
-            const user = userInfo[0]
 
-            if(!userInfo) {
-                return res.status(401).json({ "error": true, message: "User Not Found" });
+            if ( userInfo.length === 0 ) { 
+                return res.status(401).json({ error: true, message: "Incorrect Email or password" });
             }
-
+            
             const isPasswordValid = await bcrypt.compare(password, userInfo[0].password);
             if (!isPasswordValid)
-                return res.status(401).json({ "error": true, message: "Invalid credentials" });
-            
+                return res.status(401).json({ error: true, message: "Incorrect Email or password" });
+
+            const user = userInfo[0]
             const accessToken = UserModel.generateAccessToken(user);
             const refreshToken = UserModel.generateRefreshToken(user);
 
@@ -100,7 +105,7 @@ class UserController {
                 isLogin: true
             }
 
-            res.status(200).json({ "ok": true, message: "User logged in successfully", loginProof: loginProof });
+            res.status(200).json({ ok: true, message: "User logged in successfully", loginProof: loginProof });
         } catch (error) {
             logger.error(`[login] ${error}`);
         }
@@ -117,7 +122,7 @@ class UserController {
 
             res.clearCookie("userId");
             res.clearCookie("accessToken");
-            res.status(200).json({ "ok": true, message: "Logged out successfully" });
+            res.status(200).json({ ok: true, message: "Logged out successfully" });
         } catch (error) {
             logger.error(`[logout] ${error}`);
         }

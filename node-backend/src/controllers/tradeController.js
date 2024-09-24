@@ -567,25 +567,3 @@ async function sendOrderUpdateToUser(user_id, orderMessage) {
         logger.error(`Error sending order update to user: ${error}`);
     }
 }
-
-// async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
-//     try {
-//         const message = {
-//             type: "orderUpdate",
-//             data: {
-//                 orderId: resultOrderData.order_id,
-//                 filledQuantity: filledQuantity,
-//                 averagePrice: resultOrderData.average_price,
-//                 status: resultOrderData.status,
-//                 symbol: resultOrderData.symbol,
-//                 side: resultOrderData.side,
-//                 price: resultOrderData.price,
-//                 quantity: resultOrderData.quantity,
-//                 createdAt: resultOrderData.created_at
-//             }
-//         };
-//         WebSocketService.sendToUser(resultOrderData.user_id, message);
-//     } catch (error) {
-//         console.error("Error sending order update to user:", error);
-//     }
-// }

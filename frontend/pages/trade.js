@@ -1,5 +1,5 @@
 import { initializeHeader } from "../components/headerUI.js";
-import { initTradePanel } from "../components/tradePanelUI.js";
+import { initTradePanel } from "./tradePanelUI.js";
 import { symbolsData } from "../data/symbolsData.js";
 import tradeWebSocket from "../services/tradeWS.js";
 

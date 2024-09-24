@@ -1,12 +1,11 @@
 import { formatLocalTime, formatLocalTimeOnly } from "../utils/timeUtil.js";
 import { checkLoginStatus } from "../utils/auth.js";
-import tooltipHandler from "./tooltipHandler.js";
+import tooltipHandler from "../components/tooltipHandler.js";
 import tradeWebSocket from "../services/tradeWS.js";
 
 
 let lastPrice = null;
 let isPriceSet = false;
-// let isOrderUpdateListening = false;
 const pair = location.pathname.split("/")[2];
 const baseAsset = pair.split("_")[0];
 
@@ -132,8 +131,6 @@ async function initAvailableAsset(){
 // create order by TRADE PANEL 
 async function submitOrder(orderType, orderSide, price, quantity) { 
     const isLoggedIn = checkLoginStatus();
-    const priceInput = document.getElementById("trade-panel__input--price");
-    const quantityInput = document.getElementById("trade-panel__input--quantity");
     const totalInput = document.getElementById("trade-panel__input--total");
 
     if (!isLoggedIn) {
@@ -493,6 +490,7 @@ function quickSelectButtonAndInputHandler() {
 async function getOpenOrders(){
     const isLoggedIn = checkLoginStatus();
     if (!isLoggedIn) return;
+    
 
     try {
         const response = await fetch("/api/trade/order")

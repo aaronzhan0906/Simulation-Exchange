@@ -5,23 +5,24 @@ import walletWebSocket from "../services/walletWS.js";
 let assets = [];
 let usdtBalance = new Decimal(0);
 let assetElements = new Map();
-let lastUpdateTime = 0;
 
 // BALANCE OVERVIEW // ( and balance )
 async function initBalanceOverview () {
     const isLoggedIn = checkLoginStatus();
     const balanceValueAvailable = document.getElementById("balance-value__available");
     const balanceValueLocked = document.getElementById("balance-value__locked");
+    const balanceValueTotal = document.getElementById("balance-value__total");
+    const balanceValueProfit = document.getElementById("balance-value__profit");
     const assetItemAmount = document.getElementById("asset-item__amount--fixed");
     const assetItemAvailable = document.getElementById("asset-item__available--fixed");
 
-    
-
     if (!isLoggedIn) {
-        assetItemAmount.textContent = "*********"
-        assetItemAvailable.textContent = "*********"
-        balanceValueAvailable.textContent = "*********"
-        balanceValueLocked.textContent = "*********"
+        balanceValueTotal.textContent = "******" 
+        balanceValueProfit.textContent = "******"
+        assetItemAmount.textContent = "******"
+        assetItemAvailable.textContent = "******"
+        balanceValueAvailable.textContent = "*****"
+        balanceValueLocked.textContent = "*****"
         return;
     };
 

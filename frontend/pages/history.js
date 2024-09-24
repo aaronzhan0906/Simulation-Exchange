@@ -43,6 +43,7 @@ function setActiveTab(activeTab) {
 }
 
 async function getOpenOrders(){
+    generatePairOptions(globalSymbols);
     const isLoggedIn = checkLoginStatus();
     if (!isLoggedIn) return;
 
@@ -57,7 +58,7 @@ async function getOpenOrders(){
 
         if (orderResponse.ok && symbolResponse.ok) {
             globalSymbols = symbolData.data.map(item => item.symbolName);
-            generatePairOptions(globalSymbols);
+
 
             const table = document.getElementById("history__table");
             renderOpenOrdersTable(orderData, table);

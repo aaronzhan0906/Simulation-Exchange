@@ -44,11 +44,11 @@ class UserModel {
             );
 
             await connection.commit();
-            return { user_id: userId };
+            return { success: true };
         } catch(error) {
             await connection.rollback();
             logger.error(`Error in createUserWithInitialFunds: ${error}`);
-            throw error
+            return { success: false, error: error.message };
         } finally {
             connection.release();
         }
@@ -58,7 +58,8 @@ class UserModel {
         try {
             const command = "SELECT user_id, email, password FROM users WHERE email = ?";
             const result = await pool.query(command, [email]);
-        return result;
+            console.log(result);
+            return result;
         } catch (error) {
             logger.error(`[getUserByEmail]: ${error}`);
             throw error;
