@@ -5,7 +5,6 @@ import config from "../config/config.js";
 import WebSocketService from "./websocketService.js";
 import schedule from "node-schedule";
 import { logger } from "../app.js"
-// import pool from "../config/database.js";
 
 const router = express.Router();
 // Create Redis client
