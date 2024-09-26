@@ -12,4 +12,4 @@ process.on("SIGINT", async () => {
     logger.info("Shutting down gracefully...");
     await gracefulShutdown();
     process.exit(0);
-});
+}); 

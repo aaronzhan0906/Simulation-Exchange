@@ -13,8 +13,7 @@ import kafkaConsumer from "./services/kafkaConsumer.js";
 import WebSocketService from "./services/websocketService.js";
 import MarketMakerService from "./services/marketMakerService.js";
 import favicon from "serve-favicon";
-// helmet
-
+import helmet from "helmet";
 
 const pretty = pinoPretty({
     colorize: true, 
@@ -32,10 +31,53 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = createServer(app);
 
+app.use(helmet({
+    contentSecurityPolicy: {
+    directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "default-src": ["'self'"],
+        "script-src": [
+            "'self'",
+            "https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js",
+            "https://cdn.jsdelivr.net",
+            "https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.mjs",
+            "translate.googleapis.com",
+            "translate.google.com",
+            "*.google.com",
+            "*.gstatic.com",
+            "'sha256-oDDp6mnBOPlCZnUmCWO7rnApMCwHiVVDO3GKQKqhOUg='" // for chart
+        ],
+        "style-src": [
+            "'self'",
+            "'sha256-3pRED1tOXas1FXFoPb9TGCjmYe9XQsmO9OV23khV2nY='", // for chart
+            "'sha256-/8r9UyAhW5NpyIhaLaimhKoCc2xHbgBzNB3FqP+o2nQ='", // for chart
+            "https://fonts.googleapis.com"
+        ],
+        "img-src": [
+            "'self'",
+            "data:",
+            "https://dqnrdfgdkhgah.cloudfront.net",
+            "*.google.com",
+            "*.gstatic.com"
+        ],
+        "font-src": ["'self'", "https://fonts.gstatic.com"],
+        "connect-src": [
+            "'self'",
+            "wss:",
+        ],
+        "frame-ancestors": ["'none'"],
+        "object-src": ["'none'"],
+        "upgrade-insecure-requests": []
+        },
+    },
+    crossOriginEmbedderPolicy: false,   // for iframe
+    referrerPolicy: {
+        policy: ['strict-origin-when-cross-origin']
+    }
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-
 
 
 app.use(favicon(path.join(__dirname, "..", "public", "favicon.ico")));
