@@ -13,4 +13,4 @@ router.get("/balanceOverview", WalletController.getBalanceOverView)
 router.get("/assetsAndSymbols", WalletController.getAssetsAndSymbols)
 router.get("/asset/:symbol", WalletController.getAvailableAmount)
 
-export default router
+export default router;

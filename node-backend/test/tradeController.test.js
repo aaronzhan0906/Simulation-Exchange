@@ -14,13 +14,13 @@ const mockKafkaProducer = {
 };
 
 const mockWebSocketService = {
-  sendToUser: jest.fn()
+    sendToUser: jest.fn()
 };
 
 const mockGenerateSnowflakeId = jest.fn();
 
 const mockLogger = {
-  error: jest.fn()
+    error: jest.fn()
 };
 
 // Mock modules

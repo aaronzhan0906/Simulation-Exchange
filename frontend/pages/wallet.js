@@ -1,5 +1,5 @@
 import { initializeHeader } from "../components/headerUI.js";
-import { checkLoginStatus } from "../utils/auth.js";
+import { checkLoginStatus, checkLoginStatusOnPageLoad } from "../utils/auth.js";
 import walletWebSocket from "../services/walletWS.js";
 
 let assets = [];
@@ -246,6 +246,7 @@ function updateTotalProfit(totalProfit) {
 
 
 document.addEventListener("DOMContentLoaded", async () => {
+    checkLoginStatusOnPageLoad();
     initializeHeader();
     // BALANCE OVERVIEW //
     await initBalanceOverview ()

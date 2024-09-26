@@ -58,7 +58,6 @@ class UserModel {
         try {
             const command = "SELECT user_id, email, password FROM users WHERE email = ?";
             const result = await pool.query(command, [email]);
-            console.log(result);
             return result;
         } catch (error) {
             logger.error(`[getUserByEmail]: ${error}`);
@@ -87,20 +86,11 @@ class UserModel {
                 "SELECT refresh_token FROM users WHERE user_id = ?",
                 [userId]
             );
-            if (result.length > 0 && result[0].refresh_token) {
-                const refreshToken = result[0].refresh_token;
-                
-                try {
-                    jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
-                    return refreshToken;
-                } catch (error) {
-                    if (error instanceof jwt.TokenExpiredError) {
-                        await this.removeRefreshToken(userId);
-                    }
-                    return null;
-                }
+            if (result.length > 0 && result[0].refresh_token !== null) {
+                return result[0].refresh_token
+            } else {
+                return null;
             }
-            return result;
         } catch (error) {
             logger.error(`[getRefreshTokenByUserId]: ${error}`);
             throw error;
@@ -123,12 +113,18 @@ class UserModel {
 
     async saveRefreshToken(userId, refreshToken){
         try {
-            await pool.query(
+            const result = await pool.query(
                 `UPDATE users 
                 SET refresh_token = ?
                 WHERE user_id = ?`,
                 [refreshToken, userId]
             );
+
+            if (result.affectedRows > 0){
+                return { success: true };
+            } else {
+                logger.warn(`[saveRefreshToken]: No user found with ID ${userId}`);
+            }
         } catch {
             logger.error(`[saveRefreshToken]: ${error}`);
             throw error;

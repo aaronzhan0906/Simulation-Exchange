@@ -13,4 +13,4 @@ router.get("/symbols", HistoryController.getSymbols);
 
 
 
-export default router
+export default router;

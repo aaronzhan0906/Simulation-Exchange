@@ -1,6 +1,7 @@
 import { initializeHeader } from "../components/headerUI.js";
 import { initTradePanel } from "./tradePanelUI.js";
 import { symbolsData } from "../data/symbolsData.js";
+import { checkLoginStatusOnPageLoad } from "../utils/auth.js";
 import tradeWebSocket from "../services/tradeWS.js";
 
 let chart;
@@ -166,6 +167,7 @@ function updateChart(price) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    checkLoginStatusOnPageLoad();
     tradeWebSocket.init();
     initChartHeader();
     initChart(); 

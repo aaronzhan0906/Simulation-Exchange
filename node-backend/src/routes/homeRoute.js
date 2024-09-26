@@ -10,4 +10,4 @@ const router = express.Router();
 // router.get("/transactions", HistoryController.getOrderHistory);
 router.get("/symbols", HomeController.getSymbols); 
 
-export default router
+export default router;

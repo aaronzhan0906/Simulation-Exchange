@@ -18,11 +18,11 @@ async function authenticateToken(req, res, next) {
             }
         }
         const { userId } = req.cookies;
-        
+        console.log(userId);
         const refreshToken = await UserModel.getRefreshTokenByUserId(userId);
         if (refreshToken) {
             try {
-                const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
+                const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret); // verify token
                 const user = { user_id: userId, email: email }; // need to wrap in user
                 const newAccessToken = UserModel.generateAccessToken(user);
 
@@ -40,24 +40,15 @@ async function authenticateToken(req, res, next) {
             }
         }
 
-        const marketMakerToken = req.headers["x-market-maker-token"];  
-        if (marketMakerToken) {
-            try {
-                const { userId, role } = jwt.verify(marketMakerToken, config.jwt.accessTokenSecret);
-                if (role === "market-maker") {
-                    req.user = { userId, role };
-                    return next();
-                }
-            } catch (error) {
-                // return 401
-            }
-        }
-
-
         return res.status(401).json({ error: true, message: "Your login session has expired" });
     } catch (error) {
-        logger.error(`[authenticateToken]: ${error}`);
-        return res.status(403).json({ error: true, message: "Invalid access token" });
+        if (error instanceof jwt.TokenExpiredError) {
+            logger.error(`[authenticateToken] Refresh token expired: ${error.message}`);
+            return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+        } else {
+            logger.error(`[authenticateToken] Refresh token verification failed: ${error.message}`);
+            return res.status(401).json({ error: true, message: "Invalid refresh token" });
+        }
     }
 }
  

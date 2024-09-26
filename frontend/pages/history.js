@@ -1,6 +1,6 @@
 import { initializeHeader } from "../components/headerUI.js";
 import { formatLocalTime } from "../utils/timeUtil.js";
-import { checkLoginStatus } from "../utils/auth.js";
+import { checkLoginStatus, checkLoginStatusOnPageLoad } from "../utils/auth.js";
 import HistoryWebSocket from "../services/historyWS.js";
 
 
@@ -500,6 +500,7 @@ function handleStatusName(status) {
 
 
 document.addEventListener("DOMContentLoaded",async () => {
+    checkLoginStatusOnPageLoad();
     initializeHeader();
 
     if (checkLoginStatus()) {

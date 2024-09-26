@@ -35,27 +35,39 @@ class UserController {
                 const { userId, email } = jwt.verify(accessToken, config.jwt.accessTokenSecret);
                 return res.status(200).json({ ok: true, message: "User is logged in", user:{ userId, email }})
             } 
-            
-            const refreshToken = await UserModel.getRefreshTokenByUserId(userId);
-            if (!refreshToken) {
-                return res.status(401).json({ error: true, message: "Unauthorized" });
-            }
 
+            const { userId } = req.cookies;
+
+            if (!userId) {
+                return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+            }
+            
+            const refreshToken = await UserModel.getRefreshTokenByUserId(userId); // check from db
+            if (!refreshToken || refreshToken === null) {
+                return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+            }
+            
             try {
-                const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
+                const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret); // verify token
                 const user = { user_id: userId, email: email };
                 const newAccessToken = UserModel.generateAccessToken({ user });
             
-            res.cookie("accessToken", newAccessToken, {
-                maxAge: 24 * 60 * 60 * 1000, 
-                httpOnly: true, 
-                secure: true, 
-                sameSite: "strict"
-            });
+                res.cookie("accessToken", newAccessToken, {
+                    maxAge: 24 * 60 * 60 * 1000, 
+                    httpOnly: true, 
+                    secure: true, 
+                    sameSite: "strict"
+                });
 
-            return res.status(200).json({ ok: true, message: "New access token issued", user: { userId, email } });
+                return res.status(200).json({ ok: true, message: "New access token issued", user: { userId, email } });
             } catch (error) {
-                return res.status(401).json({ error: true, message: "Your login session has expired" });
+                if (error instanceof jwt.TokenExpiredError) {
+                    logger.error(`[getInfo] Refresh token expired: ${error.message}`);
+                    return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+                } else {
+                    logger.error(`[getInfo] Refresh token verification failed: ${error.message}`);
+                    return res.status(401).json({ error: true, message: "Invalid refresh token" });
+                }
             }
         } catch (error) {
             logger.error(`[getInfo] ${error}`);
@@ -68,9 +80,9 @@ class UserController {
             const { email, password } = req.body;
             const userInfo = await UserModel.getUserByEmail(email);
 
-            if ( userInfo.length === 0 ) { 
+            if ( userInfo.length === 0 ) 
                 return res.status(401).json({ error: true, message: "Incorrect Email or password" });
-            }
+            
             
             const isPasswordValid = await bcrypt.compare(password, userInfo[0].password);
             if (!isPasswordValid)
@@ -83,7 +95,7 @@ class UserController {
             // clear cookies
             res.clearCookie("accessToken");
             res.clearCookie("userId");
-
+            console.log("login")
             res.cookie("accessToken", accessToken, {
                 maxAge: 24 * 60 * 60 * 1000, 
                 httpOnly: true, 
@@ -99,7 +111,11 @@ class UserController {
                 sameSite: "strict"
             });
 
-            await UserModel.saveRefreshToken(user.user_id, refreshToken);
+            const result  = await UserModel.saveRefreshToken(user.user_id, refreshToken);
+
+            if (!result.success) {
+                return res.status(500).json({ error: true, message: "Failed to save refresh token" });
+            }
 
             const loginProof = {
                 isLogin: true
