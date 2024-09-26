@@ -75,17 +75,24 @@ class TradeController {
     async createOrder(req, res){
         const { symbol, side, type, price, quantity } = req.body;
             const userId = req.user.userId;
-            if ( !userId || !symbol || !side || !type || !price || !quantity) {
-                return res.status(400).json({ error:true, message:"Missing required fields!" })
-            }
+            if (!userId || !symbol || !side || !type || !price || !quantity)
+                return res.status(400).json({ error: true, message: "Missing required fields!" });
+            
+            if (Number(price) <= 0 || Number(quantity) <= 0)
+                return res.status(400).json({ error: true, message: "Price and quantity must be greater than 0" });
+            
+            if (type !== "limit")
+                return res.status(400).json({ error: true, message: "Invalid order type" });
+            
+            if (side !== "buy" && side !== "sell")
+                return res.status(400).json({ error: true, message: "Invalid order side" });
+
 
         try {
             let authResult;
-            if (side === "buy") {
-                authResult = await preBuyAuth(userId, price, quantity);
-            } else if (side === "sell") {
-                authResult = await preSellAuth(userId, symbol, quantity);
-            } 
+            authResult = side === "buy" 
+                ? await preBuyAuth(userId, price, quantity)
+                : await preSellAuth(userId, symbol, quantity);
     
             if (!authResult.success) {
                 logger.error(`authResult: ${authResult}`);
