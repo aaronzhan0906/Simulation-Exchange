@@ -298,12 +298,12 @@ class TradeModel {
             const executedPrice = updateOrderData.executed_price;
             if (resultOrderData.side === "buy") {
                 await this.increaseAsset(connection, resultOrderData, executedQty, executedPrice);
-                await this.decreaseBalance(connection, resultOrderData, executedQty, executedPrice);
                 await this.unlockBalance(connection, resultOrderData, executedQty, old.price);
+                await this.decreaseBalance(connection, resultOrderData, executedQty, executedPrice);
             } else {
-                await this.decreaseAsset(connection, resultOrderData, executedQty);
                 await this.increaseBalance(connection, resultOrderData, executedQty, executedPrice);
                 await this.unlockAsset(connection, resultOrderData, executedQty);
+                await this.decreaseAsset(connection, resultOrderData, executedQty);
             }
 
             await connection.commit();
@@ -313,7 +313,7 @@ class TradeModel {
             this.logError(`updateOrderData(model) ${error}` );
             return { success: false, message: error.message || "Already CANCELED and rollback" };
         } finally {
-            // 釋release lock
+            // release lock
             await connection.query('SELECT RELEASE_LOCK("trade_lock") as release_result');
             connection.release();
         }
@@ -419,6 +419,7 @@ class TradeModel {
                     [newQuantity.toString(), newAveragePrice.toString(), updateUserId, updateSymbol]
                 );
             } else {
+                // Create new asset if not exists when first buy
                 const initQuantity = executedQuantity;
                 const initAveragePrice = executedPrice;
 
@@ -454,6 +455,16 @@ class TradeModel {
     
         if (newQuantity.isNegative()) {
             throw new Error(`Insufficient asset quantity for user ${updateUserId} and symbol ${updateSymbol}`);
+        }
+
+        // delete asset if quantity is zero for recalculate average price
+        if (newQuantity.isZero()){
+            await connection.query(
+                `DELETE FROM assets
+                WHERE user_id = ? AND symbol = ?`,
+                [updateUserId, updateSymbol]
+            );
+            return;
         }
     
         await connection.query(

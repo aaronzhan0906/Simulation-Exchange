@@ -18,7 +18,6 @@ async function authenticateToken(req, res, next) {
             }
         }
         const { userId } = req.cookies;
-        console.log(userId);
         const refreshToken = await UserModel.getRefreshTokenByUserId(userId);
         if (refreshToken) {
             try {
