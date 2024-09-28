@@ -64,6 +64,8 @@ app.use(helmet({
         "connect-src": [
             "'self'",
             "wss:",
+            "https://data-stream.binance.vision",
+            "wss://data-stream.binance.vision"
         ],
         "frame-ancestors": ["'none'"],
         "object-src": ["'none'"],
