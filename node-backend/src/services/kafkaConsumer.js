@@ -56,7 +56,7 @@ const handleMessage = async ({ topic, message }) => {
                 break;
 
             case "cancel-result":
-                console.log(`(CONSUMER)cancel-result-${symbol}:`, data);
+                // logger.info(`(CONSUMER)cancel-result-${symbol}: ${data}`);
                 await TradeController.handleCancelResult(data);
                 break;
 
