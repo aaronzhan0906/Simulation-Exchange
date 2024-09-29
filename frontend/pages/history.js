@@ -500,7 +500,7 @@ function handleStatusName(status) {
 
 
 document.addEventListener("DOMContentLoaded",async () => {
-    checkLoginStatusOnPageLoad();
+    await checkLoginStatusOnPageLoad()
     initializeHeader();
 
     if (checkLoginStatus()) {

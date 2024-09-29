@@ -50,7 +50,7 @@ class UserController {
             try {
                 const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret); // verify token
                 const user = { user_id: userId, email: email };
-                const newAccessToken = UserModel.generateAccessToken({ user });
+                const newAccessToken = UserModel.generateAccessToken(user);
             
                 res.cookie("accessToken", newAccessToken, {
                     maxAge: 24 * 60 * 60 * 1000, 
@@ -95,7 +95,6 @@ class UserController {
             // clear cookies
             res.clearCookie("accessToken");
             res.clearCookie("userId");
-            console.log("login")
             res.cookie("accessToken", accessToken, {
                 maxAge: 24 * 60 * 60 * 1000, 
                 httpOnly: true, 

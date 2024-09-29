@@ -182,6 +182,7 @@ select::-ms-expand {
     width: 20px;
     height: 20px;
 }
+
 .chart-header__symbol  {
     padding-left: 10px;
     display: flex;

@@ -18,20 +18,28 @@ async function authenticateToken(req, res, next) {
             }
         }
         const { userId } = req.cookies;
+
+        if (!userId) {
+            return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+        }
+
         const refreshToken = await UserModel.getRefreshTokenByUserId(userId);
+        if (!refreshToken || refreshToken === null) {
+            return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+        }
+
         if (refreshToken) {
             try {
                 const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret); // verify token
                 const user = { user_id: userId, email: email }; // need to wrap in user
-                const newAccessToken = UserModel.generateAccessToken(user);
-
+                const newAccessToken = UserModel.generateAccessToken(user); // fix it but need to observe
                 res.cookie("accessToken", newAccessToken, {
                     maxAge: 24 * 60 * 60 * 1000,
                     httpOnly: true,
                     secure: true,
                     sameSite: "strict"
                 });
-
+                console.log(userId)
                 req.user = { userId, email };
                 return next();
             } catch (error) {

@@ -483,11 +483,7 @@ class TradeController {
             seller
         } = trade_result
 
-        // const user_id = side === "buy" ? buyer.user_id : seller.user_id;
-        // const trade_id = side === "buy" ? `b${originalTradeId}` : `s${originalTradeId}`
-
         const tradeData = {
-            // user_id,
             trade_id,
             executed_at: new Date(timestamp),
             symbol,

@@ -167,7 +167,7 @@ function updateChart(price) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    checkLoginStatusOnPageLoad();
+    await checkLoginStatusOnPageLoad(); // need to ajax call because of jwt token refresh
     tradeWebSocket.init();
     initChartHeader();
     initChart(); 

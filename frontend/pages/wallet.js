@@ -246,9 +246,9 @@ function updateTotalProfit(totalProfit) {
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-    checkLoginStatusOnPageLoad();
+    await checkLoginStatusOnPageLoad()
     initializeHeader();
     // BALANCE OVERVIEW //
-    await initBalanceOverview ()
-    await initAssets();
+    initBalanceOverview ()
+    initAssets(); // need to wait for initBalanceOverview to finish
 });

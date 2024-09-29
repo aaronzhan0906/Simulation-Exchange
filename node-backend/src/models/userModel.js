@@ -66,6 +66,7 @@ class UserModel {
     }
 
     generateAccessToken(user) {
+        // console.log(`[generateAccessToken] ${JSON.stringify(user)}`);
         return jwt.sign(
             { userId: user.user_id, email: user.email },
             config.jwt.accessTokenSecret,
