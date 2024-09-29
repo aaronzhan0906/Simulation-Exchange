@@ -12,7 +12,7 @@ const API_ENDPOINTS = {
 }
 
 let isOrderUpdateListening = false;
-let globalSymbols = [];
+let globalSymbols = []; // for selector
 
 
 ///////////////////////// TAB /////////////////////////
@@ -42,32 +42,43 @@ function setActiveTab(activeTab) {
     activeTab.classList.add("active");
 }
 
+async function getPairs() {
+    const response = await fetch(API_ENDPOINTS.symbols)
+    const responseData = await response.json();
+
+    try {
+        if (responseData.ok) {
+            globalSymbols = responseData.data.map(item => item.symbolName);
+        }
+
+        generatePairOptions(globalSymbols); // for selector
+    } catch (error) {
+        console.error("[getPairs] error", error);
+    }
+}
+
 async function getOpenOrders(){
     const table = document.getElementById("history__table");
 
-    generatePairOptions(globalSymbols);
     if (!checkLoginStatus()) {
         renderOpenOrdersTable(null, table);
         return;
-    }
+    } // return if not logged in
 
     try {
-        const [orderResponse, symbolResponse] = await Promise.all([
-            fetch(API_ENDPOINTS.openOrders),
-            fetch(API_ENDPOINTS.symbols)
-        ]);
+        const response = await fetch(API_ENDPOINTS.openOrders);
 
-        const orderData = await orderResponse.json();
-        const symbolData = await symbolResponse.json();
+        const responseData = await response.json();
 
-        if (orderResponse.ok && symbolResponse.ok) {
-            globalSymbols = symbolData.data.map(item => item.symbolName);
+        if (responseData.ok) {
+            renderOpenOrdersTable(responseData, table);
+        }
 
-            renderOpenOrdersTable(orderData, table);
-            if (orderData.orders.length > 0) {
-                startListeningForOrderUpdate();
-                HistoryWebSocket.requestPersonalData();
-            }
+        // Listen for order updates
+        if (!isOrderUpdateListening) {
+            HistoryWebSocket.requestPersonalData();
+            isOrderUpdateListening = true;
+            document.addEventListener("orderUpdate", handleOrderUpdate);
         }
     } catch (error) {
         console.error("[getOpenOrders] error:", error);
@@ -377,14 +388,6 @@ function addOpenOrderRow(orderData) {
     }
 }
 
-function startListeningForOrderUpdate() {
-    if (!isOrderUpdateListening) {
-        document.addEventListener("orderUpdate", handleOrderUpdate);
-        isOrderUpdateListening = true;
-        HistoryWebSocket.requestPersonalData();
-    }
-}
-
 
 async function cancelOrder(orderId) {
     const orderRow = document.querySelector(`[order-id="${orderId}"]`);
@@ -502,7 +505,7 @@ function handleStatusName(status) {
 document.addEventListener("DOMContentLoaded",async () => {
     await checkLoginStatusOnPageLoad()
     initializeHeader();
-
+    getPairs();
     if (checkLoginStatus()) {
         HistoryWebSocket.init();
     }
