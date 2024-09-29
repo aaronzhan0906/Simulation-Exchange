@@ -1,6 +1,9 @@
 class HistoryWebSocket {
     constructor() {
         this.ws = null;
+        this.retryCount = 0;  
+        this.maxRetries = 5;  
+        this.retryInterval = 1000;  
     }
 
     init() {
