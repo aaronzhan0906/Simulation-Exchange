@@ -182,6 +182,10 @@ function createCustomSelect(label, options, defaultValue = "All", displayLabel =
 
 
 async function handleOrderUpdate(event) {
+    if (event.detail.status === "open") {
+        addOpenOrderRow(event.detail);
+    }
+
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
     if (!orderRow) return;
@@ -191,7 +195,8 @@ async function handleOrderUpdate(event) {
     const cancelBtn = orderRow.children[8].querySelector("button");
     const filledQuantityCell = cells[6];
     const statusCell = cells[7];
-    console.log("orderData:", orderData);
+
+
     try {
         if (orderData.status === "CANCELED" || orderData.status === "PARTIALLY_FILLED_CANCELED") {
             orderRow.remove();
@@ -206,7 +211,7 @@ async function handleOrderUpdate(event) {
                 if (cancelBtn) {
                     cancelBtn.remove();
                 }
-                orderRow.remove();
+                orderRow.remove(); // remove, which is different from trade
             }
         }
     } catch (error) {
@@ -473,7 +478,6 @@ function renderOrderHistoryTable(orderHistoryData, table) {
 }
 
 function handlePartiallyFilled(executedQuantity, base) {
-    console.log(executedQuantity);
     if (executedQuantity === "0.00000000") {
         return `- ${base}`;
     } else {

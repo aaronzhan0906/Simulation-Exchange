@@ -39,7 +39,6 @@ async function authenticateToken(req, res, next) {
                     secure: true,
                     sameSite: "strict"
                 });
-                console.log(userId)
                 req.user = { userId, email };
                 return next();
             } catch (error) {
