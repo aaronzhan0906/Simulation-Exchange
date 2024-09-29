@@ -237,7 +237,11 @@ class TradeModel {
             );
 
             if (!oldData) {
-                throw new Error(`Order not found: ${updateOrderData.order_id}`);
+                await connection.rollback();
+                return {
+                    success: false,
+                    message: `Order not found: ${updateOrderData.order_id}`,
+                };
             }
 
             if (oldData.status === "CANCELED" || oldData.status === "PARTIALLY_FILLED_CANCELED") {
@@ -264,13 +268,21 @@ class TradeModel {
             const allTotal = oldTotal.plus(newTotal);
 
             if (newExecutedQuantity.isZero()) {
-                throw new Error("New executed quantity cannot be zero");
+                await connection.rollback();
+                return {
+                    success: false,
+                    message: "Executed quantity cannot be zero",
+                }
             }
 
             const newAveragePrice = allTotal.dividedBy(newExecutedQuantity);
 
             if (newAveragePrice.isNaN() || !newAveragePrice.isFinite()) {
-                throw new Error("Invalid average price calculation result");
+                await connection.rollback();
+                return {
+                    success: false,
+                    message: "Invalid average price calculation result",
+                }
             }
 
             // update order data
@@ -310,6 +322,7 @@ class TradeModel {
             return { success: true, data: resultOrderData };
         } catch (error) {
             await connection.rollback(); // 
+            console.log(`[updateOrderData(model)] ${error}`);
             this.logError(`updateOrderData(model) ${error}` );
             return { success: false, message: error.message || "Already CANCELED and rollback" };
         } finally {

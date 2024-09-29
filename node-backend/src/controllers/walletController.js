@@ -17,7 +17,7 @@ class WalletController {
     // router.get("/balanceOverview", WalletController.getBalanceOverView)
     async getBalanceOverView(req, res) {
         try {
-            console.log("userId", req.user.userId);
+            // console.log("userId", req.user.userId);
             const { balance, available_balance, locked_balance } = await WalletModel.getBalanceOverView(req.user.userId);
             
             const deBalance = new Decimal(balance).toFixed(2);

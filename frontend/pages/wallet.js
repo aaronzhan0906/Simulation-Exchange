@@ -249,6 +249,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     await checkLoginStatusOnPageLoad()
     initializeHeader();
     // BALANCE OVERVIEW //
-    initBalanceOverview ()
-    initAssets(); // need to wait for initBalanceOverview to finish
+    initAssets(); // await initBalanceOverview();
 });
+

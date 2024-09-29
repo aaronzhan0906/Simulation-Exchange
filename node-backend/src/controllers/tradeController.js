@@ -311,7 +311,8 @@ class TradeController {
 
             await sendOrderUpdateToUser(resultOrderData.user_id,  newUpdate);
         } catch (error) {
-            const errorMessage = `[updateOrderData(controller)] error: ${error}`
+            console.log(error);
+            const errorMessage = `[updateOrderData] Error: ${error.message}\nStack: ${error.stack}`;
             logger.error(errorMessage);
         }
     }
