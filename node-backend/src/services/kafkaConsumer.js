@@ -44,7 +44,7 @@ const handleMessage = async ({ topic, message }) => {
 
         switch (topicType) {
             case "trade-result":
-                // logger.info({ message: `(CONSUMER)trade-result-${symbol}`, orderId: data.order_id });
+                logger.info({ message: `(CONSUMER)trade-result-${symbol}`, orderId: data.order_id });
                 await TradeController.createTradeHistory(data);
                 await TradeController.updateOrderData(data);
                 await TradeController.broadcastRecentTradeToRoom(data, symbol);
@@ -56,7 +56,7 @@ const handleMessage = async ({ topic, message }) => {
                 break;
 
             case "cancel-result":
-                // console.log(`(CONSUMER)cancel-result-${symbol}:`, data);
+                console.log(`(CONSUMER)cancel-result-${symbol}:`, data);
                 await TradeController.handleCancelResult(data);
                 break;
 
