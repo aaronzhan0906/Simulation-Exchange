@@ -2,6 +2,7 @@ import os
 import redis
 import asyncio
 import pickle
+
 from sortedcontainers import SortedDict
 from decimal import Decimal
 from collections import deque
@@ -97,8 +98,8 @@ class OrderBook:
     
     async def close(self):
         self.stop_snapshot_timer()
-        logging.info("Save before shutdown")
         await self.save_snapshot() 
+        logging.info(f"Final snapshot for {self.symbol} saved successfully")
 
 
 ## ORDER BOOK MATCHING LOGIC #######################################

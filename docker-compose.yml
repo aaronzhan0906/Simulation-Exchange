@@ -92,18 +92,16 @@ services:
       dockerfile: matching-engine/Dockerfile
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
-      - ./wait-for-it.sh:/wait-for-it.sh 
     environment:
       - KAFKA_BROKERS=kafka:9092
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-    command: >
-      /bin/sh -c "
-        chmod +x /wait-for-it.sh &&
-        /wait-for-it.sh kafka:9092 -t 60 -- 
-        /wait-for-it.sh node-backend:3000 -t 90 -- 
-        python /usr/src/app/matching-engine/src/main.py
-      "
+    stop_grace_period: 60s
+    depends_on:
+      kafka:
+        condition: service_healthy
+      node-backend:
+        condition: service_started
 
 volumes:
   redis-data:
