@@ -221,13 +221,14 @@ class TradeModel {
 
 ///////////////////////// UPDATE ORDER //////////////////////////
 // main logic
-    async updateOrderData(updateOrderData) {
+    async updateOrderData(updateOrderData, user_id) {
         const connection = await pool.getConnection();
         await connection.beginTransaction();
 
         try {
-            await connection.query('SELECT GET_LOCK("trade_lock", 10) as lock_result');
-
+            // user 
+            await connection.query('SELECT GET_LOCK("?", 10) as lock_result',[`user_trade_lock_${user_id}`]);
+            console.log(`Acquired lock: user_trade_lock_${user_id}`);
             // use FOR UPDATE to lock the row
             const [[oldData]] = await connection.query(
                 `SELECT quantity, executed_quantity, remaining_quantity, average_price, price
@@ -327,7 +328,8 @@ class TradeModel {
             return { success: false, message: error.message || "Already CANCELED and rollback" };
         } finally {
             // release lock
-            await connection.query('SELECT RELEASE_LOCK("trade_lock") as release_result');
+            await connection.query('SELECT RELEASE_LOCK(?) as release_result', [`user_trade_lock_${user_id}`]);
+            console.log(`Released lock: user_trade_lock_${user_id}`);
             connection.release();
         }
     }

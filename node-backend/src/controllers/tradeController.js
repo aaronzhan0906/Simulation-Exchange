@@ -268,6 +268,7 @@ class TradeController {
             executed_price,
             status
         } = trade_result;
+        const user_id = trade_result.side === "buy" ? trade_result.buyer.user_id : trade_result.seller.user_id;
     
         const updateOrderData = {
             order_id,
@@ -278,7 +279,7 @@ class TradeController {
         };
     
         try {
-            const result = await TradeModel.updateOrderData(updateOrderData);
+            const result = await TradeModel.updateOrderData(updateOrderData, user_id);
             if (!result.success) {
                 const warnMessage = result
                 logger.warn(warnMessage)
