@@ -314,8 +314,7 @@ class TradeModel {
                 await this.decreaseBalance(connection, resultOrderData, executedQty, executedPrice);
             } else {
                 await this.increaseBalance(connection, resultOrderData, executedQty, executedPrice);
-                await this.unlockAsset(connection, resultOrderData, executedQty);
-                await this.decreaseAsset(connection, resultOrderData, executedQty);
+                await this.unlockAndDecreaseAsset(connection, resultOrderData, executedQty);
             }
 
             await connection.commit();
@@ -446,58 +445,117 @@ class TradeModel {
             throw error;
         }
     }
-    
-    async decreaseAsset(connection, updateAssetData, executedQty) {
-        const updateUserId = updateAssetData.user_id;
-        const updateSymbol = updateAssetData.symbol.replace("_usdt","");
-    
-        const [[existingAsset]] = await connection.query(
-            `SELECT quantity
-            FROM assets
-            WHERE user_id = ? AND symbol = ? FOR UPDATE`,
-            [updateUserId, updateSymbol]
-        );
-    
-        if (!existingAsset) {
-            throw new Error(`Asset not found for user ${updateUserId} and symbol ${updateSymbol}`);
-        }
-    
-        const currentQuantity = new Decimal(existingAsset.quantity);
-        const newQuantity = currentQuantity.minus(executedQty);
-    
-        if (newQuantity.isNegative()) {
-            throw new Error(`Insufficient asset quantity for user ${updateUserId} and symbol ${updateSymbol}`);
-        }
 
-        // delete asset if quantity is zero for recalculate average price
-        if (newQuantity.isZero()){
-            await connection.query(
-                `DELETE FROM assets
-                WHERE user_id = ? AND symbol = ?`,
+    async unlockAndDecreaseAsset(connection, updateAssetData, executedQty) {
+        const updateUserId = updateAssetData.user_id;
+        const updateSymbol = updateAssetData.symbol.replace("_usdt", "");
+    
+        try {
+            // FOR UPDATE 
+            const [[existingAsset]] = await connection.query(
+                `SELECT quantity, locked_quantity
+                 FROM assets
+                 WHERE user_id = ? AND symbol = ?
+                 FOR UPDATE`,
                 [updateUserId, updateSymbol]
             );
-            return;
+    
+            if (!existingAsset) {
+                throw new Error(`Asset not found for user ${updateUserId} and symbol ${updateSymbol}`);
+            }
+            
+            const executedQuantity = new Decimal(executedQty);
+            const currentQuantity = new Decimal(existingAsset.quantity);
+            const currentLockedQuantity = new Decimal(existingAsset.locked_quantity);
+            
+            // calc
+            const newQuantity = currentQuantity.minus(executedQuantity);
+            const newLockedQuantity = currentLockedQuantity.minus(executedQuantity);
+    
+            if (newQuantity.isNegative() || newLockedQuantity.isNegative()) {
+                throw new Error(`Insufficient asset quantity for user ${updateUserId} and symbol ${updateSymbol}`);
+            }
+            
+            // delete asset if quantity is zero for recalculate average price
+            if (newQuantity.isZero()) {
+                await connection.query(
+                    `DELETE FROM assets
+                     WHERE user_id = ? AND symbol = ?`,
+                    [updateUserId, updateSymbol]
+                );
+            } else {
+                await connection.query(
+                    `UPDATE assets
+                     SET quantity = ?, locked_quantity = ?
+                     WHERE user_id = ? AND symbol = ?`,
+                    [newQuantity.toString(), newLockedQuantity.toString(), updateUserId, updateSymbol]
+                );
+            }
+        } catch (error) {
+            console.error(`Error in unlockAndDecreaseAsset: ${error.message}`);
+            logger.error(`Error in unlockAndDecreaseAsset: ${error}`);
+            throw error;
         }
-    
-        await connection.query(
-            `UPDATE assets
-            SET quantity = ?
-            WHERE user_id = ? AND symbol = ?`,
-            [newQuantity.toString(), updateUserId, updateSymbol]
-        );
     }
     
-    async unlockAsset(connection, updateAssetData, executedQty) {
-        const updateUserId = updateAssetData.user_id;
-        const updateSymbol = updateAssetData.symbol.replace("_usdt","");
+    // async unlockAsset(connection, updateAssetData, executedQty) {
+    //     const updateUserId = updateAssetData.user_id;
+    //     const updateSymbol = updateAssetData.symbol.replace("_usdt","");
     
-        await connection.query(
-            `UPDATE assets
-            SET locked_quantity = locked_quantity - ?
-            WHERE user_id = ? AND symbol = ?`,
-            [executedQty, updateUserId, updateSymbol]
-        );
-    }
+    //     await connection.query(
+    //         `UPDATE assets
+    //         SET locked_quantity = locked_quantity - ?
+    //         WHERE user_id = ? AND symbol = ?`,
+    //         [executedQty, updateUserId, updateSymbol]
+    //     );
+    // }
+
+    // async unlockAndDecreaseAsset(connection, updateAssetData, executedQty) {
+    //     const updateUserId = updateAssetData.user_id;
+    //     const updateSymbol = updateAssetData.symbol.replace("_usdt","");
+
+    //     await connection.query(
+    //         `UPDATE assets
+    //         SET locked_quantity = locked_quantity - ?
+    //         WHERE user_id = ? AND symbol = ?`,
+    //         [executedQty, updateUserId, updateSymbol]
+    //     );
+    
+    //     const [[existingAsset]] = await connection.query(
+    //         `SELECT quantity
+    //         FROM assets
+    //         WHERE user_id = ? AND symbol = ? FOR UPDATE`,
+    //         [updateUserId, updateSymbol]
+    //     );
+    
+    //     if (!existingAsset) {
+    //         throw new Error(`Asset not found for user ${updateUserId} and symbol ${updateSymbol}`);
+    //     }
+    
+    //     const currentQuantity = new Decimal(existingAsset.quantity);
+    //     const newQuantity = currentQuantity.minus(executedQty);
+    
+    //     if (newQuantity.isNegative()) {
+    //         throw new Error(`Insufficient asset quantity for user ${updateUserId} and symbol ${updateSymbol}`);
+    //     }
+
+    //     // delete asset if quantity is zero for recalculate average price
+    //     if (newQuantity.isZero()){
+    //         await connection.query(
+    //             `DELETE FROM assets
+    //             WHERE user_id = ? AND symbol = ?`,
+    //             [updateUserId, updateSymbol]
+    //         );
+    //         return;
+    //     }
+    
+    //     await connection.query(
+    //         `UPDATE assets
+    //         SET quantity = ?
+    //         WHERE user_id = ? AND symbol = ?`,
+    //         [newQuantity.toString(), updateUserId, updateSymbol]
+    //     );
+    // }
 
 }
 
