@@ -226,8 +226,9 @@ class TradeModel {
         await connection.beginTransaction();
 
         try {
-            // user 
-            await connection.query('SELECT GET_LOCK("?", 10) as lock_result',[`user_trade_lock_${user_id}`]);
+            // GET_LOCK
+            await connection.query('SELECT GET_LOCK(?, 10) as lock_result', [`user_trade_lock_${user_id}`]);
+
             // use FOR UPDATE to lock the row
             const [[oldData]] = await connection.query(
                 `SELECT quantity, executed_quantity, remaining_quantity, average_price, price
@@ -310,8 +311,7 @@ class TradeModel {
             const executedPrice = updateOrderData.executed_price;
             if (resultOrderData.side === "buy") {
                 await this.increaseAsset(connection, resultOrderData, executedQty, executedPrice);
-                await this.unlockBalance(connection, resultOrderData, executedQty, old.price);
-                await this.decreaseBalance(connection, resultOrderData, executedQty, executedPrice);
+                await this.unlockBalanceAndDecreaseBalance(connection, resultOrderData, executedQty, old.price, executedPrice);
             } else {
                 await this.increaseBalance(connection, resultOrderData, executedQty, executedPrice);
                 await this.unlockAndDecreaseAsset(connection, resultOrderData, executedQty);
@@ -320,79 +320,17 @@ class TradeModel {
             await connection.commit();
             return { success: true, data: resultOrderData };
         } catch (error) {
-            await connection.rollback(); // 
+            await connection.rollback(); 
             this.logError("updateOrderData(model)", error);
             return { success: false, message: error.message || "Already CANCELED and rollback" };
         } finally {
             // release lock
-            await connection.query('SELECT RELEASE_LOCK(?) as release_result', [`user_trade_lock_${user_id}`]);
+            await connection.query('SELECT RELEASE_LOCK(?) as release_result',[`user_trade_lock_${user_id}`]);
             connection.release();
         }
     }
 
-    async decreaseBalance(connection, updateAccountData, executedQty, executedPrice) {
-        const updateUserId = updateAccountData.user_id;
-        const executedQuantity = new Decimal(executedQty);
-        const decreaseAmount = executedQuantity.times(executedPrice);
-    
-        try {
-            const [result] = await connection.query(
-                `UPDATE accounts 
-                SET balance = balance - ? 
-                WHERE user_id = ?`,
-                [decreaseAmount.toString(), updateUserId]
-            );
-            if (result.affectedRows === 0) {
-                throw new Error(`Failed to decrease balance for user ${updateUserId}`);
-            }
-        
-        } catch (error) {
-            logger.error(`[decreaseBalance] Error: ${error}`);
-            throw error;
-        }
-    }
-    
-    async increaseBalance(connection, updateAccountData, executedQty, executedPrice) {
-        const updateUserId = updateAccountData.user_id;
-        const executedQuantity = new Decimal(executedQty);
-        const increaseAmount = executedQuantity.times(executedPrice);
-        try{
-            const [result] = await connection.query(
-                "UPDATE accounts SET balance = balance + ? WHERE user_id = ?",
-                [increaseAmount.toString(), updateUserId]
-            );
-            if (result.affectedRows === 0) {
-                throw new Error(`Failed to increase balance for user ${updateUserId}`);
-            }
-        } catch (error) {
-            logger.error(`[increaseBalance] Error: ${error}`);
-            throw error;
-        }
-    }
-    
-    async unlockBalance(connection, updateAccountData, executedQty, originalPrice) {
-        const updateUserId = updateAccountData.user_id;
-        const executedQuantity = new Decimal(executedQty);
-        const unlockAmount = executedQuantity.times(originalPrice);
-    
-    
-        try {
-            const [result] = await connection.query(
-                `UPDATE accounts
-                SET locked_balance = locked_balance - ?
-                WHERE user_id = ?`,
-                [unlockAmount.toString(), updateUserId]
-            );
-    
-            if (result.affectedRows === 0) {    
-                throw new Error(`Failed to unlock balance for user ${updateUserId}`);
-            }
-        } catch (error) {
-            logger.error(`[unlockBalance] Error: ${error}`);
-            throw error;
-        }
-    }
-    
+    // buy side 
     async increaseAsset(connection, updateAssetData, executedQty, executedP) {
         const updateUserId = updateAssetData.user_id;
         const updateSymbol = updateAssetData.symbol.replace("_usdt","");
@@ -446,17 +384,62 @@ class TradeModel {
         }
     }
 
+    async unlockBalanceAndDecreaseBalance(connection, updateAccountData, executedQty, originalPrice, executedPrice) {
+        const updateUserId = updateAccountData.user_id;
+        const executedQuantity = new Decimal(executedQty);
+        const unlockAmount = executedQuantity.times(originalPrice);
+        const decreaseAmount = executedQuantity.times(executedPrice);
+        console.log("!!!unlockBalanceAndDecreaseBalance")
+        try {
+            const [result] = await connection.query(
+                `UPDATE accounts
+                SET locked_balance = locked_balance - ?, balance = balance - ?
+                WHERE user_id = ?`,
+                [unlockAmount.toString(), decreaseAmount.toString(), updateUserId]
+            );
+    
+            if (result.affectedRows === 0) {    
+                throw new Error(`Failed to unlock balance for user ${updateUserId}`);
+            }
+        } catch (error) {
+            logger.error(`[unlockBalance] Error: ${error}`);
+            throw error;
+        }
+    }
+    
+
+
+    // sell side
+    async increaseBalance(connection, updateAccountData, executedQty, executedPrice) {
+        const updateUserId = updateAccountData.user_id;
+        const executedQuantity = new Decimal(executedQty);
+        const increaseAmount = executedQuantity.times(executedPrice);
+        try{
+            const [result] = await connection.query(
+                "UPDATE accounts SET balance = balance + ? WHERE user_id = ?",
+                [increaseAmount.toString(), updateUserId]
+            );
+            if (result.affectedRows === 0) {
+                throw new Error(`Failed to increase balance for user ${updateUserId}`);
+            }
+        } catch (error) {
+            logger.error(`[increaseBalance] Error: ${error}`);
+            throw error;
+        }
+    }
+
     async unlockAndDecreaseAsset(connection, updateAssetData, executedQty) {
         const updateUserId = updateAssetData.user_id;
         const updateSymbol = updateAssetData.symbol.replace("_usdt", "");
     
         try {
+            console.log("!!!unlockAndDecreaseAsset")
             // FOR UPDATE 
             const [[existingAsset]] = await connection.query(
                 `SELECT quantity, locked_quantity
                  FROM assets
                  WHERE user_id = ? AND symbol = ?
-                 FOR UPDATE`,
+                 FOR UPDATE`, 
                 [updateUserId, updateSymbol]
             );
     
@@ -498,64 +481,6 @@ class TradeModel {
         }
     }
     
-    // async unlockAsset(connection, updateAssetData, executedQty) {
-    //     const updateUserId = updateAssetData.user_id;
-    //     const updateSymbol = updateAssetData.symbol.replace("_usdt","");
-    
-    //     await connection.query(
-    //         `UPDATE assets
-    //         SET locked_quantity = locked_quantity - ?
-    //         WHERE user_id = ? AND symbol = ?`,
-    //         [executedQty, updateUserId, updateSymbol]
-    //     );
-    // }
-
-    // async unlockAndDecreaseAsset(connection, updateAssetData, executedQty) {
-    //     const updateUserId = updateAssetData.user_id;
-    //     const updateSymbol = updateAssetData.symbol.replace("_usdt","");
-
-    //     await connection.query(
-    //         `UPDATE assets
-    //         SET locked_quantity = locked_quantity - ?
-    //         WHERE user_id = ? AND symbol = ?`,
-    //         [executedQty, updateUserId, updateSymbol]
-    //     );
-    
-    //     const [[existingAsset]] = await connection.query(
-    //         `SELECT quantity
-    //         FROM assets
-    //         WHERE user_id = ? AND symbol = ? FOR UPDATE`,
-    //         [updateUserId, updateSymbol]
-    //     );
-    
-    //     if (!existingAsset) {
-    //         throw new Error(`Asset not found for user ${updateUserId} and symbol ${updateSymbol}`);
-    //     }
-    
-    //     const currentQuantity = new Decimal(existingAsset.quantity);
-    //     const newQuantity = currentQuantity.minus(executedQty);
-    
-    //     if (newQuantity.isNegative()) {
-    //         throw new Error(`Insufficient asset quantity for user ${updateUserId} and symbol ${updateSymbol}`);
-    //     }
-
-    //     // delete asset if quantity is zero for recalculate average price
-    //     if (newQuantity.isZero()){
-    //         await connection.query(
-    //             `DELETE FROM assets
-    //             WHERE user_id = ? AND symbol = ?`,
-    //             [updateUserId, updateSymbol]
-    //         );
-    //         return;
-    //     }
-    
-    //     await connection.query(
-    //         `UPDATE assets
-    //         SET quantity = ?
-    //         WHERE user_id = ? AND symbol = ?`,
-    //         [newQuantity.toString(), updateUserId, updateSymbol]
-    //     );
-    // }
 
 }
 
