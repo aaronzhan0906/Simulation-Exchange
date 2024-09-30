@@ -18,13 +18,16 @@ const baseAsset = pair.split("_")[0];
 async function initChartHeader() {
     // symbol and ticker info
     const symbolInfo = symbolsData.data.find(symbol => symbol.symbolName === baseAsset);
-    const icon = document.getElementById("chart-header__icon");
+    const iconDiv = document.getElementById("chart-header__icon");
     const baseAssetName = document.getElementById("chart-header__base-asset");
     const quoteAsset = document.getElementById("chart-header__quote-asset");
         
     baseAssetName.textContent = symbolInfo.symbolName.toUpperCase();
     quoteAsset.textContent = `/${pair.split("_")[1].toUpperCase()}`;
-    icon.src = symbolInfo.imageUrl;
+    const img = document.createElement("img");
+    img.src = symbolInfo.imageUrl;
+    img.alt = baseAssetName;
+    iconDiv.appendChild(img);
 
     // high and low price
     const highDiv = document.getElementById("chart-header__high");
