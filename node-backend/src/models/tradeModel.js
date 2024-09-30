@@ -228,7 +228,6 @@ class TradeModel {
         try {
             // user 
             await connection.query('SELECT GET_LOCK("?", 10) as lock_result',[`user_trade_lock_${user_id}`]);
-            console.log(`Acquired lock: user_trade_lock_${user_id}`);
             // use FOR UPDATE to lock the row
             const [[oldData]] = await connection.query(
                 `SELECT quantity, executed_quantity, remaining_quantity, average_price, price
@@ -323,13 +322,11 @@ class TradeModel {
             return { success: true, data: resultOrderData };
         } catch (error) {
             await connection.rollback(); // 
-            console.log(`[updateOrderData(model)] ${error}`);
-            this.logError(`updateOrderData(model) ${error}` );
+            this.logError("updateOrderData(model)", error);
             return { success: false, message: error.message || "Already CANCELED and rollback" };
         } finally {
             // release lock
             await connection.query('SELECT RELEASE_LOCK(?) as release_result', [`user_trade_lock_${user_id}`]);
-            console.log(`Released lock: user_trade_lock_${user_id}`);
             connection.release();
         }
     }
