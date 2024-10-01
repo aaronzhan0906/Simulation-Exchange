@@ -3,14 +3,13 @@
 Website URL : https://simuexchange.online/
 
 Simu Exchange is a simulated trading platform which offers simulated trading, matching engine and implementing a market maker to auto-generate order book depth.
-
-<img width="100%" alt="SIMU-image" src="https://github.com/user-attachments/assets/61d0298c-316d-4a2a-b667-936a7bb9d06d">
+<img width="100%" alt="SIMU-image" src="https://github.com/user-attachments/assets/cc7930fc-6a5a-4848-8e9b-74fb7d09b6e2">
 
 
 ## Features
 * Each user receives 10,000 USDT in simulated funds after registration.
-* Automated market maker system creates simulated buy and sell orders based on real-time prices.
 * Provides a matching engine to obtain the best prices.
+* Automated market maker system creates simulated buy and sell orders based on real-time prices.
 * Home Page
     * Offers cryptocurrency selection with real-time prices and 24-hour price changes.
 * Trade Page
@@ -25,9 +24,9 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
     * Displays owned assets.
     * Calculate total assets and profits based on real-time prices every 3 seconds
 * History Page
-    * Provides real-time view of open orders.
+    * Displays a real-time view of open orders with filtering options.
     * Allows viewing and filtering of historical order records.
-<br
+<br>
    
 ## Architecture
 <img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/645971e7-2cb9-4d10-a043-a7e11986b30f">
@@ -40,10 +39,12 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 * **Python** was employed for the matching engine to handle order matching logic.
 * Developed the market-making strategy using **Node.js** and automated its operation with **PM2**.
 * **RDS / MySQL** stores normalized (3NF) data. Indexing optimizes queries; foreign keys ensure integrity.
+* Data updates use named lock GET_LOCK and row lock FOR UPDATE for concurrency control.
 * **Redis** is used for storing historical data, real-time data, and order books, optimizing read/write speeds.
 * Implemented **WebSocket** with rooms for targeted real-time data and trade result pushing.
 * Implemented containerized deployment using **Docker-Compose** and deployed on **EC2**.
 * **S3** and **CloudFront** are utilized for image storage and distribution.
+* Uses **JWT** for authentication, with access tokens and refresh tokens for session management.
 * Integrated with the Binance API for real-time market data and 30 days of historical data.
 <br>
 
@@ -59,9 +60,10 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 - Redis
 #### Cloud Service (AWS)
 - EC2
+- RDS
 - Route 53
-- S3
 - CloudFront
+- S3
 #### Containerization
 - Docker
 - Docker-compose
@@ -72,6 +74,9 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 - SSL(CertBot)
 - pm2
 - npm
+#### Testing
+- Postman
+- Jest
 #### Third-Party API
 - Binance API
 <br>
