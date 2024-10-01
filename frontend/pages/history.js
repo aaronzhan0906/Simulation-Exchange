@@ -26,6 +26,9 @@ async function initTabActive(){
             switch(tabId){
                 case "open-orders":
                     await getOpenOrders();
+                    if (globalSymbols.length !== 0) {
+                        generatePairOptions(globalSymbols)
+                    }
                     break;
                 case "order-history":
                     generateOrderHistoryFilters();
@@ -125,10 +128,10 @@ function generatePairOptions(symbols) {
     filtersContainer.appendChild(sideSelect);
 
     // Add event listener to filter table
-    pairSelect.querySelector("select").addEventListener("change", filterTable);
-    sideSelect.querySelector("select").addEventListener("change", filterTable);
+    pairSelect.querySelector("select").addEventListener("change", filterOpenTable);
+    sideSelect.querySelector("select").addEventListener("change", filterOpenTable);
 
-    filterTable();
+    filterOpenTable();
 }
 
 function createCustomSelect(label, options, defaultValue = "All", displayLabel = null) {
@@ -222,12 +225,11 @@ async function handleOrderUpdate(event) {
 
 
 // filter table
-function filterTable() {
+function filterOpenTable() {
     const pairFilter = document.querySelector('.filter-select[data-filter="Pair"]').value;
     const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
 
     const rows = document.querySelectorAll("#open-orders__tbody tr");
-    let visibleRowCount = 0;
 
     rows.forEach(row => {
         const pair = row.children[1].textContent.toLowerCase();
@@ -238,7 +240,6 @@ function filterTable() {
 
         if (pairMatch && sideMatch) {
             row.style.display = "";
-            visibleRowCount++;
         } else {
             row.style.display = "none";
         }
@@ -391,6 +392,8 @@ function addOpenOrderRow(orderData) {
     } else {
         tbody.appendChild(newRow);
     }
+
+    filterOpenTable();
 }
 
 

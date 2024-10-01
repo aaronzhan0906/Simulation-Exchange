@@ -223,17 +223,6 @@ select::-ms-expand {
     color: #b4b4b4;
 }
 
-/* .chart-header__price.positive {
-    color: #259a32;
-}
-
-.chart-header__price.negative {
-    color: #db3a32;
-} */
-
-
-
-
 .chart-header__high , .chart-header__low {
     margin-left: 30px;
     display: flex;
@@ -261,12 +250,11 @@ select::-ms-expand {
 }
 
 
-/* ORDER-BOOK */
+/* GRID */
 .order-book {
     grid-column: 2;
     grid-row: 1 / 2;
     border-radius: 2px;
-
 }
 
 .trade-panel {
@@ -577,6 +565,8 @@ input:-webkit-autofill:focus {
     padding: 15px;
     color: #ffffff;
     /* overflow */
+    min-height: 300px;
+    max-height: calc(100vh - 550px);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin; 
