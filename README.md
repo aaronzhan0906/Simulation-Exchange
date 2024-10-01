@@ -82,8 +82,7 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 <br>
 
 ## Database Schema
-
-<img width="100%" alt="SIMU-db schema" src="https://github.com/user-attachments/assets/45130944-16e4-4cb4-9c80-575a0a105960">
+<img width="1119" alt="SIMU-db schema" src="https://github.com/user-attachments/assets/47b4d17a-28b7-4e44-9745-fe526392fe57">
 <br>
 
 ## Order Book Mechanism
