@@ -682,6 +682,8 @@ input:-webkit-autofill:focus {
     padding: 15px;
     border-radius: 5px;
     /* overflow */
+    min-height: 300px;
+    max-height: calc(100vh - 550px);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin; 
@@ -704,7 +706,7 @@ input:-webkit-autofill:focus {
 }
 
 .recent-trades__list {
-    max-height: 400px;
+    
     overflow-y: auto;
 }
 
