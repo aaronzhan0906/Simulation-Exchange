@@ -1,27 +1,28 @@
 import { initializeHeader } from "../components/headerUI.js";
-import { checkLoginStatus } from "../utils/auth.js";
+import { checkLoginStatus, checkLoginStatusOnPageLoad } from "../utils/auth.js";
 import walletWebSocket from "../services/walletWS.js";
 
 let assets = [];
 let usdtBalance = new Decimal(0);
 let assetElements = new Map();
-let lastUpdateTime = 0;
 
 // BALANCE OVERVIEW // ( and balance )
 async function initBalanceOverview () {
     const isLoggedIn = checkLoginStatus();
     const balanceValueAvailable = document.getElementById("balance-value__available");
     const balanceValueLocked = document.getElementById("balance-value__locked");
+    const balanceValueTotal = document.getElementById("balance-value__total");
+    const balanceValueProfit = document.getElementById("balance-value__profit");
     const assetItemAmount = document.getElementById("asset-item__amount--fixed");
     const assetItemAvailable = document.getElementById("asset-item__available--fixed");
 
-    
-
     if (!isLoggedIn) {
-        assetItemAmount.textContent = "*********"
-        assetItemAvailable.textContent = "*********"
-        balanceValueAvailable.textContent = "*********"
-        balanceValueLocked.textContent = "*********"
+        balanceValueTotal.textContent = "******" 
+        balanceValueProfit.textContent = "******"
+        assetItemAmount.textContent = "******"
+        assetItemAvailable.textContent = "******"
+        balanceValueAvailable.textContent = "*****"
+        balanceValueLocked.textContent = "*****"
         return;
     };
 
@@ -51,6 +52,8 @@ async function initBalanceOverview () {
 async function initAssets() { 
     try {
         usdtBalance = await initBalanceOverview();
+        
+        if (!checkLoginStatus()) return;
 
         const assetsResponse = await fetch("/api/wallet/assetsAndSymbols");
         const assetsData = await assetsResponse.json();
@@ -218,12 +221,20 @@ function updateTotalProfit(totalProfit) {
     const balanceValueProfit = document.getElementById("balance-value__profit");
     const roundedProfit = totalProfit.times(100).toDecimalPlaces(2);
     
-    if (totalProfit.greaterThan(0)) {
+    if (totalProfit.greaterThan(0) && roundedProfit.toFixed(2) == 0.00) {
+        balanceValueProfit.textContent = `≈ ${roundedProfit.toFixed(2)} %`;
+        balanceValueProfit.classList.add("positive");
+        balanceValueProfit.classList.remove("negative");
+    } else if (totalProfit.greaterThan(0)) {
         balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
         balanceValueProfit.classList.add("positive");
         balanceValueProfit.classList.remove("negative");
+    } else if (totalProfit.lessThan(0) && roundedProfit.toFixed(2) == 0.00) {
+        balanceValueProfit.textContent = `≈ ${roundedProfit.toFixed(2)} %`;
+        balanceValueProfit.classList.remove("positive");
+        balanceValueProfit.classList.add("negative");
     } else if (totalProfit.lessThan(0)) {
-        balanceValueProfit.textContent = `- ${roundedProfit.toFixed(2)} %`;
+        balanceValueProfit.textContent = `${roundedProfit.toFixed(2)} %`;
         balanceValueProfit.classList.remove("positive");
         balanceValueProfit.classList.add("negative");
     } else {
@@ -235,8 +246,9 @@ function updateTotalProfit(totalProfit) {
 
 
 document.addEventListener("DOMContentLoaded", async () => {
+    await checkLoginStatusOnPageLoad()
     initializeHeader();
     // BALANCE OVERVIEW //
-    await initBalanceOverview ()
-    await initAssets();
+    initAssets(); // await initBalanceOverview();
 });
+

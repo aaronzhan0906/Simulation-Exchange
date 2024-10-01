@@ -1,6 +1,9 @@
 class HistoryWebSocket {
     constructor() {
         this.ws = null;
+        this.retryCount = 0;  
+        this.maxRetries = 5;  
+        this.retryInterval = 1000;  
     }
 
     init() {
@@ -21,11 +24,25 @@ class HistoryWebSocket {
 
     // if open orders 
     requestPersonalData(){
-        console.log("requesting personal data");
+        console.log("Requesting open data");
         if (this.ws && this.ws.readyState === 1) {
-            this.ws.send(JSON.stringify({ action: "getPersonalData"}));
+            this.ws.send(JSON.stringify({ action: "getPersonalData" }));
+            this.retryCount = 0;  
         } else {
-            console.error("WebSocket is not open. Unable to request personal data.");
+            console.error("Fail to requestPersonalData.");
+            this.retryRequestOpenData();  
+        }
+    }
+    
+    retryRequestOpenData() {
+        if (this.retryCount < this.maxRetries) {
+            this.retryCount++;
+            console.log(`Attempting to request personal data again, retry ${this.retryCount}`);
+            setTimeout(() => {
+                this.requestPersonalData();
+            }, this.retryInterval * this.retryCount);  // Increase wait time with each retry
+        } else {
+            console.error("Reached maximum retry limit. Unable to request personal data.");
         }
     }
 

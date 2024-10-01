@@ -1,9 +1,11 @@
 import { initializeHeader } from "../components/headerUI.js";
-import { checkLoginStatus } from "../utils/auth.js";
+import { checkLoginStatus, checkLoginStatusOnPageLoad } from "../utils/auth.js";
 import homeWebSocket from "../services/homeWS.js";
 
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Check login status
+    checkLoginStatusOnPageLoad();
     // WS
     homeWebSocket.init()
     // Header

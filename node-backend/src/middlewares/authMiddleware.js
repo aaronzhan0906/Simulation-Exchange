@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import UserModel from "../models/userModel.js";
+import { logger } from "../app.js";
+
 
 async function authenticateToken(req, res, next) {
     try {
@@ -15,21 +17,28 @@ async function authenticateToken(req, res, next) {
                 // keep going to check refresh token
             }
         }
-        const { userId } = req.cookies.userId;
-        
+        const { userId } = req.cookies;
+
+        if (!userId) {
+            return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+        }
+
         const refreshToken = await UserModel.getRefreshTokenByUserId(userId);
+        if (!refreshToken || refreshToken === null) {
+            return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+        }
+
         if (refreshToken) {
             try {
-                const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
-                const newAccessToken = UserModel.generateAccessToken({ userId, email });
-
+                const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret); // verify token
+                const user = { user_id: userId, email: email }; // need to wrap in user
+                const newAccessToken = UserModel.generateAccessToken(user); // fix it but need to observe
                 res.cookie("accessToken", newAccessToken, {
-                    maxAge: 15 * 60 * 1000,
+                    maxAge: 24 * 60 * 60 * 1000,
                     httpOnly: true,
                     secure: true,
                     sameSite: "strict"
                 });
-
                 req.user = { userId, email };
                 return next();
             } catch (error) {
@@ -37,35 +46,18 @@ async function authenticateToken(req, res, next) {
             }
         }
 
-        const marketMakerToken = req.headers["x-market-maker-token"];  
-        if (marketMakerToken) {
-            try {
-                const { userId, role } = jwt.verify(marketMakerToken, config.jwt.accessTokenSecret);
-                if (role === "market-maker") {
-                    req.user = { userId, role };
-                    return next();
-                }
-            } catch (error) {
-                // return 401
-            }
-        }
-
-
-        return res.status(401).json({ error: true, message: "Unauthorized" });
+        return res.status(401).json({ error: true, message: "Your login session has expired" });
     } catch (error) {
-        console.error("Error in authenticateToken: ", error);
-        return res.status(403).json({ error: true, message: "Invalid access token" });
+        if (error instanceof jwt.TokenExpiredError) {
+            logger.error(`[authenticateToken] Refresh token expired: ${error.message}`);
+            return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+        } else {
+            logger.error(`[authenticateToken] Refresh token verification failed: ${error.message}`);
+            return res.status(401).json({ error: true, message: "Invalid refresh token" });
+        }
     }
 }
  
-
-function generateLongLivedToken (userId, role) {
-    return jwt.sign(
-        { userId, role },
-        config.jwt.accessTokenSecret,
-        { expiresIn: "3m" }
-    );
-}
 
 
 

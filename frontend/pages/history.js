@@ -1,6 +1,6 @@
 import { initializeHeader } from "../components/headerUI.js";
 import { formatLocalTime } from "../utils/timeUtil.js";
-import { checkLoginStatus } from "../utils/auth.js";
+import { checkLoginStatus, checkLoginStatusOnPageLoad } from "../utils/auth.js";
 import HistoryWebSocket from "../services/historyWS.js";
 
 
@@ -12,7 +12,7 @@ const API_ENDPOINTS = {
 }
 
 let isOrderUpdateListening = false;
-let globalSymbols = [];
+let globalSymbols = []; // for selector
 
 
 ///////////////////////// TAB /////////////////////////
@@ -42,36 +42,57 @@ function setActiveTab(activeTab) {
     activeTab.classList.add("active");
 }
 
-async function getOpenOrders(){
-    const isLoggedIn = checkLoginStatus();
-    if (!isLoggedIn) return;
+async function getPairs() {
+    const response = await fetch(API_ENDPOINTS.symbols)
+    const responseData = await response.json();
 
     try {
-        const [orderResponse, symbolResponse] = await Promise.all([
-            fetch(API_ENDPOINTS.openOrders),
-            fetch(API_ENDPOINTS.symbols)
-        ]);
+        if (responseData.ok) {
+            globalSymbols = responseData.data.map(item => item.symbolName);
+        }
 
-        const orderData = await orderResponse.json();
-        const symbolData = await symbolResponse.json();
+        generatePairOptions(globalSymbols); // for selector
+    } catch (error) {
+        console.error("[getPairs] error", error);
+    }
+}
 
-        if (orderResponse.ok && symbolResponse.ok) {
-            globalSymbols = symbolData.data.map(item => item.symbolName);
-            generatePairOptions(globalSymbols);
+async function getOpenOrders(){
+    const table = document.getElementById("history__table");
 
-            const table = document.getElementById("history__table");
-            renderOpenOrdersTable(orderData, table);
-            if (orderData.orders.length > 0) {
-                startListeningForOrderUpdate();
-                HistoryWebSocket.requestPersonalData();
-            }
+    if (!checkLoginStatus()) {
+        renderOpenOrdersTable(null, table);
+        return;
+    } // return if not logged in
+
+    try {
+        const response = await fetch(API_ENDPOINTS.openOrders);
+
+        const responseData = await response.json();
+
+        if (responseData.ok) {
+            renderOpenOrdersTable(responseData, table);
+        }
+
+        // Listen for order updates
+        if (!isOrderUpdateListening) {
+            HistoryWebSocket.requestPersonalData();
+            isOrderUpdateListening = true;
+            document.addEventListener("orderUpdate", handleOrderUpdate);
         }
     } catch (error) {
-        console.error("Fail to get open orders or symbols:", error);
+        console.error("[getOpenOrders] error:", error);
     }
 }
 
 async function fetchOrderHistory() {
+    const table = document.getElementById("history__table");
+
+    if (!checkLoginStatus()) {
+        renderOrderHistoryTable(null, table);
+        return;
+    }
+
     const timeRangeSelect = document.querySelector('.filter-select[data-filter="Time"]');
     const timeRange = timeRangeSelect ? timeRangeSelect.value : "today";
 
@@ -79,7 +100,6 @@ async function fetchOrderHistory() {
         const response = await fetch(`${API_ENDPOINTS.orderHistory}?timeRange=${timeRange}`);
         const responseData = await response.json();
         if (response.ok) {
-            const table = document.getElementById("history__table");
             renderOrderHistoryTable(responseData.data, table);
             filterOrderHistoryTable(); // Apply filters again
         } else {
@@ -162,6 +182,10 @@ function createCustomSelect(label, options, defaultValue = "All", displayLabel =
 
 
 async function handleOrderUpdate(event) {
+    if (event.detail.status === "open") {
+        addOpenOrderRow(event.detail);
+    }
+
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
     if (!orderRow) return;
@@ -171,7 +195,8 @@ async function handleOrderUpdate(event) {
     const cancelBtn = orderRow.children[8].querySelector("button");
     const filledQuantityCell = cells[6];
     const statusCell = cells[7];
-    console.log("orderData:", orderData);
+
+
     try {
         if (orderData.status === "CANCELED" || orderData.status === "PARTIALLY_FILLED_CANCELED") {
             orderRow.remove();
@@ -186,7 +211,7 @@ async function handleOrderUpdate(event) {
                 if (cancelBtn) {
                     cancelBtn.remove();
                 }
-                orderRow.remove();
+                orderRow.remove(); // remove, which is different from trade
             }
         }
     } catch (error) {
@@ -292,10 +317,6 @@ function filterOrderHistoryTable(event) {
 function renderOpenOrdersTable(openOrdersData, table){
     table.innerHTML = "";
 
-    const isLoggedIn = checkLoginStatus();
-    if(!isLoggedIn){
-        return;
-    }
     // create table header
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -312,6 +333,8 @@ function renderOpenOrdersTable(openOrdersData, table){
     const tbody = document.createElement("tbody");
     tbody.id = "open-orders__tbody";
     table.appendChild(tbody);
+
+    if (!checkLoginStatus()) return; // If not logged in, return
     openOrdersData.orders.forEach(order => {
         addOpenOrderRow(order);
     })
@@ -370,14 +393,6 @@ function addOpenOrderRow(orderData) {
     }
 }
 
-function startListeningForOrderUpdate() {
-    if (!isOrderUpdateListening) {
-        document.addEventListener("orderUpdate", handleOrderUpdate);
-        isOrderUpdateListening = true;
-        HistoryWebSocket.requestPersonalData();
-    }
-}
-
 
 async function cancelOrder(orderId) {
     const orderRow = document.querySelector(`[order-id="${orderId}"]`);
@@ -414,11 +429,7 @@ async function cancelOrder(orderId) {
 ///////////////////////// ORDER HISTORY /////////////////////////
 function renderOrderHistoryTable(orderHistoryData, table) {
     table.innerHTML = "";
-    console.log("orderHistoryData:", orderHistoryData);
-    const isLoggedIn = checkLoginStatus();
-    if(!isLoggedIn){
-        return;
-    }
+    // console.log("orderHistoryData:", orderHistoryData);
 
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -431,8 +442,12 @@ function renderOrderHistoryTable(orderHistoryData, table) {
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
+
     const tbody = document.createElement("tbody");
     table.appendChild(tbody);
+
+    if (!checkLoginStatus()) return; // If not logged in, return
+
     orderHistoryData.forEach(order => {
         const row = document.createElement("tr");
         const [base, quoteCurrency] = order.symbol.toUpperCase().split("_");
@@ -463,7 +478,6 @@ function renderOrderHistoryTable(orderHistoryData, table) {
 }
 
 function handlePartiallyFilled(executedQuantity, base) {
-    console.log(executedQuantity);
     if (executedQuantity === "0.00000000") {
         return `- ${base}`;
     } else {
@@ -493,8 +507,13 @@ function handleStatusName(status) {
 
 
 document.addEventListener("DOMContentLoaded",async () => {
+    await checkLoginStatusOnPageLoad()
     initializeHeader();
-    HistoryWebSocket.init();
+    getPairs();
+    if (checkLoginStatus()) {
+        HistoryWebSocket.init();
+    }
+
     await initTabActive();
     await getOpenOrders();
 });

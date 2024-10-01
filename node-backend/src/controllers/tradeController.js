@@ -75,17 +75,24 @@ class TradeController {
     async createOrder(req, res){
         const { symbol, side, type, price, quantity } = req.body;
             const userId = req.user.userId;
-            if ( !userId || !symbol || !side || !type || !price || !quantity) {
-                return res.status(400).json({ error:true, message:"Missing required fields!" })
-            }
+            if (!userId || !symbol || !side || !type || !price || !quantity)
+                return res.status(400).json({ error: true, message: "Missing required fields!" });
+            
+            if (Number(price) <= 0 || Number(quantity) <= 0)
+                return res.status(400).json({ error: true, message: "Price and quantity must be greater than 0" });
+            
+            if (type !== "limit")
+                return res.status(400).json({ error: true, message: "Invalid order type" });
+            
+            if (side !== "buy" && side !== "sell")
+                return res.status(400).json({ error: true, message: "Invalid order side" });
+
 
         try {
             let authResult;
-            if (side === "buy") {
-                authResult = await preBuyAuth(userId, price, quantity);
-            } else if (side === "sell") {
-                authResult = await preSellAuth(userId, symbol, quantity);
-            } 
+            authResult = side === "buy" 
+                ? await preBuyAuth(userId, price, quantity)
+                : await preSellAuth(userId, symbol, quantity);
     
             if (!authResult.success) {
                 logger.error(`authResult: ${authResult}`);
@@ -261,6 +268,7 @@ class TradeController {
             executed_price,
             status
         } = trade_result;
+        const user_id = trade_result.side === "buy" ? trade_result.buyer.user_id : trade_result.seller.user_id;
     
         const updateOrderData = {
             order_id,
@@ -271,7 +279,7 @@ class TradeController {
         };
     
         try {
-            const result = await TradeModel.updateOrderData(updateOrderData);
+            const result = await TradeModel.updateOrderData(updateOrderData, user_id);
             if (!result.success) {
                 const warnMessage = result
                 logger.warn(warnMessage)
@@ -304,7 +312,8 @@ class TradeController {
 
             await sendOrderUpdateToUser(resultOrderData.user_id,  newUpdate);
         } catch (error) {
-            const errorMessage = `[updateOrderData(controller)] error: ${error}`
+            console.log(error);
+            const errorMessage = `[updateOrderData] Error: ${error.message}\nStack: ${error.stack}`;
             logger.error(errorMessage);
         }
     }
@@ -476,11 +485,7 @@ class TradeController {
             seller
         } = trade_result
 
-        const user_id = side === "buy" ? buyer.user_id : seller.user_id;
-        // const trade_id = side === "buy" ? `b${originalTradeId}` : `s${originalTradeId}`
-
         const tradeData = {
-            user_id,
             trade_id,
             executed_at: new Date(timestamp),
             symbol,
@@ -567,25 +572,3 @@ async function sendOrderUpdateToUser(user_id, orderMessage) {
         logger.error(`Error sending order update to user: ${error}`);
     }
 }
-
-// async function sendOrderUpdateToUser(resultOrderData, filledQuantity) {
-//     try {
-//         const message = {
-//             type: "orderUpdate",
-//             data: {
-//                 orderId: resultOrderData.order_id,
-//                 filledQuantity: filledQuantity,
-//                 averagePrice: resultOrderData.average_price,
-//                 status: resultOrderData.status,
-//                 symbol: resultOrderData.symbol,
-//                 side: resultOrderData.side,
-//                 price: resultOrderData.price,
-//                 quantity: resultOrderData.quantity,
-//                 createdAt: resultOrderData.created_at
-//             }
-//         };
-//         WebSocketService.sendToUser(resultOrderData.user_id, message);
-//     } catch (error) {
-//         console.error("Error sending order update to user:", error);
-//     }
-// }

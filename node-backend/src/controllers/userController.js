@@ -11,11 +11,16 @@ class UserController {
             const { email, password } = req.body;
             const checkEmailExist = await UserModel.checkEmailExist(email);
             if (checkEmailExist) {
-                return res.status(400).json({ "error": true, message: "Email already exists" });};
+                return res.status(400).json({ error: true, message: "Email already exists" });
+            };
 
+            const result = await UserModel.createUserWithInitialFunds({ email, password });
 
-            await UserModel.createUserWithInitialFunds({ email, password });
+            if (result.success) {
                 return res.status(201).json({ ok: true, message: "User registered successfully" });
+            } else {
+                return res.status(400).json({ error: true, message: "Failed to register user", details: result.error });
+            }
         } catch(error) {
             logger.error(`[register] ${error}`);
         }
@@ -30,27 +35,39 @@ class UserController {
                 const { userId, email } = jwt.verify(accessToken, config.jwt.accessTokenSecret);
                 return res.status(200).json({ ok: true, message: "User is logged in", user:{ userId, email }})
             } 
-            
-            const refreshToken = await UserModel.getRefreshTokenByUserId(userId);
-            if (!refreshToken) {
-                return res.status(401).json({ error: true, message: "Unauthorized" });
+
+            const { userId } = req.cookies;
+
+            if (!userId) {
+                return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
             }
-
-            try {
-                const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret);
-                // create new access token
-                const newAccessToken = UserModel.generateAccessToken({ userId, email });
             
-            res.cookie("accessToken", newAccessToken, {
-                maxAge: 15 * 60 * 1000, 
-                httpOnly: true, 
-                secure: true, 
-                sameSite: "strict"
-            });
+            const refreshToken = await UserModel.getRefreshTokenByUserId(userId); // check from db
+            if (!refreshToken || refreshToken === null) {
+                return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+            }
+            
+            try {
+                const { userId, email } = jwt.verify(refreshToken, config.jwt.refreshTokenSecret); // verify token
+                const user = { user_id: userId, email: email };
+                const newAccessToken = UserModel.generateAccessToken(user);
+            
+                res.cookie("accessToken", newAccessToken, {
+                    maxAge: 24 * 60 * 60 * 1000, 
+                    httpOnly: true, 
+                    secure: true, 
+                    sameSite: "strict"
+                });
 
-            return res.status(200).json({ ok: true, message: "New access token issued", user: { userId, email } });
+                return res.status(200).json({ ok: true, message: "New access token issued", user: { userId, email } });
             } catch (error) {
-                return res.status(401).json({ error: true, message: "Invalid refresh token" });
+                if (error instanceof jwt.TokenExpiredError) {
+                    logger.error(`[getInfo] Refresh token expired: ${error.message}`);
+                    return res.status(401).json({ error: true, message: "Your token has expired. Please log in again." });
+                } else {
+                    logger.error(`[getInfo] Refresh token verification failed: ${error.message}`);
+                    return res.status(401).json({ error: true, message: "Invalid refresh token" });
+                }
             }
         } catch (error) {
             logger.error(`[getInfo] ${error}`);
@@ -62,25 +79,24 @@ class UserController {
         try{
             const { email, password } = req.body;
             const userInfo = await UserModel.getUserByEmail(email);
-            const user = userInfo[0]
 
-            if(!userInfo) {
-                return res.status(401).json({ "error": true, message: "User Not Found" });
-            }
-
+            if ( userInfo.length === 0 ) 
+                return res.status(401).json({ error: true, message: "Incorrect Email or password" });
+            
+            
             const isPasswordValid = await bcrypt.compare(password, userInfo[0].password);
             if (!isPasswordValid)
-                return res.status(401).json({ "error": true, message: "Invalid credentials" });
-            
+                return res.status(401).json({ error: true, message: "Incorrect Email or password" });
+
+            const user = userInfo[0]
             const accessToken = UserModel.generateAccessToken(user);
             const refreshToken = UserModel.generateRefreshToken(user);
 
             // clear cookies
             res.clearCookie("accessToken");
             res.clearCookie("userId");
-
             res.cookie("accessToken", accessToken, {
-                maxAge: 7 * 24 * 60 * 60 * 1000, 
+                maxAge: 24 * 60 * 60 * 1000, 
                 httpOnly: true, 
                 secure: true, 
                 sameSite: "strict"
@@ -94,13 +110,17 @@ class UserController {
                 sameSite: "strict"
             });
 
-            await UserModel.saveRefreshToken(user.user_id, refreshToken);
+            const result  = await UserModel.saveRefreshToken(user.user_id, refreshToken);
+
+            if (!result.success) {
+                return res.status(500).json({ error: true, message: "Failed to save refresh token" });
+            }
 
             const loginProof = {
                 isLogin: true
             }
 
-            res.status(200).json({ "ok": true, message: "User logged in successfully", loginProof: loginProof });
+            res.status(200).json({ ok: true, message: "User logged in successfully", loginProof: loginProof });
         } catch (error) {
             logger.error(`[login] ${error}`);
         }
@@ -117,7 +137,7 @@ class UserController {
 
             res.clearCookie("userId");
             res.clearCookie("accessToken");
-            res.status(200).json({ "ok": true, message: "Logged out successfully" });
+            res.status(200).json({ ok: true, message: "Logged out successfully" });
         } catch (error) {
             logger.error(`[logout] ${error}`);
         }

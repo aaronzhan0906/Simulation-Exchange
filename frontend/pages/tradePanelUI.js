@@ -1,12 +1,11 @@
 import { formatLocalTime, formatLocalTimeOnly } from "../utils/timeUtil.js";
 import { checkLoginStatus } from "../utils/auth.js";
-import tooltipHandler from "./tooltipHandler.js";
+import tooltipHandler from "../components/tooltipHandler.js";
 import tradeWebSocket from "../services/tradeWS.js";
 
 
 let lastPrice = null;
 let isPriceSet = false;
-// let isOrderUpdateListening = false;
 const pair = location.pathname.split("/")[2];
 const baseAsset = pair.split("_")[0];
 
@@ -53,8 +52,8 @@ async function initTradePanelWebSocket(){
     document.addEventListener("orderBook", handleOrderBookUpdate);
 
     const submitBtn = document.getElementById("trade-panel__submit");
-    const isLoggedIn = checkLoginStatus();
-    if (!isLoggedIn) {
+
+    if (!checkLoginStatus()) {
         submitBtn.classList.remove("buy");
         submitBtn.classList.add("buyUnauthorized");
         submitBtn.disabled = true;
@@ -94,12 +93,10 @@ function initOrderBook () {
 //////////////////////////// TRADE PANEL ////////////////////////////
 // get available balance in TRADE PANEL
 async function initAvailableBalance () {
-    const isLoggedIn = checkLoginStatus();
-    const unAuthPrice = document.getElementById("trade-panel__available-price");
-    unAuthPrice.textContent = "- USDT";
-    if (!isLoggedIn) return;
-
     const availablePrice = document.getElementById("trade-panel__available-price");
+    availablePrice.textContent = "- USDT";
+    if (!checkLoginStatus()) return;
+
     const response = await fetch("/api/wallet/available");
         
     if (response.ok){
@@ -113,12 +110,10 @@ async function initAvailableBalance () {
 
 //get available asset in TRADE PANEL
 async function initAvailableAsset(){
-    const isLoggedIn = checkLoginStatus();
-    const unAuthAsset = document.getElementById("trade-panel__available-asset");
-    unAuthAsset.textContent = `- ${baseAsset.toUpperCase()}`;
-    if (!isLoggedIn) return;
-
     const availableAsset = document.getElementById("trade-panel__available-asset");
+    availableAsset.textContent = `- ${baseAsset.toUpperCase()}`;
+    if (!checkLoginStatus()) return;
+
     const response = await fetch(`/api/wallet/asset/${baseAsset}`);
     
     if (response.ok){
@@ -131,22 +126,14 @@ async function initAvailableAsset(){
 
 // create order by TRADE PANEL 
 async function submitOrder(orderType, orderSide, price, quantity) { 
-    const isLoggedIn = checkLoginStatus();
-    const priceInput = document.getElementById("trade-panel__input--price");
-    const quantityInput = document.getElementById("trade-panel__input--quantity");
+    if (!checkLoginStatus()) return;
+
     const totalInput = document.getElementById("trade-panel__input--total");
-
-    if (!isLoggedIn) {
-        alert("Please login first");
-        return;
-    };
-
     if (price === "" || quantity === "" || totalInput.value === "" ||
         new Decimal(price).isZero() || new Decimal(quantity).isZero() || new Decimal(totalInput.value).isZero()) {
         alert("Please enter valid price and quantity");
         return;
     }
-
 
     try {
         const response = await fetch("/api/trade/order", {
@@ -359,7 +346,7 @@ function quickSelectButtonAndInputHandler() {
             tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
             submitButton.disabled = true;
         } else {
-            tooltipHandler.hide();
+            hideButtonTooltip()
             submitButton.disabled = false;
         }
     
@@ -390,9 +377,6 @@ function quickSelectButtonAndInputHandler() {
         tooltipHandler.show(tooltipTarget, tooltipMessage, "top");
     }
     
-    function hideButtonTooltip() {
-        tooltipHandler.hide();
-    }
 
     // CALCULATE AND UPDATE
     function calculateAndUpdate(changedInput) {
@@ -457,7 +441,7 @@ function quickSelectButtonAndInputHandler() {
         });
 
         input.addEventListener("blur", () => {
-            tooltipHandler.hide();
+            hideButtonTooltip()
         });
 
         input.addEventListener("keydown", function(event) { // Prevent arrow keys from changing input value
@@ -491,9 +475,8 @@ function quickSelectButtonAndInputHandler() {
 //////////////////////////// OPEN ORDERS ////////////////////////////
 // get open orders
 async function getOpenOrders(){
-    const isLoggedIn = checkLoginStatus();
-    if (!isLoggedIn) return;
-
+    if (!checkLoginStatus()) return;
+    
     try {
         const response = await fetch("/api/trade/order")
         const data = await response.json();
@@ -602,7 +585,7 @@ function handleStatusName(status){
 
 // OPEN ORDERS // update status
 async function handleOrderUpdate(event) {
-    console.log(event.detail);
+    // console.log(event.detail);
     initAvailableBalance();
     initAvailableAsset();
     if (event.detail.status === "open") {
@@ -612,23 +595,21 @@ async function handleOrderUpdate(event) {
     const orderData = event.detail;
     const orderRow = document.querySelector(`[order-id="${orderData.orderId}"]`);
     if (!orderRow) return;
-
+    
     const cells = orderRow.getElementsByTagName("td");
     const symbol = cells[1].textContent.split("/")[0];
     const cancelBtn = orderRow.children[8].querySelector("button");
     const filledQuantityCell = cells[6];
     const statusCell = cells[7];
 
-    // for different page cancel order (trade / history)
     try {
         if (orderData.status === "CANCELED" || orderData.status === "PARTIALLY_FILLED_CANCELED") {
             orderRow.remove();
         } else {
-            if (orderData.status === "filled") {
-                if (cancelBtn) {
-                    cancelBtn.remove();
-                }
-                orderRow.remove();
+            if (orderData.status === "filled") { // No Remove if filled for UX
+                cancelBtn.remove();
+                const orderType = cells[3].textContent.toLowerCase(); // to make filled successfully clearly
+                statusCell.classList.add(orderType === "buy" ? "open-orders__cell--buy" : "open-orders__cell--sell");
             }
 
             if (orderData.filledQuantity !== undefined) {
@@ -684,7 +665,7 @@ async function cancelOrder(orderId) {
 function updateOpenOrdersCount() {
     const openOrdersCount = document.getElementById("open-orders-count");
     const cancelButtons = document.querySelectorAll(".cancel-btn");
-    openOrdersCount.textContent = `Open orders(${cancelButtons.length})`;
+    openOrdersCount.textContent = `Open orders(${cancelButtons.length})`; // exclude filled orders
 }
 
 // ORDER BOOK // 

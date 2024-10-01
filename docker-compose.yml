@@ -3,7 +3,6 @@ services:
     image: bitnami/kafka:latest
     ports:
       - "9092:9092"
-      - "9093:9093"
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -21,9 +20,13 @@ services:
       - KAFKA_CFG_SESSION_TIMEOUT_MS=300000
       - KAFKA_CFG_GROUP_MIN_SESSION_TIMEOUT_MS=6000
       - KAFKA_CFG_GROUP_MAX_SESSION_TIMEOUT_MS=300000
-      - KAFKA_CFG_LOG_RETENTION_HOURS=12
-      - KAFKA_CFG_LOG_RETENTION_BYTES=1073741824
-      - KAFKA_JVM_PERFORMANCE_OPTS="-Xms512M -Xmx1.5G -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent"
+      - KAFKA_CFG_LOG_RETENTION_MS=900000 # 15 m 
+      - KAFKA_CFG_LOG_RETENTION_BYTES=67108864 # 64 M
+      - KAFKA_CFG_LOG_SEGMENT_BYTES=38504432 # 32 M
+      - KAFKA_CFG_LOG_CLEANUP_POLICY=delete 
+      - KAFKA_CFG_LOG_COMPRESSION_TYPE=gzip # compress
+      - KAFKA_HEAP_OPTS=-Xms512M -Xmx2560M
+      - KAFKA_JVM_PERFORMANCE_OPTS=-XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent
 
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
@@ -89,18 +92,16 @@ services:
       dockerfile: matching-engine/Dockerfile
     volumes:
       - ./matching-engine:/usr/src/app/matching-engine
-      - ./wait-for-it.sh:/wait-for-it.sh 
     environment:
       - KAFKA_BROKERS=kafka:9092
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-    command: >
-      /bin/sh -c "
-        chmod +x /wait-for-it.sh &&
-        /wait-for-it.sh kafka:9092 -t 60 -- 
-        /wait-for-it.sh node-backend:3000 -t 90 -- 
-        python /usr/src/app/matching-engine/src/main.py
-      "
+    stop_grace_period: 60s
+    depends_on:
+      kafka:
+        condition: service_healthy
+      node-backend:
+        condition: service_started
 
 volumes:
   redis-data:

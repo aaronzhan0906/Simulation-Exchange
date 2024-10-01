@@ -1,6 +1,7 @@
 import { initializeHeader } from "../components/headerUI.js";
-import { initTradePanel } from "../components/tradePanelUI.js";
+import { initTradePanel } from "./tradePanelUI.js";
 import { symbolsData } from "../data/symbolsData.js";
+import { checkLoginStatusOnPageLoad } from "../utils/auth.js";
 import tradeWebSocket from "../services/tradeWS.js";
 
 let chart;
@@ -17,13 +18,16 @@ const baseAsset = pair.split("_")[0];
 async function initChartHeader() {
     // symbol and ticker info
     const symbolInfo = symbolsData.data.find(symbol => symbol.symbolName === baseAsset);
-    const icon = document.getElementById("chart-header__icon");
+    const iconDiv = document.getElementById("chart-header__icon");
     const baseAssetName = document.getElementById("chart-header__base-asset");
     const quoteAsset = document.getElementById("chart-header__quote-asset");
         
     baseAssetName.textContent = symbolInfo.symbolName.toUpperCase();
     quoteAsset.textContent = `/${pair.split("_")[1].toUpperCase()}`;
-    icon.src = symbolInfo.imageUrl;
+    const img = document.createElement("img");
+    img.src = symbolInfo.imageUrl;
+    img.alt = baseAssetName;
+    iconDiv.appendChild(img);
 
     // high and low price
     const highDiv = document.getElementById("chart-header__high");
@@ -83,7 +87,7 @@ async function initChart() {
     chart = createChart(chartContainer, {
         width: containerWidth,
         layout: {
-            background: { type: "solid", color: "rgba(13, 14, 15)" },
+            background: { type: "solid", color: "#0d0f10" },
             textColor: "#cfcfcf",
             fontSize: 11,
             fontFamily: "Roboto, sans-serif",
@@ -166,13 +170,14 @@ function updateChart(price) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    await checkLoginStatusOnPageLoad(); // need to ajax call because of jwt token refresh
     tradeWebSocket.init();
     initChartHeader();
-    await initChart(); 
+    initChart(); 
     initTradePanel();
     initializeHeader();    
     document.addEventListener("recentPrice", (event) => {
         const price = event.detail.price;
         updateChart(price);
     });
-});
+})

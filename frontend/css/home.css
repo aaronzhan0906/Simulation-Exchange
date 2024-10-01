@@ -210,6 +210,7 @@ hr {
     padding: 15px 0;
     border-bottom: 1px solid #272727;
 }
+
 .symbol-item {
     min-height: 60.5px;
 }
@@ -257,12 +258,12 @@ hr {
 }
 
 .symbol-list__header span:last-child{
-    margin-right: 39px;
+    margin-right: 46px;
     justify-self: end;
 }
 
 .symbol-item__actions {
-    margin-right: 10px;
+    margin-right: 8px;
     justify-self: end;
 }
 

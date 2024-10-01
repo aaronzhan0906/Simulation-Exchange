@@ -162,7 +162,7 @@ select::-ms-expand {
 .chart {
     grid-column: 1;
     grid-row: 1 / 2;
-    border-radius: 2px;
+    border-radius: 5px;
     width: 100%;
     height: 100%;
     overflow: hidden;
@@ -173,7 +173,7 @@ select::-ms-expand {
     justify-content: flex-start;
     align-items: center;
     height: 55px;
-    background-color: #0d0e0f;
+    background-color: #0d0f10;
     border-radius: 2px;
     padding: 0 20px;
 }
@@ -182,6 +182,7 @@ select::-ms-expand {
     width: 20px;
     height: 20px;
 }
+
 .chart-header__symbol  {
     padding-left: 10px;
     display: flex;
@@ -222,13 +223,13 @@ select::-ms-expand {
     color: #b4b4b4;
 }
 
-.chart-header__price.positive {
+/* .chart-header__price.positive {
     color: #259a32;
 }
 
 .chart-header__price.negative {
     color: #db3a32;
-}
+} */
 
 
 
@@ -255,7 +256,7 @@ select::-ms-expand {
 
 
 .chart-container{
-    height: calc(100% - 50px);
+    height: calc(100% - 40px);
     width: 100%;
 }
 
@@ -282,7 +283,7 @@ select::-ms-expand {
 
 /* order-book */
 .order-book {
-    background-color: #0d0e0f;
+    background-color: #0d0f10;
     color: #ffffff;
     padding: 10px 10px 6px 10px;
     border-radius: 5px;
@@ -379,7 +380,7 @@ select::-ms-expand {
 }
 
 .order-book__price.negative {
-    color: #db3a32;
+    color: #dd382f;
 }
 
 
@@ -387,7 +388,7 @@ select::-ms-expand {
 
 /* trade-panel */
 .trade-panel {
-    background-color: #0d0e0f;
+    background-color: #0d0f10;
     color: #ffffff;
     padding: 10px;
 }
@@ -571,7 +572,7 @@ input:-webkit-autofill:focus {
 
 /* open-order */
 .open-orders {
-    background-color: #1a1a1a;
+    background-color: #171717;
     border-radius: 5px;
     padding: 15px;
     color: #ffffff;
@@ -686,7 +687,7 @@ input:-webkit-autofill:focus {
 
 /* recent-trades */
 .recent-trades {
-    background-color: #1a1a1a;
+    background-color: #0d0f10;
     color: #ffffff;
     padding: 15px;
     border-radius: 5px;
@@ -730,7 +731,7 @@ input:-webkit-autofill:focus {
 }
 
 .recent-trade__item.sell {
-    color: rgba(239, 72 ,63, 0.75);
+    color: rgba(239, 72, 63, 0.71);
 }
 
 

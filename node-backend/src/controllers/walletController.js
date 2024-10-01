@@ -17,13 +17,18 @@ class WalletController {
     // router.get("/balanceOverview", WalletController.getBalanceOverView)
     async getBalanceOverView(req, res) {
         try {
+            // console.log("userId", req.user.userId);
             const { balance, available_balance, locked_balance } = await WalletModel.getBalanceOverView(req.user.userId);
+            
             const deBalance = new Decimal(balance).toFixed(2);
             const deAvailable = new Decimal(available_balance).toFixed(2);
             const deLocked = new Decimal(locked_balance).toFixed(2);
             res.status(200).json({ "ok": true, "balance": deBalance, "available": deAvailable, "locked": deLocked });
         } catch(error) {
-            logger.error(`[getBalanceOverView] ${error}`);
+            logger.error(`[getBalanceOverView(controller)] ${error}`);
+            if (balance === undefined || available_balance === undefined || locked_balance === undefined) {
+                return res.status(401).json({ "error": true, "message": "Unauthorized" });
+            }
         }
     }
  

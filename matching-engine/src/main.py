@@ -1,4 +1,3 @@
-import sys
 import asyncio
 import os
 import time
@@ -73,10 +72,9 @@ matching_engines = {
 # Create an asyncio Event for graceful shutdown
 shutdown_event = asyncio.Event()
 
-def signal_handler():  # Handle termination signals
-    logging.info("Termination signal received, shutting down gracefully...")
-    shutdown_event.set()
-
+def signal_handler(signum, frame):  # Handle termination signals
+    logging.info(f"Termination signal received: {signum}, shutting down gracefully...")
+    shutdown_event.set() # Set the shutdown event to stop running tasks
 
 async def handle_new_order(order, matching_engine, kafka_client, order_book):
     global error_counter
@@ -133,7 +131,7 @@ async def handle_cancel_order(cancel_request, matching_engine, kafka_client, ord
         # logging.info("========================")
         # logging.info(f"Sent 'order-book-snapshot-{symbol}")
 
-        error_counter = 0  # 重置錯誤計數器
+        error_counter = 0  
     except Exception as e:
         error_counter += 1
         logging.error(f"處理取消訂單請求時發生錯誤: {e}")
@@ -199,7 +197,7 @@ async def shutdown(kafka_client, tasks):
             task.cancel()
     
     try:    # Wait for all tasks to complete with a timeout
-        await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=10)
+        await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=30)
     except asyncio.TimeoutError:
         logging.warning("Some tasks did not complete in time")
     
@@ -213,17 +211,15 @@ async def shutdown(kafka_client, tasks):
 
 # Main function to setup and run the trading engine
 async def main():
-    loop = asyncio.get_running_loop() # Get the current running event loop
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, signal_handler) # Register signal handlers
     
-    for sig in (signal.SIGINT, signal.SIGTERM): # Set up signal handlers for graceful shutdown
-        loop.add_signal_handler(sig, signal_handler)
     try:
         kafka_client = KafkaClient()
         await kafka_client.setup()
         logging.info("Trading engine started")
         logging.info("----------------------")
         tasks = []
-
         for symbol in SUPPORTED_SYMBOLS:
             kafka_client.add_topic_handler(
                 f"new-order-{symbol}",
@@ -234,29 +230,27 @@ async def main():
                 lambda cancel_request, s=symbol: handle_cancel_order(cancel_request, matching_engines[s], kafka_client, order_books[s])
             )
             
-            # 創建更新訂單簿快照的任務
             update_task = asyncio.create_task(update_order_book_snapshot(symbol, order_books[symbol]))
             tasks.append(update_task)
 
-        # 創建發送訂單簿快照的任務
         send_snapshot_task = asyncio.create_task(send_order_book_snapshots_every_300ms(kafka_client))
         tasks.append(send_snapshot_task)
         
-        # 創建 Kafka 消息消費任務
         kafka_consumer_task = asyncio.create_task(kafka_client.consume_messages())
         tasks.append(kafka_consumer_task)
 
-        await asyncio.shield(shutdown_event.wait())  # 等待關閉信號被設置 (shutdown_event = True)
-    except asyncio.CancelledError:
-        logging.info("主任務已取消")
+        await shutdown_event.wait()
     except Exception as e:
-        logging.error(f"主循環中發生錯誤: {e}")
+        logging.error(f"An error occurred in the main loop: {e}")
     finally:
         await shutdown(kafka_client, tasks)
-
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+    except KeyboardInterrupt:
+        logging.info("Program interrupted by user")
     except Exception as e:
-        logging.critical(f"程序執行時發生嚴重錯誤: {e}")
+        logging.critical(f"Critical error occurred: {e}")
+    finally:
+        logging.info("Program exited")

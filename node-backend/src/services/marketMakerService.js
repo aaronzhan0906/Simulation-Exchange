@@ -45,8 +45,8 @@ class MarketMakerService {
     
             const [result] = await connection.query(
                 `DELETE FROM trades 
-                 WHERE user_id = ?`,
-                [process.env.MARKET_MAKER_ID]
+                 WHERE buyer_user_id = ? OR seller_user_id = ?`,
+                [process.env.MARKET_MAKER_ID, process.env.MARKET_MAKER_ID]
             );
     
             await connection.commit();

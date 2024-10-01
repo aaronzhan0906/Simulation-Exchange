@@ -2,7 +2,6 @@ import express from "express";
 import TradeController from "../controllers/tradeController.js";
 import authenticateToken from "../middlewares/authMiddleware.js";
 const router = express.Router();
-import { logger } from "../app.js";
 
 
 router.use(authenticateToken) // jwt token middleware
@@ -14,4 +13,4 @@ router.post("/order", TradeController.createOrder);
 // cancel order
 router.patch("/order", TradeController.cancelOrder);
 
-export default router
+export default router;

@@ -33,7 +33,6 @@ class WalletWebSocket {
         const message = JSON.parse(event.data);
         switch (message.type) {
             case "welcome":
-                console.log("Received welcome message");
                 break;
 
             case "subscribed":

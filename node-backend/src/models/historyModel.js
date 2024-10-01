@@ -57,7 +57,7 @@ class HistoryModel {
                     break;
             }   
 
-            query += `ORDER BY created_at DESC`;
+            query += ` ORDER BY created_at DESC`; // Needing to add a space before ORDER BY
             const [rows] = await connection.query(query, params);
             return rows;            
         } catch (error) {
