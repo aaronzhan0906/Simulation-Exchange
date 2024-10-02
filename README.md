@@ -3,12 +3,25 @@
 Website URL : https://simuexchange.online/
 
 Simu Exchange is a simulated trading platform which offers simulated trading, matching engine and implementing a market maker to auto-generate order book depth.
+<br>
+
+<img width="100%" alt="SIMU-image" src="https://github.com/user-attachments/assets/cc7930fc-6a5a-4848-8e9b-74fb7d09b6e2">
+
+<br><br>
+
+The following is test account, but it's recommended to register new account yourself to receive  10,000 USDT in simulated funds and enjoy a more completed experience!
+
+
 ```code
 Test Account: test@gmail.com
 Test Password: test
 ```
-<img width="100%" alt="SIMU-image" src="https://github.com/user-attachments/assets/cc7930fc-6a5a-4848-8e9b-74fb7d09b6e2">
+
 ## Demo Video
+https://github.com/user-attachments/assets/ee2f0613-7ed8-4ba4-a56f-2ab691544864
+
+
+<br>
 
 
 ## Features
@@ -32,13 +45,15 @@ Test Password: test
     * Displays a real-time view of open orders with filtering options.
     * Allows viewing and filtering of historical order records.
 <br>
+
+
    
 ## Architecture
 <img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/645971e7-2cb9-4d10-a043-a7e11986b30f">
 
 <br>
 
-## Techniques Highlights
+## Technique Highlights
 * Built the backend system using **Node.js / Express** as the core framework.
 * Utilized **Kafka** for real-time data processing with multiple topics for different data streams.
 * **Python** was employed for the matching engine to handle order matching logic.
