@@ -230,6 +230,7 @@ function filterOpenTable() {
 
     // If filter elements don't exist yet, don't filter
     if (!pairFilter || !sideFilter) {
+        console.error("Filter elements not found");
         return;
     }
 
@@ -397,7 +398,11 @@ function addOpenOrderRow(orderData) {
         tbody.appendChild(newRow);
     }
 
-    filterOpenTable();
+    // Only call filterOpenTable if the filters exist
+    if (document.querySelector('.filter-select[data-filter="Pair"]') &&
+        document.querySelector('.filter-select[data-filter="Side"]')) {
+        filterOpenTable();
+    }
 }
 
 
