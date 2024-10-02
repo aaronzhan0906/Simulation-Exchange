@@ -10,7 +10,7 @@ Simu Exchange is a simulated trading platform which offers simulated trading, ma
 <br>
 <br>
 
-The following is test account, but it's recommended to register new account yourself to receive  10,000 USDT in simulated funds and enjoy a more completed experience!
+The following is a test account, but it's recommended to register new account yourself to receive  10,000 USDT in simulated funds and enjoy a more completed experience!
 
 
 ```code
@@ -19,7 +19,11 @@ Test Password: test
 ```
 
 ## Demo Video
-https://github.com/user-attachments/assets/ee2f0613-7ed8-4ba4-a56f-2ab691544864
+
+
+https://github.com/user-attachments/assets/5875bc97-b8ed-4737-97f8-c4544d3b1d39
+
+
 
 
 <br>
