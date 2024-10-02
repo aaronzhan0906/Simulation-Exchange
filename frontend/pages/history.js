@@ -70,11 +70,10 @@ async function getOpenOrders(){
 
     try {
         const response = await fetch(API_ENDPOINTS.openOrders);
-
+    
         const responseData = await response.json();
-
         if (responseData.ok) {
-            renderOpenOrdersTable(responseData, table);
+            await renderOpenOrdersTable(responseData, table);
         }
 
         // Listen for order updates
@@ -131,7 +130,6 @@ function generatePairOptions(symbols) {
     pairSelect.querySelector("select").addEventListener("change", filterOpenTable);
     sideSelect.querySelector("select").addEventListener("change", filterOpenTable);
 
-    filterOpenTable();
 }
 
 function createCustomSelect(label, options, defaultValue = "All", displayLabel = null) {
@@ -217,6 +215,7 @@ async function handleOrderUpdate(event) {
                 orderRow.remove(); // remove, which is different from trade
             }
         }
+       filterOpenTable();
     } catch (error) {
         console.error("Failed to handle order update:", error);
     }
@@ -228,7 +227,6 @@ async function handleOrderUpdate(event) {
 function filterOpenTable() {
     const pairFilter = document.querySelector('.filter-select[data-filter="Pair"]').value;
     const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
-
     const rows = document.querySelectorAll("#open-orders__tbody tr");
 
     rows.forEach(row => {
@@ -315,7 +313,7 @@ function filterOrderHistoryTable(event) {
 
 
 ///////////////////////// OPEN ORDERS /////////////////////////
-function renderOpenOrdersTable(openOrdersData, table){
+async function renderOpenOrdersTable(openOrdersData, table){
     table.innerHTML = "";
 
     // create table header
@@ -511,11 +509,12 @@ function handleStatusName(status) {
 
 document.addEventListener("DOMContentLoaded",async () => {
     await checkLoginStatusOnPageLoad()
-    initializeHeader();
-    getPairs();
     if (checkLoginStatus()) {
         HistoryWebSocket.init();
     }
+    initializeHeader();
+
+    getPairs();
 
     await initTabActive();
     await getOpenOrders();
