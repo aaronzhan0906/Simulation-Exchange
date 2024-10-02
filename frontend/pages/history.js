@@ -227,6 +227,12 @@ async function handleOrderUpdate(event) {
 function filterOpenTable() {
     const pairFilter = document.querySelector('.filter-select[data-filter="Pair"]').value;
     const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
+
+    // If filter elements don't exist yet, don't filter
+    if (!pairFilter || !sideFilter) {
+        return;
+    }
+
     const rows = document.querySelectorAll("#open-orders__tbody tr");
 
     rows.forEach(row => {
