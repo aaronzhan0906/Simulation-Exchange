@@ -120,7 +120,7 @@ https://github.com/user-attachments/assets/5875bc97-b8ed-4737-97f8-c4544d3b1d39
 <br>
 
 ## Matching Mechanism of Matching Engine
-Find the best price, execute the trade if matched, otherwise enter the order book.
+Find the best price for the new order; execute the trade if matched; otherwise, enter the order into the order book.
 <img width="100%" alt="SIMU-ME flow chart" src="https://github.com/user-attachments/assets/fce19d59-4222-4d10-831d-8f8e32cef761">
 
 <br>
