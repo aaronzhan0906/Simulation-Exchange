@@ -26,6 +26,9 @@ async function initTabActive(){
             switch(tabId){
                 case "open-orders":
                     await getOpenOrders();
+                    if (globalSymbols.length !== 0) {
+                        generatePairOptions(globalSymbols)
+                    }
                     break;
                 case "order-history":
                     generateOrderHistoryFilters();
@@ -67,11 +70,10 @@ async function getOpenOrders(){
 
     try {
         const response = await fetch(API_ENDPOINTS.openOrders);
-
+    
         const responseData = await response.json();
-
         if (responseData.ok) {
-            renderOpenOrdersTable(responseData, table);
+            await renderOpenOrdersTable(responseData, table);
         }
 
         // Listen for order updates
@@ -125,10 +127,9 @@ function generatePairOptions(symbols) {
     filtersContainer.appendChild(sideSelect);
 
     // Add event listener to filter table
-    pairSelect.querySelector("select").addEventListener("change", filterTable);
-    sideSelect.querySelector("select").addEventListener("change", filterTable);
+    pairSelect.querySelector("select").addEventListener("change", filterOpenTable);
+    sideSelect.querySelector("select").addEventListener("change", filterOpenTable);
 
-    filterTable();
 }
 
 function createCustomSelect(label, options, defaultValue = "All", displayLabel = null) {
@@ -214,6 +215,7 @@ async function handleOrderUpdate(event) {
                 orderRow.remove(); // remove, which is different from trade
             }
         }
+       filterOpenTable();
     } catch (error) {
         console.error("Failed to handle order update:", error);
     }
@@ -222,12 +224,17 @@ async function handleOrderUpdate(event) {
 
 
 // filter table
-function filterTable() {
+function filterOpenTable() {
     const pairFilter = document.querySelector('.filter-select[data-filter="Pair"]').value;
     const sideFilter = document.querySelector('.filter-select[data-filter="Side"]').value;
 
+    // If filter elements don't exist yet, don't filter
+    if (!pairFilter || !sideFilter) {
+        console.error("Filter elements not found");
+        return;
+    }
+
     const rows = document.querySelectorAll("#open-orders__tbody tr");
-    let visibleRowCount = 0;
 
     rows.forEach(row => {
         const pair = row.children[1].textContent.toLowerCase();
@@ -238,7 +245,6 @@ function filterTable() {
 
         if (pairMatch && sideMatch) {
             row.style.display = "";
-            visibleRowCount++;
         } else {
             row.style.display = "none";
         }
@@ -314,7 +320,7 @@ function filterOrderHistoryTable(event) {
 
 
 ///////////////////////// OPEN ORDERS /////////////////////////
-function renderOpenOrdersTable(openOrdersData, table){
+async function renderOpenOrdersTable(openOrdersData, table){
     table.innerHTML = "";
 
     // create table header
@@ -390,6 +396,12 @@ function addOpenOrderRow(orderData) {
         tbody.insertBefore(newRow, tbody.firstChild);
     } else {
         tbody.appendChild(newRow);
+    }
+
+    // Only call filterOpenTable if the filters exist
+    if (document.querySelector('.filter-select[data-filter="Pair"]') &&
+        document.querySelector('.filter-select[data-filter="Side"]')) {
+        filterOpenTable();
     }
 }
 
@@ -508,11 +520,12 @@ function handleStatusName(status) {
 
 document.addEventListener("DOMContentLoaded",async () => {
     await checkLoginStatusOnPageLoad()
-    initializeHeader();
-    getPairs();
     if (checkLoginStatus()) {
         HistoryWebSocket.init();
     }
+    initializeHeader();
+
+    getPairs();
 
     await initTabActive();
     await getOpenOrders();

@@ -4,6 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const passwordInput = document.getElementById("login__form--password");
     const homeLink = document.getElementById("header__logo--link");
 
+    emailInput.value = "test@gmail.com";
+    passwordInput.value = "test";
+
 
     homeLink.addEventListener("click", (event) => {
         event.preventDefault();
