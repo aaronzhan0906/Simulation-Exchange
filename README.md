@@ -54,7 +54,7 @@ https://github.com/user-attachments/assets/5875bc97-b8ed-4737-97f8-c4544d3b1d39
 
    
 ## Architecture
-<img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/645971e7-2cb9-4d10-a043-a7e11986b30f">
+<img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/4ce9c0ee-9191-4715-806c-06acf1a86d9c">
 
 <br>
 
