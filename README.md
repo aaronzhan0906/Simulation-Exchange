@@ -4,8 +4,8 @@ Website URL : https://simuexchange.online/
 
 Simu Exchange is a simulated trading platform which offers simulated trading, matching engine and implementing a market maker to auto-generate order book depth.
 <br>
+<img width="100%" alt="SIMU-Architecture" src="https://github.com/user-attachments/assets/f748cd4f-f990-4538-8739-835793b4b318">
 
-<img width="100%" alt="SIMU-image" src="https://github.com/user-attachments/assets/cc7930fc-6a5a-4848-8e9b-74fb7d09b6e2">
 
 <br>
 <br>
