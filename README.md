@@ -67,7 +67,7 @@ https://github.com/user-attachments/assets/5875bc97-b8ed-4737-97f8-c4544d3b1d39
 * Data updates use named lock **GET_LOCK** and row lock **FOR UPDATE** for concurrency control.
 * **Redis** is used for storing historical data, real-time data, and order books, optimizing read/write speeds.
 * Implemented **WebSocket** with rooms for targeted real-time data and trade result pushing.
-* Implemented containerized deployment using **Docker-Compose** and deployed on **EC2**.
+* Implemented containerized deployment using **Docker Compose** and deployed on **EC2**.
 * **S3** and **CloudFront** are utilized for image storage and distribution.
 * Uses **JWT** for authentication, with access tokens and refresh tokens for session management.
 * Integrated with the Binance API for real-time market data and 30 days of historical data.
