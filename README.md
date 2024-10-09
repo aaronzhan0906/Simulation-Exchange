@@ -130,10 +130,10 @@ Find the best price for the new order; execute the trade if matched; otherwise, 
     * Automatically sorts a dictionary based on price.
     * Retrieve the minimum/maximum price in O(1).
     * Insert, delete, and search operations in O(log n).
-* **deque**
+* **Deque**
     * At each price level, when matching orders, remove from the front; for new orders, add them to the back.
     * Head and tail operations in O(1).
-* **dict**
+* **Dictionary**
     * Uses the order ID as the key.
     * Deletion operation in O(1).
 <br>
