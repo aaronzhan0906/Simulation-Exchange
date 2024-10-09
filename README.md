@@ -133,7 +133,7 @@ Find the best price for the new order; execute the trade if matched; otherwise, 
 * **deque**
     * At each price level, when matching orders, remove from the front; for new orders, add them to the back.
     * Head and tail operations in O(1).
-* **index**
+* **dict**
     * Uses the order ID as the key.
     * Deletion operation in O(1).
 <br>
