@@ -57,23 +57,29 @@ function broadcastToRoomEvery3s(symbol, data) {
 }
 
 export async function updatePriceData(pair, price) {
-    const formattedPair = pair.toUpperCase(); // XXXUSDT
-    let priceChangePercent = await calculate24hChangePercent(formattedPair, price);
+    try{
+        const formattedPair = pair.toUpperCase(); // XXXUSDT
+        let priceChangePercent = await calculate24hChangePercent(formattedPair, price);
 
-    const updatedData = {
-        symbol: formattedPair,
-        price: price,
-        priceChangePercent: priceChangePercent
-    };
+        const updatedData = {
+            symbol: formattedPair,
+            price: price,
+            priceChangePercent: priceChangePercent
+        };
 
-    latestTickerData[formattedPair] = updatedData;
+        latestTickerData[formattedPair] = updatedData;
 
-    broadcastMessageToAll("ticker", updatedData);
-    broadcastToRoom(formattedPair, updatedData); // broadcastToRoom will convert pair to xxx_usdt
-    broadcastToRoomEvery3s(formattedPair, updatedData);
+        broadcastMessageToAll("ticker", updatedData);
+        broadcastToRoom(formattedPair, updatedData); // broadcastToRoom will convert pair to xxx_usdt
+        broadcastToRoomEvery3s(formattedPair, updatedData);
 
-    // store every time
-    await storePriceData(formattedPair, updatedData);
+    
+        await storePriceData(formattedPair, updatedData);
+    } catch (error) {
+        logger.error(`[updatePriceData]: ${error}`);
+    }
+    
+    
 }
 
 
@@ -97,13 +103,18 @@ async function storePriceData(pair, data) {
         const oneDayAgo = now - 86400000;
         await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, oneDayAgo);
     } catch (error) {
-        logger.error(`Error storing price for ${pair}: ${error}`);
+        logger.error(`[storePriceData]: ${error}`);
     }
 }
 
 export async function getLatestPriceData(pair) {
-    const latestPrice = await redis.get(`latest_price:${pair}`);
-    return latestPrice ? JSON.parse(latestPrice) : null;
+    try {
+        const latestPrice = await redis.get(`latest_price:${pair}`);
+        return latestPrice ? JSON.parse(latestPrice) : null;
+    } catch (error) {
+        logger.error(`[getLatestPriceData]: ${error}`);
+        return null;
+    }
 }
 
 async function calculate24hChangePercent(pair, currentPrice) {
@@ -152,7 +163,7 @@ async function storeHourlyData() {
             await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, thirtyDaysAgo);
     
         } catch (error) {
-            logger.error(`Error store hourly data for ${pair}: ${error}`);
+            logger.error(`[storeHourlyData]${pair}: ${error}`);
         }
     }
 }
@@ -163,16 +174,25 @@ async function cleanupData() {
     const monthAgo = now - 2592000000;
 
     for (const pair of Object.keys(latestTickerData)) {
-        await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, dayAgo); // remove data older than 24 hours
-        await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, monthAgo); // remove data older than 30 days
+        try {
+            await redis.zremrangebyscore(`recent_price_data:${pair}`, 0, dayAgo);
+            await redis.zremrangebyscore(`hourly_price_data:${pair}`, 0, monthAgo);
+        } catch (error) {
+            logger.error(`[cleanupData]${pair}: ${error}`);
+        }
     }
 }
 
 
 export async function queryMonthlyTrend(pair) {
-    const now = Date.now();
-    const monthAgo = now - 2592000000;
-    return await redis.zrangebyscore(`hourly_price_data:${pair}`, monthAgo, now, "WITHSCORES");
+    try {
+        const now = Date.now();
+        const monthAgo = now - 2592000000;
+        return await redis.zrangebyscore(`hourly_price_data:${pair}`, monthAgo, now, "WITHSCORES");
+    } catch (error) {
+        logger.error(`[queryMonthlyTrend]${pair}: ${error}`);
+        return [];
+    }
 }
 
 async function get24hHighLow(pair) {
@@ -242,20 +262,27 @@ router.get("/ticker", (req, res) => {
 });
 
 router.get("/ticker/:pair", async (req, res) => {
-    const { pair } = req.params;
-    // logger.info("Latest price:", pair);
-    const formattedPair = pair.toUpperCase().replace("_", "");
-    const latestPrice = latestTickerData[formattedPair];
-    res.status(200).json({ ok: true, data: latestPrice });
+    try {
+        const { pair } = req.params;
+        const formattedPair = pair.toUpperCase().replace("_", "");
+        const latestPrice = latestTickerData[formattedPair];
+        res.status(200).json({ ok: true, data: latestPrice });
+    } catch (error) {
+        logger.error(`[/ticker/:pair]: ${error}`);
+    }
 });
 
 // order book
 let latestOrderBookSnapshot = {};
 
 export async function logOrderBookSnapshot(symbol, processedData) {
-    latestOrderBookSnapshot[symbol] = processedData;
-    // console.log("latestOrderBookSnapshot", latestOrderBookSnapshot);
-    return latestOrderBookSnapshot[symbol];
+    try {
+        latestOrderBookSnapshot[symbol] = processedData;
+        return latestOrderBookSnapshot[symbol];
+    } catch (error) {
+        logger.error(`[logOrderBookSnapshot]: ${error}`);
+        return null;
+    }
 }
 
 router.get("/orderBook/:pair", async (req, res) => {

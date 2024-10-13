@@ -221,114 +221,119 @@ class TradeModel {
 
 ///////////////////////// UPDATE ORDER //////////////////////////
 // main logic
-    async updateOrderData(updateOrderData, user_id) {
-        const connection = await pool.getConnection();
-        await connection.beginTransaction();
+    async updateOrderData(updateOrderData, retryCount = 3) {
+        for (let attempt = 1; attempt <= retryCount; attempt++){
+            const connection = await pool.getConnection();
+            await connection.beginTransaction();
 
-        try {
-            // GET_LOCK
-            await connection.query('SELECT GET_LOCK(?, 10) as lock_result', [`user_trade_lock_${user_id}`]);
+            try {
+                // use FOR UPDATE to lock the row
+                const [[oldData]] = await connection.query(
+                    `SELECT quantity, executed_quantity, remaining_quantity, average_price, price
+                    FROM orders
+                    WHERE order_id = ? FOR UPDATE`,
+                    [updateOrderData.order_id]
+                );
 
-            // use FOR UPDATE to lock the row
-            const [[oldData]] = await connection.query(
-                `SELECT quantity, executed_quantity, remaining_quantity, average_price, price
-                FROM orders
-                WHERE order_id = ? FOR UPDATE`,
-                [updateOrderData.order_id]
-            );
+                if (!oldData) {
+                    await connection.rollback();
+                    return {
+                        success: false,
+                        message: `Order not found: ${updateOrderData.order_id}`,
+                    };
+                }
 
-            if (!oldData) {
-                await connection.rollback();
-                return {
-                    success: false,
-                    message: `Order not found: ${updateOrderData.order_id}`,
+                if (oldData.status === "CANCELED" || oldData.status === "PARTIALLY_FILLED_CANCELED") {
+                    await connection.rollback();
+                    return {
+                        success: false,
+                        orderId: oldData.order_id,
+                        message: "Cannot update order with status CANCELED or PARTIALLY_FILLED_CANCELED",
+                    }
+                }
+
+                // calculate new order data
+                const old = {
+                    quantity: new Decimal(oldData.quantity || 0),
+                    executed_quantity: new Decimal(oldData.executed_quantity || 0),
+                    remaining_quantity: new Decimal(oldData.remaining_quantity || 0),
+                    average_price: new Decimal(oldData.average_price || 0),
+                    price: new Decimal(oldData.price || 0)
                 };
-            }
 
-            if (oldData.status === "CANCELED" || oldData.status === "PARTIALLY_FILLED_CANCELED") {
-                await connection.rollback();
-                return {
-                    success: false,
-                    orderId: oldData.order_id,
-                    message: "Cannot update order with status CANCELED or PARTIALLY_FILLED_CANCELED",
+                const newExecutedQuantity = old.executed_quantity.plus(updateOrderData.executed_quantity);
+                const oldTotal = old.average_price.times(old.executed_quantity);
+                const newTotal = new Decimal(updateOrderData.executed_price).times(updateOrderData.executed_quantity);
+                const allTotal = oldTotal.plus(newTotal);
+
+                if (newExecutedQuantity.isZero()) {
+                    await connection.rollback();
+                    return {
+                        success: false,
+                        message: "Executed quantity cannot be zero",
+                    }
                 }
-            }
 
-            // calculate new order data
-            const old = {
-                quantity: new Decimal(oldData.quantity || 0),
-                executed_quantity: new Decimal(oldData.executed_quantity || 0),
-                remaining_quantity: new Decimal(oldData.remaining_quantity || 0),
-                average_price: new Decimal(oldData.average_price || 0),
-                price: new Decimal(oldData.price || 0)
-            };
+                const newAveragePrice = allTotal.dividedBy(newExecutedQuantity);
 
-            const newExecutedQuantity = old.executed_quantity.plus(updateOrderData.executed_quantity);
-            const oldTotal = old.average_price.times(old.executed_quantity);
-            const newTotal = new Decimal(updateOrderData.executed_price).times(updateOrderData.executed_quantity);
-            const allTotal = oldTotal.plus(newTotal);
-
-            if (newExecutedQuantity.isZero()) {
-                await connection.rollback();
-                return {
-                    success: false,
-                    message: "Executed quantity cannot be zero",
+                if (newAveragePrice.isNaN() || !newAveragePrice.isFinite()) {
+                    await connection.rollback();
+                    return {
+                        success: false,
+                        message: "Invalid average price calculation result",
+                    }
                 }
-            }
 
-            const newAveragePrice = allTotal.dividedBy(newExecutedQuantity);
+                // update order data
+                await connection.query(
+                    `UPDATE orders
+                    SET executed_quantity = ?,
+                        average_price = ?,
+                        status = ?,
+                        updated_at = ?
+                    WHERE order_id = ?`,
+                    [newExecutedQuantity.toString(),
+                    newAveragePrice.toString(),
+                    updateOrderData.status,
+                    updateOrderData.updated_at,
+                    updateOrderData.order_id]
+                );
 
-            if (newAveragePrice.isNaN() || !newAveragePrice.isFinite()) {
-                await connection.rollback();
-                return {
-                    success: false,
-                    message: "Invalid average price calculation result",
+                // get result order data after update
+                const [[resultOrderData]] = await connection.query(
+                    `SELECT * FROM orders WHERE order_id = ?`,
+                    [updateOrderData.order_id]
+                );
+        
+                const executedQty = updateOrderData.executed_quantity;
+                const executedPrice = updateOrderData.executed_price;
+                if (resultOrderData.side === "buy") {
+                    await this.increaseAsset(connection, resultOrderData, executedQty, executedPrice);
+                    await this.unlockBalanceAndDecreaseBalance(connection, resultOrderData, executedQty, old.price, executedPrice);
+                } else {
+                    await this.increaseBalance(connection, resultOrderData, executedQty, executedPrice);
+                    await this.unlockAndDecreaseAsset(connection, resultOrderData, executedQty);
                 }
+
+                await connection.commit();
+                return { success: true, data: resultOrderData };
+            
+            } catch (error) {
+                await connection.rollback(); 
+                this.logError(`updateOrderData attempt ${attempt} failed`, error);
+
+                if (attempt === retryCount){
+                    logger.error(`Update failed after ${retryCount} attempts`);
+                    return { success: false, message: error.message ||  "Update failed after multiple attempts"  };
+                }
+                await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+            } finally {
+                connection.release();
             }
-
-            // update order data
-            await connection.query(
-                `UPDATE orders
-                SET executed_quantity = ?,
-                    average_price = ?,
-                    status = ?,
-                    updated_at = ?
-                WHERE order_id = ?`,
-                [newExecutedQuantity.toString(),
-                newAveragePrice.toString(),
-                updateOrderData.status,
-                updateOrderData.updated_at,
-                updateOrderData.order_id]
-            );
-
-            // get result order data after update
-            const [[resultOrderData]] = await connection.query(
-                `SELECT * FROM orders WHERE order_id = ?`,
-                [updateOrderData.order_id]
-            );
-      
-            const executedQty = updateOrderData.executed_quantity;
-            const executedPrice = updateOrderData.executed_price;
-            if (resultOrderData.side === "buy") {
-                await this.increaseAsset(connection, resultOrderData, executedQty, executedPrice);
-                await this.unlockBalanceAndDecreaseBalance(connection, resultOrderData, executedQty, old.price, executedPrice);
-            } else {
-                await this.increaseBalance(connection, resultOrderData, executedQty, executedPrice);
-                await this.unlockAndDecreaseAsset(connection, resultOrderData, executedQty);
-            }
-
-            await connection.commit();
-            return { success: true, data: resultOrderData };
-        } catch (error) {
-            await connection.rollback(); 
-            this.logError("updateOrderData(model)", error);
-            return { success: false, message: error.message || "Already CANCELED and rollback" };
-        } finally {
-            // release lock
-            await connection.query('SELECT RELEASE_LOCK(?) as release_result',[`user_trade_lock_${user_id}`]);
-            connection.release();
         }
     }
+
+    
 
     // buy side 
     async increaseAsset(connection, updateAssetData, executedQty, executedP) {
@@ -389,7 +394,6 @@ class TradeModel {
         const executedQuantity = new Decimal(executedQty);
         const unlockAmount = executedQuantity.times(originalPrice);
         const decreaseAmount = executedQuantity.times(executedPrice);
-        console.log("!!!unlockBalanceAndDecreaseBalance")
         try {
             const [result] = await connection.query(
                 `UPDATE accounts
@@ -433,7 +437,6 @@ class TradeModel {
         const updateSymbol = updateAssetData.symbol.replace("_usdt", "");
     
         try {
-            console.log("!!!unlockAndDecreaseAsset")
             // FOR UPDATE 
             const [[existingAsset]] = await connection.query(
                 `SELECT quantity, locked_quantity
