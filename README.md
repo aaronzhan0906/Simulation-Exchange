@@ -64,7 +64,7 @@ https://github.com/user-attachments/assets/5875bc97-b8ed-4737-97f8-c4544d3b1d39
 * **Python** was employed for the matching engine to handle order matching logic.
 * Developed the market-making strategy using **Node.js** and automated its operation with **PM2**.
 * **RDS / MySQL** stores normalized 3NF data. Indexing optimizes queries; foreign keys ensure integrity.
-* Data updates use named lock **GET_LOCK** and row lock **FOR UPDATE** for concurrency control.
+* Data updates utilize **Transaction** and **SELECT ... FOR UPDATE** statements for concurrency control.
 * **Redis** is used for storing historical data, real-time data, and order books, optimizing read/write speeds.
 * Implemented **WebSocket** with rooms for targeted real-time data and trade result pushing.
 * Implemented containerized deployment using **Docker Compose** and deployed on **EC2**.
