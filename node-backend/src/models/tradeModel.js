@@ -227,7 +227,7 @@ class TradeModel {
 
         try {
             // GET_LOCK
-            await connection.query('SELECT GET_LOCK(?, 10) as lock_result', [`user_trade_lock_${user_id}`]);
+            // await connection.query('SELECT GET_LOCK(?, 10) as lock_result', [`user_trade_lock_${user_id}`]);
 
             // use FOR UPDATE to lock the row
             const [[oldData]] = await connection.query(
@@ -325,10 +325,12 @@ class TradeModel {
             return { success: false, message: error.message || "Already CANCELED and rollback" };
         } finally {
             // release lock
-            await connection.query('SELECT RELEASE_LOCK(?) as release_result',[`user_trade_lock_${user_id}`]);
+            // await connection.query('SELECT RELEASE_LOCK(?) as release_result',[`user_trade_lock_${user_id}`]);
             connection.release();
         }
     }
+
+    
 
     // buy side 
     async increaseAsset(connection, updateAssetData, executedQty, executedP) {
@@ -389,7 +391,6 @@ class TradeModel {
         const executedQuantity = new Decimal(executedQty);
         const unlockAmount = executedQuantity.times(originalPrice);
         const decreaseAmount = executedQuantity.times(executedPrice);
-        console.log("!!!unlockBalanceAndDecreaseBalance")
         try {
             const [result] = await connection.query(
                 `UPDATE accounts
@@ -433,7 +434,6 @@ class TradeModel {
         const updateSymbol = updateAssetData.symbol.replace("_usdt", "");
     
         try {
-            console.log("!!!unlockAndDecreaseAsset")
             // FOR UPDATE 
             const [[existingAsset]] = await connection.query(
                 `SELECT quantity, locked_quantity
