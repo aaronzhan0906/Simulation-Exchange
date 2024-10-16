@@ -133,6 +133,9 @@ Find the best price for the new order; execute the trade if matched; otherwise, 
 * **Deque**
     * At each price level, when matching orders, remove from the front; for new orders, add them to the back.
     * Head and tail operations in O(1).
+* **Dictionary**
+    * Uses the order ID as the key.
+    * Deletion operation in O(1).
 <br>
 
 | Operation | Time Complexity |
@@ -140,7 +143,7 @@ Find the best price for the new order; execute the trade if matched; otherwise, 
 | Get Best Price | O(1) |
 | Insert | O(log n) |
 | Match | O(n * m) |
-| Delete | O(log n + m) |
+| Delete | O(1) |
 
 <sub>n: Number of price levels</sub>
 <br>
