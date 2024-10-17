@@ -130,9 +130,10 @@ Find the best price for the new order; execute the trade if matched; otherwise, 
     * Automatically sorts a dictionary based on price.
     * Retrieve the minimum/maximum price in O(1).
     * Insert, delete, and search operations in O(log n).
-* **Deque**
-    * At each price level, when matching orders, remove from the front; for new orders, add them to the back.
-    * Head and tail operations in O(1).
+* **Dictionary**
+    * Since Python version 3.7, dictionary order is guaranteed to be insertion order.   
+    * A dict is used for each price level.
+    * FIFO (First In, First Out).
 <br>
 
 | Operation | Time Complexity |
@@ -140,7 +141,7 @@ Find the best price for the new order; execute the trade if matched; otherwise, 
 | Get Best Price | O(1) |
 | Insert | O(log n) |
 | Match | O(n * m) |
-| Delete | O(log n + m) |
+| Delete | O(log n) |
 
 <sub>n: Number of price levels</sub>
 <br>
