@@ -114,6 +114,7 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
 # Function to handel order cancellation
 async def handle_cancel_order(cancel_request, matching_engine, kafka_client, order_book):
     global error_counter
+    print(cancel_request, matching_engine, kafka_client, order_book)
     try:
         symbol = cancel_request["symbol"].replace("_usdt","")
         logger.info(f"Received cancel-order-{symbol}: {cancel_request}")
