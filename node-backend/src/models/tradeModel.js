@@ -136,7 +136,7 @@ class TradeModel {
     checkCancelOrderStatus(orderId){
         try {
             const result = pool.query(
-                `SELECT side, price, status FROM orders
+                `SELECT side, price, quantity, status FROM orders
                 WHERE order_id = ?`,
                 [orderId]
             );

@@ -118,7 +118,6 @@ class OrderBook:
             quantity = Decimal(str(order["quantity"]))
             order_id = order["order_id"]
             user_id = order["user_id"]
-
             book = self.bids if side == "buy" else self.asks
             if price not in book:
                 book[price] = {}
@@ -134,10 +133,10 @@ class OrderBook:
             price = Decimal(str(price))
 
             if price in book and order_id in book[price]:
-                quantity, original_quantity, user_id = book[price].pop(order_id)
+                current_quantity, original_quantity, user_id = book[price].pop(order_id)
                 if not book[price]: # if no order after pop, delete this key
                     del book[price]
-                return (side, price, quantity, original_quantity, user_id)
+                return (side, price, current_quantity, original_quantity, user_id)
     
             logging.info(f"Order {order_id} not found in order book. It may have been cancelled or executed.")
             return None

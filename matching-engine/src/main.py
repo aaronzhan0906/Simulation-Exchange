@@ -121,7 +121,8 @@ async def handle_cancel_order(cancel_request, matching_engine, kafka_client, ord
             cancel_request["userId"],
             cancel_request["symbol"],
             cancel_request["side"],
-            cancel_request["price"]
+            cancel_request["price"],
+            cancel_request["original_quantity"]
         )
         await kafka_client.produce_result(f"cancel-result-{symbol}", cancel_result)
         logging.info("========================")

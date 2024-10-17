@@ -390,7 +390,8 @@ class TradeController {
             const topic = `cancel-order-${topicSymbol}`
             const side = localOrderStatus[0].side
             const price = localOrderStatus[0].price
-            await kafkaProducer.sendMessage(topic, { orderId, userId, symbol ,side , price});
+            const original_quantity = localOrderStatus[0].quantity
+            await kafkaProducer.sendMessage(topic, { orderId, userId, symbol ,side , price, original_quantity});
             
             res.status(200).json({ ok: true, message: "Order cancellation request sent" });
         } catch(error) {
@@ -418,7 +419,8 @@ class TradeController {
             const topic = `cancel-order-${topicSymbol}`
             const side = localOrderStatus[0].side
             const price = localOrderStatus[0].price
-            await kafkaProducer.sendMessage(topic, { orderId, userId, symbol ,side , price});
+            const original_quantity = localOrderStatus[0].quantity
+            await kafkaProducer.sendMessage(topic, { orderId, userId, symbol ,side , price, original_quantity});
 
         } catch (error) {
             const errorMessage = `[cancelOrderByMarketMaker] error:, ${error}`
