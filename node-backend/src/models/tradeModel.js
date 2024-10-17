@@ -136,7 +136,7 @@ class TradeModel {
     checkCancelOrderStatus(orderId){
         try {
             const result = pool.query(
-                `SELECT status FROM orders
+                `SELECT side, price, quantity, status FROM orders
                 WHERE order_id = ?`,
                 [orderId]
             );
@@ -320,13 +320,20 @@ class TradeModel {
             
             } catch (error) {
                 await connection.rollback(); 
-                this.logError(`updateOrderData attempt ${attempt} failed`, error);
-
-                if (attempt === retryCount){
-                    logger.error(`Update failed after ${retryCount} attempts`);
-                    return { success: false, message: error.message ||  "Update failed after multiple attempts"  };
+                if (error.code === "ER_LOCK_DEADLOCK" || error.code === "ER_LOCK_WAIT_TIMEOUT") {
+                    this.logError(`updateOrderData attempt ${attempt} failed due to retryable error`, error);
+                    if (attempt < retryCount) {
+                        const delay = Math.pow(2, attempt) * 100; 
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue; 
+                    }
                 }
-                await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+                
+                this.logError(`[updateOrderData] Error`, error);
+                return { 
+                    success: false, 
+                    message: error.message || "Update failed"
+                };
             } finally {
                 connection.release();
             }

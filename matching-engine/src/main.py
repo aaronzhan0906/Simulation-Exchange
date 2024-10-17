@@ -108,8 +108,7 @@ async def handle_new_order(order, matching_engine, kafka_client, order_book):
         error_counter += 1
         logging.error(f"處理新訂單時發生錯誤: {e}")
         if error_counter >= MAX_ERRORS:
-            logging.critical(f"錯誤次數超過 {MAX_ERRORS}，準備關閉程序")
-            shutdown_event.set()
+            logging.critical(f"錯誤次數超過 {MAX_ERRORS}")
 
 # Function to handel order cancellation
 async def handle_cancel_order(cancel_request, matching_engine, kafka_client, order_book):
@@ -120,7 +119,10 @@ async def handle_cancel_order(cancel_request, matching_engine, kafka_client, ord
         cancel_result = matching_engine.cancel_order(
             cancel_request["orderId"],
             cancel_request["userId"],
-            cancel_request["symbol"]
+            cancel_request["symbol"],
+            cancel_request["side"],
+            cancel_request["price"],
+            cancel_request["original_quantity"]
         )
         await kafka_client.produce_result(f"cancel-result-{symbol}", cancel_result)
         logging.info("========================")
@@ -136,9 +138,7 @@ async def handle_cancel_order(cancel_request, matching_engine, kafka_client, ord
         error_counter += 1
         logging.error(f"處理取消訂單請求時發生錯誤: {e}")
         if error_counter >= MAX_ERRORS:
-            logging.critical(f"錯誤次數超過 {MAX_ERRORS}，準備關閉程序")
-            shutdown_event.set()
-
+            logging.critical(f"錯誤次數超過 {MAX_ERRORS}")
     
 
 # Function to periodically send order book snapshots
@@ -182,8 +182,7 @@ async def send_order_book_snapshots_every_300ms(kafka_client):
             error_counter += 1
             logging.error(f"發送訂單簿快照時出現錯誤 {e}")
             if error_counter >= MAX_ERRORS:
-                logging.critical(f"錯誤次數超過 {MAX_ERRORS}，準備關閉程序")
-                shutdown_event.set()
+                logging.critical(f"錯誤次數超過 {MAX_ERRORS}")
             await asyncio.sleep(5)  
 
 async def shutdown(kafka_client, tasks):

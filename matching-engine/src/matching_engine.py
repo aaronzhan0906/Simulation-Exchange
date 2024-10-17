@@ -79,8 +79,8 @@ class MatchingEngine:
             yield input_order_result
             yield matched_order_result
 
-    def cancel_order(self, order_id, user_id, symbol):
-        canceled_order = self.order_book.cancel_order(order_id)
+    def cancel_order(self, order_id, user_id, symbol, side, price, original_quantity):
+        canceled_order = self.order_book.cancel_order(order_id, side, price)
 
         if canceled_order is None:
             return {
@@ -89,14 +89,9 @@ class MatchingEngine:
                 "message": "Order not found."
             }
         
-        side, price, current_quantity, original_quantity, order_user_id = canceled_order
-        if order_user_id != user_id:
-            return {
-                "order_id": order_id,
-                "status": "error",
-                "message": "Order does not belong to the user"
-            }
-        
+        side, price, current_quantity, quantity, order_user_id = canceled_order
+
+        original_quantity = Decimal(str(original_quantity))
         executed_quantity = original_quantity - current_quantity
         if executed_quantity == 0:
             status = "CANCELED"
@@ -107,7 +102,7 @@ class MatchingEngine:
 
         cancel_result = {
             "order_id": order_id,
-            "user_id": user_id,
+            "user_id": order_user_id,
             "side": side,
             "symbol": symbol,
             "price": str(price),
@@ -120,6 +115,3 @@ class MatchingEngine:
         }
             
         return cancel_result
-        
-    def get_market_depth(self, levels: int = 10):
-        return self.order_book.get_order_book(levels)
