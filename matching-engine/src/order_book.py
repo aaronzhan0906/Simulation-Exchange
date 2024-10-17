@@ -128,15 +128,17 @@ class OrderBook:
             raise
 
 
-    def cancel_order(self, order_id):
+    def cancel_order(self, order_id, side, price):
         try:
-            for book in (self.bids, self.asks):
-                for price, orders in book.items():
-                    if order_id in orders:
-                        quantity, original_quantity, user_id = orders.pop(order_id)
-                        if not orders:
-                            del book[price]
-                        return ("buy" if book is self.bids else "sell", price, quantity, original_quantity, user_id)
+            book = self.bids if side == "buy" else self.asks
+            price = Decimal(str(price))
+
+            if price in book and order_id in book[price]:
+                quantity, original_quantity, user_id = book[price].pop(order_id)
+                if not book[price]: # if no order after pop, delete this key
+                    del book[price]
+                return (side, price, quantity, original_quantity, user_id)
+    
             logging.info(f"Order {order_id} not found in order book. It may have been cancelled or executed.")
             return None
         except Exception as e:
@@ -190,16 +192,19 @@ class OrderBook:
                         "input_order_id": input_order_id
                     }
                     
-                    if input_quantity == 0:
+                    if input_quantity == 0:   # fully matched, stop matching
                         break
 
-                if not orders:
-                    del opposite_book[opposite_price]
+                if not orders:   # If this price level is now empty, remove it from the book
+                    try:
+                        del opposite_book[opposite_price]
+                    except KeyError:
+                        logging.error(f"Failed to remove empty price level {opposite_price} from order book for {self.symbol}")
 
-                if input_quantity == 0:
+                if input_quantity == 0:   # If the input order is fully matched, stop looking for matches
                     break
 
-            if input_quantity > 0:
+            if input_quantity > 0:   # If no matching and there's any quantity left, add it into orderbook
                 try:
                     self.add_order({**order, "quantity": input_quantity})
                 except Exception as e:
