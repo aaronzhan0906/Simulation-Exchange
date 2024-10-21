@@ -120,16 +120,18 @@ export async function getLatestPriceData(pair) {
 async function calculate24hChangePercent(pair, currentPrice) {
     const now = new Date();
     now.setUTCMinutes(0, 0, 0); // XX:00:00
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000 + 1000); // 24 hours ago plus 1 second to ensure retrieving the data point from exactly 24 hours ago
+    const twentyFiveHoursAgo = new Date(now.getTime() - 25 * 60 * 60 * 1000 - 1000);
 
     try {
         const oldPriceData = await redis.zrevrangebyscore(
             `hourly_price_data:${pair}`, 
-            '+inf',
             twentyFourHoursAgo.getTime(),
-            "LIMIT", 0, 1 
+            twentyFiveHoursAgo.getTime(),
+            "LIMIT", 0, 1
         );
-
+    
+    
         const oldPriceObj = JSON.parse(oldPriceData[0]);
         const oldPrice = parseFloat(oldPriceObj.open);
         const changePercent = ((currentPrice - oldPrice) / oldPrice) * 100;
