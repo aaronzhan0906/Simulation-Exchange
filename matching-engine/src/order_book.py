@@ -151,31 +151,31 @@ class OrderBook:
             input_quantity = Decimal(str(order["quantity"]))
             input_order_id = order["order_id"]
             input_user_id = order["user_id"]
-            
+                        
             if side == "buy":
                 opposite_book = self.asks 
                 price_condition = lambda op, ip: op <= ip
-                sorted_prices = sorted(opposite_book.keys()) # Sort from lowest to highest price
+                get_best_price = lambda: next(iter(opposite_book), None) if opposite_book else None
             else:  
                 opposite_book = self.bids
                 price_condition = lambda op, ip: op >= ip
-                sorted_prices = sorted(opposite_book.keys(), reverse=True) # Sort from highest to lowest price
+                get_best_price = lambda: next(reversed(opposite_book), None) if opposite_book else None
 
-            for opposite_price in sorted_prices:
-                if not price_condition(opposite_price, input_price): 
-                    break  
+            while True:
+                opposite_price = get_best_price()
+                if opposite_price is None or not price_condition(opposite_price, input_price):
+                    break
 
                 orders = opposite_book[opposite_price]
-                logging.info(f"Checking price level: {opposite_price}, Order IDs: {list(orders.keys())}")
+                logging.info(f"Matching at price level: {opposite_price}, Orders: {list(orders.keys())}")
 
                 for matched_order_id, (matched_quantity, matched_original_quantity, matched_user_id) in list(orders.items()):
                     trade_quantity = min(matched_quantity, input_quantity)
-
                     orders[matched_order_id] = (matched_quantity - trade_quantity, matched_original_quantity, matched_user_id)
-
+                    
                     if matched_quantity == trade_quantity:
                         del orders[matched_order_id]
-                
+
                     input_quantity -= trade_quantity
 
                     yield {
