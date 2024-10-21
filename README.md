@@ -140,10 +140,14 @@ Find the best price for the new order; execute the trade if matched; otherwise, 
 |-----------|-----------------|
 | Get Best Price | O(1) |
 | Insert | O(log n) |
-| Match | O(n * m) |
+| Match | O(k * m) |
 | Delete | O(log n) |
 
 <sub>n: Number of price levels</sub>
 <br>
 <sub>m: Number of orders at a single price level</sub>
 <br>
+<sub>
+k: Number of price levels traversed during matching (often much smaller than n)
+</sub>
+
