@@ -23,7 +23,7 @@ redis.on("connect", () => {
 });
   
 redis.on("error", (error) => {
-    logger.error("Redis connection error:", error);
+    logger.error(`[Redis connection] error: ${error}`);
 });
 
 const wsBaseUrl = process.env.WSS_BINANCE_URL;
@@ -31,11 +31,70 @@ const supportedSymbols = config.supportedSymbols;
 const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join("/");
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
-const binanceWS = new WebSocket(wsUrl);
 
 let latestTickerData = {}; // for different trading pairs { BNBUSDT: {symbol: 'BNBUSDT' price: '551.10000000',priceChangePercent: '-1.73' }
 // store price at least once every 1s
 let lastBroadcastTime = {};
+
+///////////////////////// Binance websocket events  /////////////////////////
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 15; 
+const RECONNECT_DELAY = 2000;
+
+function connectionWebSocket(){
+    const binanceWS = new WebSocket(wsUrl);
+
+    binanceWS.on("open", () => {
+        logger.info("[binanceWS.open] WebSocket connection opened.")
+        
+        if (reconnectAttempts > 0){
+            logger.info(`Connection recovered after ${reconnectAttempts} attempts`)
+        }
+        reconnectAttempts = 0;
+    })
+
+    binanceWS.on("message", (data) => {
+        const parsedData = JSON.parse(data);
+        const { stream, data: streamData } = parsedData;
+
+        const pair = stream.split("@")[0].toUpperCase();
+
+        latestTickerData[pair] = {
+            symbol: streamData.s,
+            price: streamData.c,
+            // priceChangePercent: streamData.P,
+        };
+        updatePriceData(pair, streamData.c)
+    });
+
+    binanceWS.on("error", (error) => {
+        logger.error(`[binanceWS.error] ${error}`);
+        attemptReconnect();
+    });
+
+    binanceWS.on("close", () => {
+        logger.info(`[binanceWS.close] Connection closed`);
+        attemptReconnect();
+    })
+}
+
+function attemptReconnect() {
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        logger.error("Max reconnect attempts reached. Stop reconnecting");
+        return; 
+    }
+    reconnectAttempts++;
+
+    logger.warn(`Attempting to reconnect [Binance WS] (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+    logger.info(`Attempting to reconnect in ${RECONNECT_DELAY / 1000} seconds...`);
+
+    setTimeout(() => {
+        logger.info("[Binance WS] Reconnecting...");
+        connectionWebSocket();
+    }, RECONNECT_DELAY);
+}
+
+connectionWebSocket();
 
 /////////////////////////  WebSocket functions ///////////////////////// 
 function broadcastMessageToAll(type, data) {
@@ -78,8 +137,6 @@ export async function updatePriceData(pair, price) {
     } catch (error) {
         logger.error(`[updatePriceData]: ${error}`);
     }
-    
-    
 }
 
 
@@ -233,24 +290,7 @@ async function get24hHighLow(pair) {
 }
 
 
-///////////////////////// Binance websocket events  /////////////////////////
-binanceWS.on("message", (data) => {
-    const parsedData = JSON.parse(data);
-    const { stream, data: streamData } = parsedData;
 
-    const pair = stream.split("@")[0].toUpperCase();
-
-    latestTickerData[pair] = {
-        symbol: streamData.s,
-        price: streamData.c,
-        // priceChangePercent: streamData.P,
-    };
-    updatePriceData(pair, streamData.c)
-});
-
-binanceWS.on("error", (error) => {
-    logger.error(`[binanceWS.on] ${error}`);
-});
 
 
 /////////////////////////  SCHEDULE JOBS  ///////////////////////// 
@@ -289,22 +329,30 @@ export async function logOrderBookSnapshot(symbol, processedData) {
 
 router.get("/orderBook/:pair", async (req, res) => {
     const { pair } = req.params;
-    logger.info(`Latest order book snapshot: ${pair}`);
-    const symbol = pair.split("_")[0]; // xxx_usdt -> xxx
-    const orderBookSnapshot = latestOrderBookSnapshot[symbol];
-    if (!orderBookSnapshot) {
-        return res.status(400).json({ error: false, error: "No Data" });
+    try {
+        logger.info(`Latest order book snapshot: ${pair}`);
+        const symbol = pair.split("_")[0]; // xxx_usdt -> xxx
+        const orderBookSnapshot = latestOrderBookSnapshot[symbol];
+        if (!orderBookSnapshot) {
+            return res.status(400).json({ error: false, error: "No Data" });
+        }
+        
+        res.status(200).json({ ok: true, data: orderBookSnapshot });
+    } catch (error) {
+        logger.error(`[/orderBook/:pair] error${error}`);
     }
-    
-    res.status(200).json({ ok: true, data: orderBookSnapshot });
 });
 
 
 router.get("/24hHighAndLow/:pair", async (req, res) => {
     const { pair } = req.params;
     // logger.info("24h high low:", pair);
-    const highLow = await get24hHighLow(pair);
-    res.status(200).json({ ok: true, data: highLow });
+    try{
+        const highLow = await get24hHighLow(pair);
+        res.status(200).json({ ok: true, data: highLow });
+    } catch (error) {
+        logger.error(`[/24hHighAndLow/:pair] error ${error}`);
+    }
 });
 
 
@@ -315,7 +363,7 @@ router.get("/monthlyTrend/:pair", async (req, res) => {
         const monthlyTrend = await queryMonthlyTrend(pair);
         res.status(200).json({ ok: true, monthlyTrend });
     } catch (error) {
-        logger.error("Error fetching monthly trend:", error);
+        logger.error(`[/monthlyTrend/:pair] error ${error}`);
     }
 });
 

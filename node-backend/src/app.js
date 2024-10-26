@@ -109,7 +109,6 @@ app.get("/signup", (req, res) => {
 // /trade/:pair 
 app.get("/trade/:pair", (req, res) => {
     const { pair } = req.params;
-    logger.info("Trading pair:", pair);
     res.sendFile(path.join(__dirname, "..", "..", "frontend", "trade.html"));
 });
 
