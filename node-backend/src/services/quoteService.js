@@ -48,7 +48,7 @@ function connectionWebSocket(){
         logger.info("[binanceWS.open] WebSocket connection opened.")
         
         if (reconnectAttempts > 0){
-            logger.info(`Connection recovered after ${reconnectAttempts} attempts`)
+            logger.info(`[Connection Recovered] after ${reconnectAttempts} attempts`)
         }
         reconnectAttempts = 0;
     })
