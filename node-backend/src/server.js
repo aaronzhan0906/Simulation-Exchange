@@ -9,7 +9,8 @@ server.listen(PORT, () => {
 });
 
 process.on("SIGINT", async () => {
-    logger.info("Shutting down gracefully...");
+    logger.info("Start to Shutting down gracefully...");
     await gracefulShutdown();
+    logger.info("Shutting down gracefully.");
     process.exit(0);
 }); 

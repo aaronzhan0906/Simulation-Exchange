@@ -17,26 +17,67 @@ const tradingPairs = supportedSymbols.map(symbol => `${symbol}usdt`);
 const streamName = tradingPairs.map(pair => `${pair}@ticker`).join("/");
 const wsUrl = `${wsBaseUrl}?streams=${streamName}`;
 
-const binanceWS = new WebSocket(wsUrl);
-
 let latestTickerData = {};
 
-binanceWS.on("message", (data) => {
-    const parsedData = JSON.parse(data);
-    const { stream, data: streamData } = parsedData;
-    const pair = stream.split("@")[0].toUpperCase();
+///////////////////////// Binance websocket events  /////////////////////////
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 15; 
+const RECONNECT_DELAY = 2000;
 
-    const updateData = {
-        symbol: pair,
-        price: streamData.c
-    };
-    latestTickerData[pair] = updateData;
-});
+function connectionWebSocket(){
+    const binanceWS = new WebSocket(wsUrl);
 
-binanceWS.on("error", (error) => {
-    console.error("WebSocket error: ", error);
-});
+    binanceWS.on("open", () => {
+        console.log("[binanceWS.open] WebSocket connection opened.")
+        
+        if (reconnectAttempts > 0){
+            console.log(`[Connection Recovered] after ${reconnectAttempts} attempts`)
+        }
+        reconnectAttempts = 0;
+    })
 
+    binanceWS.on("message", (data) => {
+        const parsedData = JSON.parse(data);
+        const { stream, data: streamData } = parsedData;
+        const pair = stream.split("@")[0].toUpperCase();
+
+        const updateData = {
+            symbol: pair,
+            price: streamData.c
+        };
+        latestTickerData[pair] = updateData;
+    });
+
+    binanceWS.on("error", (error) => {
+        console.log(`[binanceWS.error] ${error}`);
+        attemptReconnect();
+    });
+
+    binanceWS.on("close", () => {
+        console.log(`[binanceWS.close] Connection closed`);
+        attemptReconnect();
+    })
+}
+
+function attemptReconnect() {
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.log("Max reconnect attempts reached. Stop reconnecting");
+        return; 
+    }
+    reconnectAttempts++;
+
+    console.log(`Attempting to reconnect [Binance WS] (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+    console.log(`Attempting to reconnect in ${RECONNECT_DELAY / 1000} seconds...`);
+
+    setTimeout(() => {
+        console.log("[Binance WS] Reconnecting...");
+        connectionWebSocket();
+    }, RECONNECT_DELAY);
+}
+
+connectionWebSocket();
+
+///////////////////////// MarketMaker  /////////////////////////
 class MarketMaker {
     constructor(){
         this.url = process.env.TARGET_URL;
