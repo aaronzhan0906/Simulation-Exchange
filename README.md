@@ -92,7 +92,7 @@ https://github.com/user-attachments/assets/5875bc97-b8ed-4737-97f8-c4544d3b1d39
 #### Containerization
 - Docker
 - Docker-compose
-#### Authentication and Authorization 
+#### Authentication
 - JWT
 #### Infrastructure
 - Nginx
