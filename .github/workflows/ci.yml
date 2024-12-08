@@ -10,7 +10,7 @@ jobs:
 
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.3
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_DATABASE: simu_exchange
@@ -18,14 +18,9 @@ jobs:
           - 3306:3306
     
       redis:
-          image: redis:latest
+          image: redis:7.2.5
           ports:
             - 6379:6379
-          options: >-
-            --health-cmd="redis-cli ping"
-            --health-interval=10s
-            --health-timeout=5s
-            --health-retries=3
     
     strategy: 
       matrix:
@@ -38,7 +33,7 @@ jobs:
         uses: actions/setup-node@v4  # 使用官方的 Node.js Action
         with:  # 配置參數
           node-version: ${{ matrix.node-version }} 
-          cache: 'npm'  # 開啟 npm 緩存以加速依賴
+          cache: "npm"  # 開啟 npm 緩存以加速依賴
           
       - name: Install dependencies  # 安裝項目依賴
         run: npm ci
