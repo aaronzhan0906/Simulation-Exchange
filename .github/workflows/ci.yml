@@ -1,0 +1,28 @@
+name: Node.js Package
+
+on:  # 觸發條件
+  push:
+    branches: ["develop", "main"]  
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy: 
+      matrix:
+        node-version: [20.11.0]
+    
+    steps:
+      - uses: actions/checkout@v4  # 輸出程式碼到工作環境中
+      
+      - name: Set up Node.js ${{ matrix.node-version }}  # 設置 Node.js 的執行環境
+        uses: actions/setup-node@v4  # 使用官方的 Node.js Action
+        with:  # 配置參數
+          node-version: ${{ matrix.node-version }} 
+          cache: 'npm'  # 開啟 npm 緩存以加速依賴
+          
+      - name: Install dependencies  # 安裝項目依賴
+        run: npm ci
+        
+      - name: Run tests  # 執行測試
+        run: npm test --if-present
