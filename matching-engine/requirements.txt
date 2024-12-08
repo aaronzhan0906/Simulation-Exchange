@@ -1,5 +1,4 @@
-# Async programming
-asyncio==3.4.3
+# Terminal text styling
 colorama==0.4.6
 
 # Kafka client
@@ -9,10 +8,10 @@ aiokafka==0.11.0
 sortedcontainers==2.4.0
 
 # Snowflake ID generator
-snowflake-id==0.0.7
+snowflake-id==1.0.2
 
 # Environment variable management
-python-dotenv==1.0.1
+python-dotenv==1.0.0
 
 # Redis client
-redis==5.0.1
+redis==5.0.7
