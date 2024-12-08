@@ -2,10 +2,6 @@ import { jest } from "@jest/globals";
 
 const mockTradeModel = {
     createOrder: jest.fn(),
-    getAvailableBalanceById: jest.fn(),
-    lockBalance: jest.fn(),
-    getQuantityBySymbolAndUserId: jest.fn(),
-    lockAsset: jest.fn(),
 };
 
 const mockKafkaProducer = {
@@ -27,16 +23,6 @@ const mockGenerateSnowflakeId = jest.fn();
 const mockLogger = {
     error: jest.fn()
 };
-
-const mockDecimal = jest.fn().mockImplementation((value) => ({
-    isPositive: jest.fn().mockReturnValue(parseFloat(value) > 0),
-    toString: jest.fn().mockReturnValue(value.toString()),
-}));
-
-// Mock all modules
-jest.unstable_mockModule("decimal.js", () => ({ 
-    default: mockDecimal
-}));
 
 jest.unstable_mockModule("../src/models/tradeModel.js", () => ({ 
     default: mockTradeModel 
