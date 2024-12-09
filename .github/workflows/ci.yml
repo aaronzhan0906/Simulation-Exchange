@@ -1,0 +1,125 @@
+name: CI Tests
+
+on:  # 觸發條件
+  push:
+    branches: ["develop", "main"]  
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.3
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE: simu_exchange
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+          
+      redis:
+        image: redis:7.2.5
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    
+    strategy: 
+      matrix:
+        node-version: [20.11.0]
+    
+    steps:
+      - uses: actions/checkout@v4  # 輸出程式碼到工作環境中
+      
+      - name: Set up Node.js ${{ matrix.node-version }}  # 設置 Node.js 的執行環境
+        uses: actions/setup-node@v4  # 使用官方的 Node.js Action
+        with:  # 配置參數
+          node-version: ${{ matrix.node-version }} 
+          cache: "npm"  # 開啟 npm 緩存以加速依賴
+          
+      - name: Install dependencies  # 安裝項目依賴
+        run: npm ci
+        
+      - name: Run tests  # 執行測試
+        run: npm test --if-present
+        env:
+          # 基本設定
+          NODE_ENV: development
+          LOG_LEVEL: debug
+          
+          # API 和 WebSocket 設定
+          SUPPORTED_SYMBOLS: "btc,eth,bnb,sol,avax"
+          WSS_BINANCE_URL: "wss://data-stream.binance.vision:9443/stream"
+          BINANCE_API_KEY: "https://api.binance.com/api/v3/klines"
+          
+          # MySQL 設定
+          MYSQL_HOST: localhost
+          MYSQL_PORT: 3306
+          MYSQL_USER: root
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: simu_exchange
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          
+          # Redis 設定
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_DB: 0
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          
+          # JWT 設定
+          JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          ACCESS_TOKEN_EXPIRY: "1d"
+          REFRESH_TOKEN_EXPIRY: "30d"
+          
+          # 其他設定
+          SNOWFLAKE_INSTANCE_ID: 0
+          SNOWFLAKE_CUSTOM_EPOCH: 1672531200000
+    
+  python-test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7.2.5
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+          cache: "pip"
+
+      - name: Install dependencies
+        working-directory: ./matching-engine 
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          pytest -v
+        env:
+          SUPPORTED_SYMBOLS: "btc,eth,bnb,sol,avax"
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_DB: 0
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}

@@ -1,17 +1,17 @@
-asyncio
-colorama
+# Terminal text styling
+colorama==0.4.6
 
 # Kafka client
 aiokafka==0.11.0
 
 # Sorted containers for efficient data structures
-sortedcontainers
+sortedcontainers==2.4.0
 
 # Snowflake ID generator
-snowflake-id
+snowflake-id==1.0.2
 
 # Environment variable management
-python-dotenv
+python-dotenv==1.0.0
 
-# Redis client (assuming you're using Redis based on earlier code)
-redis
+# Redis client
+redis==5.0.7

@@ -177,7 +177,7 @@ class OrderBook:
                         del orders[matched_order_id]
 
                     input_quantity -= trade_quantity
-
+                    
                     yield {
                         "matched_order_id": matched_order_id,
                         "matched_user_id": matched_user_id,
@@ -190,9 +190,6 @@ class OrderBook:
                         "input_user_id": input_user_id,
                         "input_order_id": input_order_id
                     }
-                    
-                    if input_quantity == 0:   # fully matched, stop matching
-                        break
 
                 if not orders:   # If this price level is now empty, remove it from the book
                     try:
@@ -202,7 +199,7 @@ class OrderBook:
 
                 if input_quantity == 0:   # If the input order is fully matched, stop looking for matches
                     break
-
+            
             if input_quantity > 0:   # If no matching and there's any quantity left, add it into orderbook
                 try:
                     self.add_order({**order, "quantity": input_quantity})
