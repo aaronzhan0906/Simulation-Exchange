@@ -60,8 +60,8 @@ https://github.com/user-attachments/assets/5875bc97-b8ed-4737-97f8-c4544d3b1d39
 
 ## Technique Highlights
 * Built the backend system using **Node.js / Express** as the core framework.
-* Utilized **Kafka** for real-time data processing with multiple topics for different data streams.
 * **Python** was employed for the matching engine to handle order matching logic.
+* Utilized **Kafka** for real-time data processing with multiple topics for different data streams.
 * Developed the market-making strategy using **Node.js** and automated its operation with **PM2**.
 * **RDS / MySQL** stores normalized 3NF data. Indexing optimizes queries; foreign keys ensure consistency.
 * Utilized **Transaction** and **SELECT ... FOR UPDATE** for concurrency control in data updates.
