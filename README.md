@@ -102,6 +102,7 @@ https://github.com/user-attachments/assets/5875bc97-b8ed-4737-97f8-c4544d3b1d39
 #### Testing
 - Postman
 - Jest
+- pytest
 #### Third-Party API
 - Binance API
 <br>
