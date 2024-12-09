@@ -13,7 +13,6 @@ const mockWebSocketService = {
 };
 
 const mockQuoteService = {
-    initializeQuoteService: jest.fn(),
     logOrderBookSnapshot: jest.fn(),
     updatePriceData: jest.fn()
 };
