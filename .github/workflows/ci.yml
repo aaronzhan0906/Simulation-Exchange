@@ -1,4 +1,4 @@
-name: Node.js Package
+name: CI Tests
 
 on:  # 觸發條件
   push:
@@ -16,11 +16,21 @@ jobs:
           MYSQL_DATABASE: simu_exchange
         ports:
           - 3306:3306
-    
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+          
       redis:
-          image: redis:7.2.5
-          ports:
-            - 6379:6379
+        image: redis:7.2.5
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
     
     strategy: 
       matrix:
@@ -70,13 +80,44 @@ jobs:
           ACCESS_TOKEN_EXPIRY: "1d"
           REFRESH_TOKEN_EXPIRY: "30d"
           
-          # Kafka 設定
-          KAFKA_CLIENT_ID: simu-exchange
-          KAFKA_BROKERS: localhost:9092
-          KAFKA_GROUP_ID: account-service-group
-          KAFKAJS_NO_PARTITIONER_WARNING: 1
-          
           # 其他設定
           SNOWFLAKE_INSTANCE_ID: 0
           SNOWFLAKE_CUSTOM_EPOCH: 1672531200000
-          MARKET_MAKER_ID: 68
+    
+  python-test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7.2.5
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.3"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          pytest -v
+        env:
+          SUPPORTED_SYMBOLS: "btc,eth,bnb,sol,avax"
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_DB: 0
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
