@@ -10,8 +10,8 @@
     "start:market-maker": "node market-maker/marketMaker.js",
     "init-kafka": "node node-backend/src/config/initKafkaTopics.js",
     "init-history-price": "node node-backend/src/config/initHistoryPrice.js",
-    "start:dev": "nodemon --exec ts-node node-backend/src/server.ts",
-    "start": "node node-backend/src/app.js"
+    "start:dev": "nodemon --exec ts-node node-backend/src/server.js",
+    "start": "node node-backend/src/server.js"
   },
   "keywords": [
     "simulation exchange",
