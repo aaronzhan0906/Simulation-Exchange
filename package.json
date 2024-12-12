@@ -5,11 +5,12 @@
   "main": "node-backend/src/app.js",
   "type": "module",
   "scripts": {
+    "build": "tsc -p node-backend/tsconfig.json",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --config jest.config.js --detectOpenHandles",
     "start:market-maker": "node market-maker/marketMaker.js",
     "init-kafka": "node node-backend/src/config/initKafkaTopics.js",
     "init-history-price": "node node-backend/src/config/initHistoryPrice.js",
-    "start:dev": "nodemon node-backend/src/server.js",
+    "start:dev": "nodemon --exec ts-node node-backend/src/server.ts",
     "start": "node node-backend/src/app.js"
   },
   "keywords": [
@@ -45,7 +46,10 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@types/node": "^22.10.2",
     "jest": "^29.7.0",
-    "nodemon": "^3.1.4"
+    "nodemon": "^3.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
   }
 }
